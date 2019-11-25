@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! [ -x "$(command -v docker)" ]; then
+  echo 'Error: docker is not installed.' >&2
+  exit 1
+fi
+
+# Not using docker-compose at the moment
+#if ! [ -x "$(command -v docker-compose)" ]; then
+#  echo 'Error: docker-compose is not installed.' >&2
+#  exit 1
+#fi
+
+sandbox () {
+  # Enter attaches users to a shell in the desired container
+  enter () {
+    echo "Entering /bin/bash session in the sandbox container..."
+    docker exec -w /opt/algorand/node -it sandbox /bin/bash
+  }
+
+  # Logs streams the logs from the container to the shell
+  logs () {
+    #docker exec -it sandbox tail -f /opt/algorand/node/data/node.log
+    docker exec -it sandbox /opt/algorand/node/carpenter -d /opt/algorand/node/data
+  }
+
+  # Start the algorand node
+  start () {
+    if [[ -d data && $# -gt 1 ]]; then
+      echo "Ignoring '$2', the data directory already exists."
+    elif [[ -d data ]]; then
+      echo "Starting algorand sandbox with existing data directory."
+    elif [[ $# -gt 1 ]]; then
+      case $2 in
+        mainnet)
+          CHANNEL=stable
+          ;;
+        testnet)
+          CHANNEL=stable
+          ;;
+        betanet)
+          CHANNEL=beta
+          ;;
+        *)
+          echo "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']"
+          exit 1
+          ;;
+      esac
+    fi
+
+    if [ ! -d data ]; then
+      NETWORK=${2:=testnet}
+      echo "Initializing data directory for $NETWORK."
+      mkdir data
+      cp genesis/${NETWORK}/genesis.json data
+    fi
+        
+    CHANNEL=${CHANNEL:=stable}
+    echo "Spinning up Docker Image..."
+    echo "If this is your first time starting sandbox this might take a minute..."
+    docker build --build-arg channel=$CHANNEL --build-arg USER_ID=$(id -u ${USER}) --build-arg GROUP_ID=$(id -g ${USER}) -t algorand-sandbox:$CHANNEL images/
+    docker run -u $(id -u ${USER}):$(id -g ${USER}) -d --name sandbox --mount type=bind,source="$(pwd)"/data,target=/opt/algorand/node/data algorand-sandbox:$CHANNEL
+  }
+
+  help () {
+      cat <<-EOF
+sandbox commands:
+  start (mainnet||testnet||betanet) -> spin up the sandbox environment
+  down                              -> tear down the sandbox environment
+  restart                           -> restart the sandbox
+  enter                             -> enter the sandbox container
+  logs                              -> stream algorand logs with the carpenter utility
+  status                            -> get node status
+  goal (args)                       -> run goal command like 'goal node status'
+  clean                             -> stops and deletes containers and data directory
+EOF
+  }
+
+  if [ $# -eq 0 ]; then
+    help
+    exit 1
+  fi
+
+  case $1 in
+    start)
+      start $@
+      ;;
+
+    down)
+      echo "Stopping sandbox container..."
+      docker kill sandbox
+      ;;
+
+    restart)
+      echo "Restarting sandbox process..."
+      docker restart sandbox
+      #echo "Services available!"
+      ;;
+
+    clean)
+      echo "Stopping running container..."
+      docker kill sandbox> /dev/null 2>&1 || true
+
+      echo "Stopping and removing running sandbox container..."
+      docker rm sandbox> /dev/null 2>&1 || true
+      docker rmi $(docker images --filter=reference=algorand-sandbox -q) > /dev/null 2>&1 || true
+      docker rmi $(docker images -f "dangling=true" -q)> /dev/null 2>&1 || true
+
+      echo "Removing algorand sandbox data..."
+      rm -rf data
+      ;;
+
+    enter)
+      enter $@
+      ;;
+
+    logs)
+      logs $@
+      ;;
+
+    status)
+      docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/algorand/node/data
+      ;;
+
+    goal)
+      shift
+      docker exec -it sandbox /opt/algorand/node/goal $@ -d /opt/algorand/node/data
+      ;;
+
+    *)
+      help
+      ;;
+  esac
+}
+
+pushd `dirname $0` > /dev/null
+    sandbox $@
+popd > /dev/null
