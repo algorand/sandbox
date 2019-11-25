@@ -21,59 +21,82 @@ sandbox () {
 
   # Logs streams the logs from the container to the shell
   logs () {
-    #docker exec -it sandbox tail -f /opt/algorand/node/data/node.log
-    docker exec -it sandbox /opt/algorand/node/carpenter -d /opt/algorand/node/data
+    if [[ $# -gt 1 && $2 == "raw" ]]; then
+      docker exec -it sandbox tail -f /opt/algorand/node/data/node.log
+    else
+      docker exec -it sandbox /opt/algorand/node/carpenter -d /opt/algorand/node/data
+    fi
   }
 
   # Start the algorand node
-  start () {
-    if [[ -d data && $# -gt 1 ]]; then
-      echo "Ignoring '$2', the data directory already exists."
-    elif [[ -d data ]]; then
-      echo "Starting algorand sandbox with existing data directory."
-    elif [[ $# -gt 1 ]]; then
-      case $2 in
-        mainnet)
-          CHANNEL=stable
-          ;;
-        testnet)
-          CHANNEL=stable
-          ;;
-        betanet)
-          CHANNEL=beta
-          ;;
-        *)
-          echo "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']"
-          exit 1
-          ;;
-      esac
-    fi
+  up () {
+    if [ "$(docker ps -a --filter name=sandbox -q)" ]; then
+      if [[ $# -gt 1 ]]; then
+        echo "A sandbox already exists, remove '$2' to resume the existing sandbox or run 'clean' before starting a new one."
+      else
+        echo "Starting the existing sandbox..."
+        docker start sandbox > /dev/null 2>&1
+      fi
+    else
+      if [[ -d data && $# -gt 1 ]]; then
+        echo "The data directory already exists, remove '$2' to resume the existing sandbox or run 'clean' before starting a new one."
+      elif [[ -d data ]]; then
+        echo "Resuming algorand sandbox with existing data directory."
+      elif [[ $# -gt 1 ]]; then
+        case $2 in
+          mainnet)
+            CHANNEL=stable
+            ;;
+          testnet)
+            CHANNEL=stable
+            ;;
+          betanet)
+            CHANNEL=beta
+            ;;
+          *)
+            echo "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']"
+            exit 1
+            ;;
+        esac
+      fi
 
-    if [ ! -d data ]; then
-      NETWORK=${2:=testnet}
-      echo "Initializing data directory for $NETWORK."
-      mkdir data
-      cp genesis/${NETWORK}/genesis.json data
+      # Create a new data directory
+      if [ ! -d data ]; then
+        NETWORK=${2:=testnet}
+        echo "Initializing data directory for $NETWORK."
+        mkdir data
+        cp genesis/${NETWORK}/genesis.json data
+      fi
+
+      CHANNEL=${CHANNEL:=stable}
+      echo "Creating a new Docker Image..."
+      docker build \
+        --build-arg channel=$CHANNEL \
+        --build-arg USER_ID=$(id -u ${USER}) \
+        --build-arg GROUP_ID=$(id -g ${USER}) \
+        -t \
+        algorand-sandbox:$CHANNEL \
+        images/
+      docker run \
+        -u $(id -u ${USER}):$(id -g ${USER}) \
+        -d \
+        --name sandbox \
+        --mount type=bind,source="$(pwd)"/data,target=/opt/algorand/node/data \
+        algorand-sandbox:$CHANNEL
     fi
-        
-    CHANNEL=${CHANNEL:=stable}
-    echo "Spinning up Docker Image..."
-    echo "If this is your first time starting sandbox this might take a minute..."
-    docker build --build-arg channel=$CHANNEL --build-arg USER_ID=$(id -u ${USER}) --build-arg GROUP_ID=$(id -g ${USER}) -t algorand-sandbox:$CHANNEL images/
-    docker run -u $(id -u ${USER}):$(id -g ${USER}) -d --name sandbox --mount type=bind,source="$(pwd)"/data,target=/opt/algorand/node/data algorand-sandbox:$CHANNEL
   }
 
   help () {
       cat <<-EOF
 sandbox commands:
-  start (mainnet||testnet||betanet) -> spin up the sandbox environment
-  down                              -> tear down the sandbox environment
-  restart                           -> restart the sandbox
-  enter                             -> enter the sandbox container
-  logs                              -> stream algorand logs with the carpenter utility
-  status                            -> get node status
-  goal (args)                       -> run goal command like 'goal node status'
-  clean                             -> stops and deletes containers and data directory
+  up (mainnet||testnet||betanet) -> spin up the sandbox environment
+  down                           -> tear down the sandbox environment
+  restart                        -> restart the sandbox
+  enter                          -> enter the sandbox container
+  logs                           -> stream algorand logs with the carpenter utility
+  status                         -> get node status
+  goal (args)                    -> run goal command like 'goal node status'
+  clean                          -> stops and deletes containers and data directory
 EOF
   }
 
@@ -83,13 +106,13 @@ EOF
   fi
 
   case $1 in
-    start)
-      start $@
+    up)
+      up $@
       ;;
 
     down)
       echo "Stopping sandbox container..."
-      docker kill sandbox
+      docker kill sandbox > /dev/null 2>&1
       ;;
 
     restart)
@@ -100,12 +123,12 @@ EOF
 
     clean)
       echo "Stopping running container..."
-      docker kill sandbox> /dev/null 2>&1 || true
+      docker kill sandbox > /dev/null 2>&1 || true
 
       echo "Stopping and removing running sandbox container..."
-      docker rm sandbox> /dev/null 2>&1 || true
+      docker rm sandbox > /dev/null 2>&1 || true
       docker rmi $(docker images --filter=reference=algorand-sandbox -q) > /dev/null 2>&1 || true
-      docker rmi $(docker images -f "dangling=true" -q)> /dev/null 2>&1 || true
+      docker rmi $(docker images -f "dangling=true" -q) > /dev/null 2>&1 || true
 
       echo "Removing algorand sandbox data..."
       rm -rf data
@@ -135,5 +158,5 @@ EOF
 }
 
 pushd `dirname $0` > /dev/null
-    sandbox $@
+sandbox $@
 popd > /dev/null
