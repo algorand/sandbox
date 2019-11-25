@@ -12,6 +12,9 @@ fi
 #  exit 1
 #fi
 
+# Global flags
+USE_SNAPSHOT=0
+
 sandbox () {
   # Enter attaches users to a shell in the desired container
   enter () {
@@ -35,26 +38,31 @@ sandbox () {
         echo "A sandbox already exists, remove '$2' to resume the existing sandbox or run 'clean' before starting a new one."
       else
         echo "Starting the existing sandbox..."
-        docker start sandbox > /dev/null 2>&1
+        docker start sandbox > /dev/null
       fi
     else
       if [[ -d data && $# -gt 1 ]]; then
         echo "The data directory already exists, remove '$2' to resume the existing sandbox or run 'clean' before starting a new one."
+        exit 1
       elif [[ -d data ]]; then
         echo "Resuming algorand sandbox with existing data directory."
       elif [[ $# -gt 1 ]]; then
         case $2 in
           mainnet)
             CHANNEL=stable
+            GENESIS_VERSION=mainnet-v1.0
             ;;
           testnet)
             CHANNEL=stable
+            SNAPSHOT_URL="https://algorand-repository.s3.amazonaws.com/testnet/ledger-snapshots/LATEST-SNAPSHOT/latest.tar.gz"
+            GENESIS_VERSION=testnet-v1.0
             ;;
           betanet)
             CHANNEL=beta
+            GENESIS_VERSION=betanet-v1.0
             ;;
           *)
-            echo "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']"
+            echo "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']."
             exit 1
             ;;
         esac
@@ -62,13 +70,29 @@ sandbox () {
 
       # Create a new data directory
       if [ ! -d data ]; then
-        NETWORK=${2:=testnet}
-        echo "Initializing data directory for $NETWORK."
+        NETWORK=${2:-testnet}
+        echo "Initializing data directory for $NETWORK..."
+
+        if [[ $USE_SNAPSHOT == 1 ]]; then
+          if [[ ${SNAPSHOT_URL:=""} == "" || ${GENESIS_VERSION:=""} == "" ]]; then
+            echo "A snapshot is not available for $NETWORK."
+            exit 1
+          else
+            echo "Downloading blockchain snapshot..."
+            mkdir -p data/$GENESIS_VERSION
+            pushd data/$GENESIS_VERSION
+            wget https://algorand-repository.s3.amazonaws.com/testnet/ledger-snapshots/LATEST-SNAPSHOT/latest.tar.gz
+            tar xvf latest.tar.gz
+            rm latest.tar.gz
+            popd
+          fi
+        fi
+
         mkdir data
         cp genesis/${NETWORK}/genesis.json data
       fi
 
-      CHANNEL=${CHANNEL:=stable}
+      CHANNEL=${CHANNEL:-stable}
       echo "Creating a new Docker Image..."
       docker build \
         --build-arg channel=$CHANNEL \
@@ -89,14 +113,16 @@ sandbox () {
   help () {
       cat <<-EOF
 sandbox commands:
-  up (mainnet||testnet||betanet) -> spin up the sandbox environment
-  down                           -> tear down the sandbox environment
-  restart                        -> restart the sandbox
-  enter                          -> enter the sandbox container
-  logs                           -> stream algorand logs with the carpenter utility
-  status                         -> get node status
-  goal (args)                    -> run goal command like 'goal node status'
-  clean                          -> stops and deletes containers and data directory
+  up (mainnet||testnet||betanet) [-s||--use-snapshot]
+              -> spin up the sandbox environment, optionally this can
+                 initialize the blockchain from a snapshot
+  down        -> tear down the sandbox environment
+  restart     -> restart the sandbox
+  enter       -> enter the sandbox container
+  logs        -> stream algorand logs with the carpenter utility
+  status      -> get node status
+  goal (args) -> run goal command like 'goal node status'
+  clean       -> stops and deletes containers and data directory
 EOF
   }
 
@@ -112,13 +138,12 @@ EOF
 
     down)
       echo "Stopping sandbox container..."
-      docker kill sandbox > /dev/null 2>&1
+      docker kill sandbox > /dev/null
       ;;
 
     restart)
       echo "Restarting sandbox process..."
       docker restart sandbox
-      #echo "Services available!"
       ;;
 
     clean)
@@ -157,6 +182,20 @@ EOF
   esac
 }
 
+PARAMS=""
+while (( "$#" )); do
+  case "$1" in
+    -s|--use-snapshot)
+      USE_SNAPSHOT=1
+      shift
+      ;;
+    *) # preserve positional arguments
+      PARAMS="$PARAMS $1"
+      shift
+      ;;
+  esac
+done
+
 pushd `dirname $0` > /dev/null
-sandbox $@
+sandbox $PARAMS
 popd > /dev/null
