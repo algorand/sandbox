@@ -13,7 +13,8 @@ RUN if [ ${USER_ID:-0} -ne 0 ] && [ ${GROUP_ID:-0} -ne 0 ]; then \
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt update && apt-get install -y ca-certificates
-ADD https://github.com/algorand/go-algorand-doc/raw/master/downloads/installers/linux_amd64/install_master_linux-amd64.tar.gz /tmp
+#ADD https://github.com/algorand/go-algorand-doc/raw/master/downloads/installers/linux_amd64/install_master_linux-amd64.tar.gz /tmp
+ADD https://algorand-releases.s3.us-east-1.amazonaws.com/channel/stable/install_stable_linux-amd64_2.0.1.tar.gz /tmp
 
 RUN \
   set -eux; \
