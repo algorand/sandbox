@@ -147,9 +147,9 @@ sandbox () {
   help () {
       cat <<-EOF
 sandbox commands:
-  up (mainnet||testnet||betanet) [-s||--use-snapshot]
-          -> spin up the sandbox environment, optionally provide -s to
-             initialize the blockchain from a snapshot if one is available
+  up [mainnet||testnet||betanet] [-s||--use-snapshot]
+          -> spin up the sandbox environment, uses testnet by default.
+             Optionally provide -s to initialize data from a snapshot.
   down    -> tear down the sandbox environment
   restart -> restart the sandbox
   enter   -> enter the sandbox container
