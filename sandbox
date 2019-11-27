@@ -4,6 +4,7 @@ set -euo pipefail
 red=`echo -en "\e[31m"`
 green=`echo -en "\e[32m"`
 default=`echo -en "\e[39m"`
+SNAPSHOT_TESTNET_URL="https://algorand-snapshots.s3.us-east-1.amazonaws.com/network/testnet-v1.0/latest.tar.gz"
 
 function printc () {
   printf "$1$2${default}\n"
@@ -75,7 +76,7 @@ sandbox () {
           testnet)
             CHANNEL=stable
             #SNAPSHOT_URL="https://algorand-repository.s3.amazonaws.com/testnet/ledger-snapshots/LATEST-SNAPSHOT/latest.tar.gz"
-            SNAPSHOT_URL="https://algorand-snapshots.s3.us-east-1.amazonaws.com/network/testnet-v1.0/latest.tar.gz"
+            SNAPSHOT_URL=$SNAPSHOT_TESTNET_URL
             GENESIS_VERSION=testnet-v1.0
             ;;
           betanet)
@@ -89,20 +90,22 @@ sandbox () {
         esac
       fi
 
-      # Set default if it wasn't set before
+      # Set default to testnet case a network wasn't provided
       NETWORK=${2:-testnet}
       CHANNEL=${CHANNEL:-stable}
+      SNAPSHOT_URL=${SNAPSHOT_URL:-$SNAPSHOT_TESTNET_URL}
+      GENESIS_VERSION=${GENESIS_VERSION:=testnet-v1.0}
 
       # Create a new data directory
       if [ ! -d data ]; then
-        statusline "\nInitializing data directory for $NETWORK..."
+        statusline "Initializing data directory for $NETWORK..."
 
         if [[ $USE_SNAPSHOT == 1 ]]; then
           if [[ ${SNAPSHOT_URL:=""} == "" || ${GENESIS_VERSION:=""} == "" ]]; then
             err "A snapshot is not available for $NETWORK."
             exit 1
           else
-            statusline "\nDownloading blockchain snapshot..."
+            statusline "\nDownloading $NETWORK snapshot..."
             wget $SNAPSHOT_URL
             mkdir -p data
             pushd data
