@@ -2,8 +2,9 @@ FROM ubuntu:18.04
 ARG channel
 ARG USER_ID
 ARG GROUP_ID
+ARG OSTYPE
 
-RUN if [ ${USER_ID:-0} -ne 0 ] && [ ${GROUP_ID:-0} -ne 0 ]; then \
+RUN if [ ${OSTYPE} = Linux ] && [ ${USER_ID:-0} -ne 0 ] && [ ${GROUP_ID:-0} -ne 0 ]; then \
     groupadd -g ${GROUP_ID} algorand &&\
     useradd -l -u ${USER_ID} -g algorand algorand &&\
     chown --changes --silent --no-dereference --recursive \

@@ -125,6 +125,7 @@ sandbox () {
         --build-arg channel=$CHANNEL \
         --build-arg USER_ID=$(id -u ${USER}) \
         --build-arg GROUP_ID=$(id -g ${USER}) \
+        --build-arg OSTYPE=$(uname) \
         -t \
         algorand-sandbox:$CHANNEL \
         images/
