@@ -1,8 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+red=`echo -en "\e[31m"`
+green=`echo -en "\e[32m"`
+default=`echo -en "\e[39m"`
+
+function printc () {
+  printf "$1$2${default}\n"
+}
+
+function statusline () {
+  printf "${green}$1${default}\n"
+}
+
+function err () {
+  printf "${red}$1${default}\n"
+}
+
 if ! [ -x "$(command -v docker)" ]; then
-  echo 'Error: docker is not installed.' >&2
+  err 'Error: docker is not installed.' >&2
   exit 1
 fi
 
@@ -16,9 +32,13 @@ fi
 USE_SNAPSHOT=0
 
 sandbox () {
+  status () {
+    docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/algorand/node/data
+  }
+
   # Enter attaches users to a shell in the desired container
   enter () {
-    echo "Entering /bin/bash session in the sandbox container..."
+    statusline "Entering /bin/bash session in the sandbox container..."
     docker exec -w /opt/algorand/node -it sandbox /bin/bash
   }
 
@@ -35,17 +55,17 @@ sandbox () {
   up () {
     if [ "$(docker ps -a --filter name=sandbox -q)" ]; then
       if [[ $# -gt 1 ]]; then
-        echo "A sandbox already exists, remove '$2' to resume the existing sandbox or run 'clean' before starting a new one."
+        err "A sandbox already exists, remove '$2' to resume the existing sandbox or run 'clean' before starting a new one."
       else
-        echo "Starting the existing sandbox..."
+        statusline "Starting the existing sandbox..."
         docker start sandbox > /dev/null
       fi
     else
       if [[ -d data && $# -gt 1 ]]; then
-        echo "The data directory already exists, remove '$2' to resume the existing sandbox or run 'clean' before starting a new one."
+        err "The data directory already exists, remove '$2' to resume the existing sandbox or run 'clean' before starting a new one."
         exit 1
       elif [[ -d data ]]; then
-        echo "Resuming algorand sandbox with existing data directory."
+        statusline "Resuming algorand sandbox with existing data directory."
       elif [[ $# -gt 1 ]]; then
         case $2 in
           mainnet)
@@ -54,7 +74,8 @@ sandbox () {
             ;;
           testnet)
             CHANNEL=stable
-            SNAPSHOT_URL="https://algorand-repository.s3.amazonaws.com/testnet/ledger-snapshots/LATEST-SNAPSHOT/latest.tar.gz"
+            #SNAPSHOT_URL="https://algorand-repository.s3.amazonaws.com/testnet/ledger-snapshots/LATEST-SNAPSHOT/latest.tar.gz"
+            SNAPSHOT_URL="https://algorand-snapshots.s3.us-east-1.amazonaws.com/network/testnet-v1.0/latest.tar.gz"
             GENESIS_VERSION=testnet-v1.0
             ;;
           betanet)
@@ -62,38 +83,41 @@ sandbox () {
             GENESIS_VERSION=betanet-v1.0
             ;;
           *)
-            echo "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']."
+            err "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']."
             exit 1
             ;;
         esac
       fi
 
+      # Set default if it wasn't set before
+      NETWORK=${2:-testnet}
+      CHANNEL=${CHANNEL:-stable}
+
       # Create a new data directory
       if [ ! -d data ]; then
-        NETWORK=${2:-testnet}
-        echo "Initializing data directory for $NETWORK..."
+        statusline "\nInitializing data directory for $NETWORK..."
 
         if [[ $USE_SNAPSHOT == 1 ]]; then
           if [[ ${SNAPSHOT_URL:=""} == "" || ${GENESIS_VERSION:=""} == "" ]]; then
-            echo "A snapshot is not available for $NETWORK."
+            err "A snapshot is not available for $NETWORK."
             exit 1
           else
-            echo "Downloading blockchain snapshot..."
-            mkdir -p data/$GENESIS_VERSION
-            pushd data/$GENESIS_VERSION
-            wget https://algorand-repository.s3.amazonaws.com/testnet/ledger-snapshots/LATEST-SNAPSHOT/latest.tar.gz
-            tar xvf latest.tar.gz
-            rm latest.tar.gz
+            statusline "\nDownloading blockchain snapshot..."
+            wget $SNAPSHOT_URL
+            mkdir -p data
+            pushd data
+            tar xvf ../latest.tar.gz
+            rm ../latest.tar.gz
             popd
           fi
         fi
 
         mkdir -p data
+        cp config/* data
         cp genesis/${NETWORK}/genesis.json data
       fi
 
-      CHANNEL=${CHANNEL:-stable}
-      echo "Creating a new Docker Image..."
+      statusline "\nBuilding a new Docker Image..."
       docker build \
         --build-arg channel=$CHANNEL \
         --build-arg USER_ID=$(id -u ${USER}) \
@@ -101,12 +125,19 @@ sandbox () {
         -t \
         algorand-sandbox:$CHANNEL \
         images/
+
+      statusline "\nStarting a new Docker Container..."
       docker run \
         -u $(id -u ${USER}):$(id -g ${USER}) \
         -d \
+        -p 4001:4001 \
         --name sandbox \
         --mount type=bind,source="$(pwd)"/data,target=/opt/algorand/node/data \
         algorand-sandbox:$CHANNEL
+
+      statusline "\nSandbox started! Printing status..."
+      sleep 1
+      status
     fi
   }
 
@@ -120,6 +151,7 @@ sandbox commands:
   restart -> restart the sandbox
   enter   -> enter the sandbox container
   clean   -> stops and deletes containers and data directory
+  test    -> runs some tests to make sure everything is working correctly
 
 algorand commands:
   logs        -> stream algorand logs with the carpenter utility
@@ -143,26 +175,40 @@ EOF
       ;;
 
     down)
-      echo "Stopping sandbox container..."
+      statusline "Stopping sandbox container..."
       docker kill sandbox > /dev/null
       ;;
 
     restart)
-      echo "Restarting sandbox process..."
+      statusline "Restarting sandbox process..."
       docker restart sandbox
       ;;
 
     clean)
-      echo "Stopping running container..."
+      statusline "Stopping running container..."
       docker kill sandbox > /dev/null 2>&1 || true
 
-      echo "Stopping and removing running sandbox container..."
+      statusline "Stopping and removing running sandbox container..."
       docker rm sandbox > /dev/null 2>&1 || true
       docker rmi $(docker images --filter=reference=algorand-sandbox -q) > /dev/null 2>&1 || true
       docker rmi $(docker images -f "dangling=true" -q) > /dev/null 2>&1 || true
 
-      echo "Removing algorand sandbox data..."
+      statusline "Removing algorand sandbox data..."
       rm -rf data
+      ;;
+
+    test)
+      printc $red "Test command forwarding..."
+      printc $default "~$ ${green}docker exec -it sandbox uname -a"
+      docker exec -it sandbox uname -a
+
+      printc $red "\nTest algod..."
+      printc $default "~$ ${green}docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/algorand/node/data"
+      status
+
+      printc $red "\nTest REST API..."
+      printc $default "~$ ${green}curl localhost:4001/v1/status -H \"X-Algo-API-Token: $(cat data/algod.token)\""
+      curl localhost:4001/v1/status -H "X-Algo-API-Token: $(cat data/algod.token)"
       ;;
 
     enter)
@@ -174,7 +220,7 @@ EOF
       ;;
 
     status)
-      docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/algorand/node/data
+      status
       ;;
 
     goal)
