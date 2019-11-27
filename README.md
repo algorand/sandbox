@@ -10,15 +10,18 @@ Use the **sandbox** command to interact with the Algorand Sandbox.
 ```
 sandbox commands:
   up (mainnet||testnet||betanet) [-s||--use-snapshot]
-              -> spin up the sandbox environment, optionally this can
-                 initialize the blockchain from a snapshot
-  down        -> tear down the sandbox environment
-  restart     -> restart the sandbox
-  enter       -> enter the sandbox container
+          -> spin up the sandbox environment, optionally this can
+             initialize the blockchain from a snapshot
+  down    -> tear down the sandbox environment
+  restart -> restart the sandbox
+  enter   -> enter the sandbox container
+  clean   -> stops and deletes containers and data directory
+
+algorand commands:
   logs        -> stream algorand logs with the carpenter utility
   status      -> get node status
   goal (args) -> run goal command like 'goal node status'
-  clean       -> stops and deletes containers and data directory
 
-* The up command also supports using '-s', or '--
+tutorials:
+  introduction -> learn how to get Algos on testnet and create a transaction
 ```
