@@ -113,8 +113,12 @@ sandbox () {
           fi
         fi
 
-        mkdir -p data
-        cp config/* data
+        mkdir -p data/kmd-v0.5
+        cp config/config.json data
+        cp config/token data/algod.token
+        cp config/kmd_config.json data/kmd-v0.5
+        cp config/token data/kmd-v0.5/kmd.token
+        chmod 700 data/kmd-v0.5
         cp genesis/${NETWORK}/genesis.json data
       fi
 
@@ -126,13 +130,15 @@ sandbox () {
         --build-arg OSTYPE=$(uname) \
         -t \
         algorand-sandbox:$CHANNEL \
-        images/
+        . \
+        -f images/Dockerfile
 
       statusline "\nStarting a new Docker Container..."
       docker run \
         -u $(id -u ${USER}):$(id -g ${USER}) \
         -d \
         -p 4001:4001 \
+        -p 4002:4002 \
         --name sandbox \
         --mount type=bind,source="$(pwd)"/data,target=/opt/algorand/node/data \
         algorand-sandbox:$CHANNEL
@@ -208,9 +214,15 @@ EOF
       printc $default "~$ ${green}docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/algorand/node/data"
       status
 
-      printc $red "\nTest REST API..."
-      printc $default "~$ ${green}curl localhost:4001/v1/status -H \"X-Algo-API-Token: $(cat data/algod.token)\""
+      printc $red "\nTest Algod REST API..."
+      printc $default "~$ ${green}curl localhost:4001/v1/status -H \"X-Algo-API-Token: \$(cat data/algod.token)\""
       curl localhost:4001/v1/status -H "X-Algo-API-Token: $(cat data/algod.token)"
+
+      printc $red "\nTest KMD REST API..."
+      printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: \$(cat data/kmd-v0.5/kmd.token)\""
+      curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat data/kmd-v0.5/kmd.token)"
+
+      printf "\n\n"
       ;;
 
     enter)

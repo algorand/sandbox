@@ -25,4 +25,6 @@ RUN \
   ./update.sh -i -c $channel -p /opt/algorand/node -d /opt/algorand/node/data.tmp -n ; \
   rm -rf /opt/algorand/node/data.tmp
 
-ENTRYPOINT ["/opt/algorand/node/algod", "-d", "/opt/algorand/node/data"]
+COPY ./config/start.sh /opt/algorand
+
+ENTRYPOINT [ "/opt/algorand/start.sh" ]
