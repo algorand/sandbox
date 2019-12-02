@@ -107,11 +107,9 @@ sandbox () {
           else
             statusline "\nDownloading $NETWORK snapshot..."
             wget $SNAPSHOT_URL
-            mkdir -p data
-            pushd data
-            tar xvf ../latest.tar.gz
-            rm ../latest.tar.gz
-            popd
+            mkdir -p data/${GENESIS_VERSION}
+            tar xvf latest.tar.gz -C data/${GENESIS_VERSION}
+            rm latest.tar.gz
           fi
         fi
 
