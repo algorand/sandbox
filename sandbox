@@ -4,7 +4,9 @@ set -euo pipefail
 red=`echo -en "\e[31m"`
 green=`echo -en "\e[32m"`
 default=`echo -en "\e[39m"`
-SNAPSHOT_TESTNET_URL="https://algorand-snapshots.s3.us-east-1.amazonaws.com/network/testnet-v1.0/latest.tar.gz"
+SNAPSHOT_URL_PREFIX="https://algorand-snapshots.s3.us-east-1.amazonaws.com"
+TESTNET_URL_PATH="network/testnet-v1.0/latest.tar.gz"
+BETANET_URL_PATH="network/betanet-v1.0/latest.tar.gz"
 
 function printc () {
   printf "$1$2${default}\n"
@@ -75,13 +77,14 @@ sandbox () {
             ;;
           testnet)
             CHANNEL=stable
-            #SNAPSHOT_URL="https://algorand-repository.s3.amazonaws.com/testnet/ledger-snapshots/LATEST-SNAPSHOT/latest.tar.gz"
-            SNAPSHOT_URL=$SNAPSHOT_TESTNET_URL
             GENESIS_VERSION=testnet-v1.0
+            SNAPSHOT_URL=$SNAPSHOT_URL_PREFIX/$TESTNET_URL_PATH
             ;;
           betanet)
             CHANNEL=beta
             GENESIS_VERSION=betanet-v1.0
+            CONFIG=beta.config.json
+            SNAPSHOT_URL=$SNAPSHOT_URL_PREFIX/$BETANET_URL_PATH
             ;;
           *)
             err "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']."
@@ -93,6 +96,7 @@ sandbox () {
       # Set default to testnet case a network wasn't provided
       NETWORK=${2:-testnet}
       CHANNEL=${CHANNEL:-stable}
+      CONFIG=${CONFIG:-config.json}
       SNAPSHOT_URL=${SNAPSHOT_URL:-$SNAPSHOT_TESTNET_URL}
       GENESIS_VERSION=${GENESIS_VERSION:=testnet-v1.0}
 
@@ -114,7 +118,7 @@ sandbox () {
         fi
 
         mkdir -p data/kmd-v0.5
-        cp config/config.json data
+        cp config/$CONFIG data/config.json
         cp config/token data/algod.token
         cp config/kmd_config.json data/kmd-v0.5
         cp config/token data/kmd-v0.5/kmd.token
