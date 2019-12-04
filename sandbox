@@ -4,9 +4,10 @@ set -euo pipefail
 red=`echo -en "\e[31m"`
 green=`echo -en "\e[32m"`
 default=`echo -en "\e[39m"`
-SNAPSHOT_URL_PREFIX="https://algorand-snapshots.s3.us-east-1.amazonaws.com"
-TESTNET_URL_PATH="network/testnet-v1.0/latest.tar.gz"
-BETANET_URL_PATH="network/betanet-v1.0/latest.tar.gz"
+SNAPSHOT_URL_PREFIX="https://algorand-snapshots.s3.us-east-1.amazonaws.com/network"
+SNAPSHOT_MAINNET_URL=$SNAPSHOT_URL_PREFIX/"mainnet-v1.0/latest.tar.gz"
+SNAPSHOT_TESTNET_URL=$SNAPSHOT_URL_PREFIX/"testnet-v1.0/latest.tar.gz"
+SNAPSHOT_BETANET_URL=$SNAPSHOT_URL_PREFIX/"betanet-v1.0/latest.tar.gz"
 
 function printc () {
   printf "$1$2${default}\n"
@@ -32,7 +33,7 @@ fi
 #fi
 
 # Global flags
-USE_SNAPSHOT=0
+USE_SNAPSHOT=1
 
 sandbox () {
   status () {
@@ -74,17 +75,18 @@ sandbox () {
           mainnet)
             CHANNEL=stable
             GENESIS_VERSION=mainnet-v1.0
+            SNAPSHOT_URL=$SNAPSHOT_MAINNET_URL
             ;;
           testnet)
             CHANNEL=stable
             GENESIS_VERSION=testnet-v1.0
-            SNAPSHOT_URL=$SNAPSHOT_URL_PREFIX/$TESTNET_URL_PATH
+            SNAPSHOT_URL=$SNAPSHOT_TESTNET_URL
             ;;
           betanet)
             CHANNEL=beta
             GENESIS_VERSION=betanet-v1.0
             CONFIG=beta.config.json
-            SNAPSHOT_URL=$SNAPSHOT_URL_PREFIX/$BETANET_URL_PATH
+            SNAPSHOT_URL=$SNAPSHOT_BETANET_URL
             ;;
           *)
             err "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']."
@@ -97,7 +99,7 @@ sandbox () {
       NETWORK=${2:-testnet}
       CHANNEL=${CHANNEL:-stable}
       CONFIG=${CONFIG:-config.json}
-      SNAPSHOT_URL=${SNAPSHOT_URL:-$SNAPSHOT_TESTNET_URL}
+      SNAPSHOT_URL=${SNAPSHOT_URL:-}
       GENESIS_VERSION=${GENESIS_VERSION:=testnet-v1.0}
 
       # Create a new data directory
@@ -107,10 +109,10 @@ sandbox () {
         if [[ $USE_SNAPSHOT == 1 ]]; then
           if [[ ${SNAPSHOT_URL:=""} == "" || ${GENESIS_VERSION:=""} == "" ]]; then
             err "A snapshot is not available for $NETWORK."
-            exit 1
           else
             statusline "\nDownloading $NETWORK snapshot..."
-            wget $SNAPSHOT_URL
+            rm -f latest.tar.gz
+            wget $SNAPSHOT_URL -O latest.tar.gz
             mkdir -p data/${GENESIS_VERSION}
             tar xvf latest.tar.gz -C data/${GENESIS_VERSION}
             rm latest.tar.gz
@@ -156,9 +158,9 @@ sandbox () {
   help () {
       cat <<-EOF
 sandbox commands:
-  up [mainnet||testnet||betanet] [-s||--use-snapshot]
+  up [mainnet||testnet||betanet] [-s||--skip-snapshot]
           -> spin up the sandbox environment, uses testnet by default.
-             Optionally provide -s to initialize data from a snapshot.
+             Optionally provide -s to skip initializing with a snapshot.
   down    -> tear down the sandbox environment
   restart -> restart the sandbox
   enter   -> enter the sandbox container
@@ -260,7 +262,7 @@ PARAMS=""
 while (( "$#" )); do
   case "$1" in
     -s|--use-snapshot)
-      USE_SNAPSHOT=1
+      USE_SNAPSHOT=0
       shift
       ;;
     *) # preserve positional arguments
