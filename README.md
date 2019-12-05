@@ -9,9 +9,9 @@ You will need to install **Docker**, [instructions are available here](https://d
 Use the **sandbox** command to interact with the Algorand Sandbox.
 ```
 sandbox commands:
-  up [mainnet||testnet||betanet] [-s||--use-snapshot]
+  up [mainnet||testnet||betanet] [-s||--skip-snapshot]
           -> spin up the sandbox environment, uses testnet by default.
-             Optionally provide -s to initialize data from a snapshot.
+             Optionally provide -s to skip initializing with a snapshot.
   down    -> tear down the sandbox environment
   restart -> restart the sandbox
   enter   -> enter the sandbox container

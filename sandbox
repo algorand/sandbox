@@ -21,6 +21,52 @@ function err () {
   printf "${red}$1${default}\n"
 }
 
+function ask_clean () {
+  if ask "$1"; then
+    clean
+  else
+    exit 1
+  fi
+}
+
+function ask () {
+    # https://djm.me/ask
+    local prompt default reply
+
+    if [ "${2:-}" = "Y" ]; then
+        prompt="Y/n"
+        default=Y
+    elif [ "${2:-}" = "N" ]; then
+        prompt="y/N"
+        default=N
+    else
+        prompt="y/n"
+        default=
+    fi
+
+    while true; do
+
+        # Ask the question (not using "read -p" as it uses stderr not stdout)
+        echo -n "$1 [$prompt] "
+
+        # Read the answer (use /dev/tty in case stdin is redirected from somewhere else)
+        read reply </dev/tty
+
+        # Default?
+        if [ -z "$reply" ]; then
+            reply=$default
+        fi
+
+        # Check if the reply is valid
+        case "$reply" in
+            Y*|y*) return 0 ;;
+            N*|n*) return 1 ;;
+        esac
+
+    done
+}
+
+
 if ! [ -x "$(command -v docker)" ]; then
   err 'Error: docker is not installed.' >&2
   exit 1
@@ -40,6 +86,19 @@ sandbox () {
     docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/algorand/node/data
   }
 
+  clean () {
+    statusline "Stopping running container..."
+    docker kill sandbox > /dev/null 2>&1 || true
+
+    statusline "Stopping and removing running sandbox container..."
+    docker rm sandbox > /dev/null 2>&1 || true
+    docker rmi $(docker images --filter=reference=algorand-sandbox -q) > /dev/null 2>&1 || true
+    docker rmi $(docker images -f "dangling=true" -q) > /dev/null 2>&1 || true
+
+    statusline "Removing algorand sandbox data..."
+    rm -rf data
+  }
+
   # Enter attaches users to a shell in the desired container
   enter () {
     statusline "Entering /bin/bash session in the sandbox container..."
@@ -57,51 +116,67 @@ sandbox () {
 
   # Start the algorand node
   up () {
-    if [ "$(docker ps -a --filter name=sandbox -q)" ]; then
-      if [[ $# -gt 1 ]]; then
-        err "A sandbox already exists, remove '$2' to resume the existing sandbox or run 'clean' before starting a new one."
-      else
-        statusline "Starting the existing sandbox..."
-        docker start sandbox > /dev/null
+    # Initialize environment variables to configure and validate sandbox.
+    if [[ $# -gt 1 ]]; then
+      case $2 in
+        mainnet)
+          CHANNEL=stable
+          GENESIS_VERSION=mainnet-v1.0
+          SNAPSHOT_URL=$SNAPSHOT_MAINNET_URL
+          ;;
+        testnet)
+          CHANNEL=stable
+          GENESIS_VERSION=testnet-v1.0
+          SNAPSHOT_URL=$SNAPSHOT_TESTNET_URL
+          ;;
+        betanet)
+          CHANNEL=beta
+          GENESIS_VERSION=betanet-v1.0
+          CONFIG=beta.config.json
+          SNAPSHOT_URL=$SNAPSHOT_BETANET_URL
+          ;;
+        *)
+          err "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']."
+          exit 1
+          ;;
+      esac
+    fi
+
+    # Set default to testnet case a network wasn't provided
+    NETWORK=${2:-testnet}
+    CHANNEL=${CHANNEL:-stable}
+    CONFIG=${CONFIG:-config.json}
+    SNAPSHOT_URL=${SNAPSHOT_URL:-}
+    GENESIS_VERSION=${GENESIS_VERSION:=testnet-v1.0}
+
+    # Validate/repair data directory
+    if [[ -d data ]]; then
+      if [[ ! -f data/network ]]; then
+        err "Detected a corrupt data directory..."
+        ask_clean "Would you like to remove it and continue?"
+      elif [[ $# -gt 1 && -f data/network && "$(cat data/network)" != $2 && "$(docker ps -a --filter name=sandbox -q)" ]]; then
+        err "The sandbox is already configured to run '$(cat data/network)'."
+        ask_clean "Would you like to reset the sandbox to run '$2'?"
       fi
+    fi
+
+    # Resume or initialize sandbox
+    if [[ -d data ]]; then
+      statusline "Starting the existing sandbox..."
+      set +e
+      docker start sandbox > /dev/null
+
+      if [[ $? -ne 0 ]]; then
+        err "Detected an error from the docker command."
+        if [[ $# -eq 0 ]]; then
+          NETWORK=$(cat data/network)
+        fi
+        ask_clean "Would you like to reset the sandbox and try again?"
+        statusline "Starting '$NETWORK' sandbox..."
+        up $NETWORK
+      fi
+      set -e
     else
-      if [[ -d data && $# -gt 1 ]]; then
-        err "The data directory already exists, remove '$2' to resume the existing sandbox or run 'clean' before starting a new one."
-        exit 1
-      elif [[ -d data ]]; then
-        statusline "Resuming algorand sandbox with existing data directory."
-      elif [[ $# -gt 1 ]]; then
-        case $2 in
-          mainnet)
-            CHANNEL=stable
-            GENESIS_VERSION=mainnet-v1.0
-            SNAPSHOT_URL=$SNAPSHOT_MAINNET_URL
-            ;;
-          testnet)
-            CHANNEL=stable
-            GENESIS_VERSION=testnet-v1.0
-            SNAPSHOT_URL=$SNAPSHOT_TESTNET_URL
-            ;;
-          betanet)
-            CHANNEL=beta
-            GENESIS_VERSION=betanet-v1.0
-            CONFIG=beta.config.json
-            SNAPSHOT_URL=$SNAPSHOT_BETANET_URL
-            ;;
-          *)
-            err "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']."
-            exit 1
-            ;;
-        esac
-      fi
-
-      # Set default to testnet case a network wasn't provided
-      NETWORK=${2:-testnet}
-      CHANNEL=${CHANNEL:-stable}
-      CONFIG=${CONFIG:-config.json}
-      SNAPSHOT_URL=${SNAPSHOT_URL:-}
-      GENESIS_VERSION=${GENESIS_VERSION:=testnet-v1.0}
-
       # Create a new data directory
       if [ ! -d data ]; then
         statusline "Initializing data directory for $NETWORK..."
@@ -126,6 +201,7 @@ sandbox () {
         cp config/token data/kmd-v0.5/kmd.token
         chmod 700 data/kmd-v0.5
         cp genesis/${NETWORK}/genesis.json data
+        echo "$NETWORK" > data/network
       fi
 
       statusline "\nBuilding a new Docker Image..."
@@ -199,16 +275,7 @@ EOF
       ;;
 
     clean)
-      statusline "Stopping running container..."
-      docker kill sandbox > /dev/null 2>&1 || true
-
-      statusline "Stopping and removing running sandbox container..."
-      docker rm sandbox > /dev/null 2>&1 || true
-      docker rmi $(docker images --filter=reference=algorand-sandbox -q) > /dev/null 2>&1 || true
-      docker rmi $(docker images -f "dangling=true" -q) > /dev/null 2>&1 || true
-
-      statusline "Removing algorand sandbox data..."
-      rm -rf data
+      clean
       ;;
 
     test)
