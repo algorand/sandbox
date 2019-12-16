@@ -102,7 +102,7 @@ sandbox () {
   # Enter attaches users to a shell in the desired container
   enter () {
     statusline "Entering /bin/bash session in the sandbox container..."
-    docker exec -w /opt/algorand/node -it sandbox /bin/bash
+    docker exec -w /opt/algorand/node -it --user="root" sandbox /bin/bash
   }
 
   # Logs streams the logs from the container to the shell
