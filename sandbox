@@ -256,7 +256,7 @@ EOF
 
   case $1 in
     up)
-      up $@
+      up "$@"
       ;;
 
     down)
@@ -294,11 +294,11 @@ EOF
       ;;
 
     enter)
-      enter $@
+      enter "$@"
       ;;
 
     logs)
-      logs $@
+      logs "$@"
       ;;
 
     status)
@@ -307,7 +307,7 @@ EOF
 
     goal)
       shift
-      docker exec -w /opt/algorand/node/data -it sandbox /opt/algorand/node/goal $@ -d .
+      docker exec -w /opt/algorand/node/data -it sandbox /opt/algorand/node/goal "$@" -d .
       ;;
 
     introduction)
@@ -320,7 +320,7 @@ EOF
   esac
 }
 
-PARAMS=""
+PARAMS=()
 while (( "$#" )); do
   case "$1" in
     -s|--use-snapshot)
@@ -328,12 +328,12 @@ while (( "$#" )); do
       shift
       ;;
     *) # preserve positional arguments
-      PARAMS="$PARAMS $1"
+      PARAMS+=("$1")
       shift
       ;;
   esac
 done
 
 pushd `dirname $0` > /dev/null
-sandbox $PARAMS
+sandbox "${PARAMS[@]}"
 popd > /dev/null
