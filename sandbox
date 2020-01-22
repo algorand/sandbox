@@ -307,7 +307,7 @@ EOF
 
     goal)
       shift
-      docker exec -it sandbox /opt/algorand/node/goal $@ -d /opt/algorand/node/data
+      docker exec -w /opt/algorand/node/data -it sandbox /opt/algorand/node/goal $@ -d .
       ;;
 
     introduction)
