@@ -4,8 +4,6 @@ This is a fast way to create and configure an Algorand node and start developing
 
 You will need to install **Docker**, [instructions are available here](https://docs.docker.com/v17.09/engine/installation/).
 
-Mac users will also need to make sure **wget** is installed, which can be done with the homebrew command `brew install wget`.
-
 # Usage
 
 Use the **sandbox** command to interact with the Algorand Sandbox.
