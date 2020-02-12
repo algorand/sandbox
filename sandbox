@@ -242,6 +242,7 @@ algorand commands:
   logs        -> stream algorand logs with the carpenter utility
   status      -> get node status
   goal (args) -> run goal command like 'goal node status'
+  dryrun (tx) -> run 'goal clerk dryrun -t tx' to test a transaction file
 
 tutorials:
   introduction -> learn how to get Algos on testnet and create a transaction
@@ -308,6 +309,12 @@ EOF
     goal)
       shift
       docker exec -w /opt/algorand/node/data -it sandbox /opt/algorand/node/goal "$@" -d .
+      ;;
+
+    dryrun)
+      shift
+      cp $1 data
+      docker exec -w /opt/algorand/node/data -it sandbox /opt/algorand/node/goal clerk dryrun -t "$(basename $1)" -d .
       ;;
 
     introduction)

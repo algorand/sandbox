@@ -22,6 +22,8 @@ algorand commands:
   logs        -> stream algorand logs with the carpenter utility
   status      -> get node status
   goal (args) -> run goal command like 'goal node status'
+  dryrun (tx) -> run 'goal clerk dryrun -t tx' to test a transaction
+
 
 tutorials:
   introduction -> learn how to get Algos on testnet and create a transaction
