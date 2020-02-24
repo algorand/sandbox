@@ -1,0 +1,89 @@
+jobs:
+  include:
+    # Bionic
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CHANNEL=
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CHANNEL=mainnet
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CHANNEL=betanet
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CHANNEL=testnet
+
+    # Xenial
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CHANNEL=
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CHANNEL=mainnet
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CHANNEL=betanet
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CHANNEL=testnet
+
+    # Trusty
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CHANNEL=
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CHANNEL=mainnet
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CHANNEL=betanet
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CHANNEL=testnet
+
+    # Docker not supported.
+    #- name: "Linux, Precise, AMD64"
+    #  os: linux
+    #  dist: precise
+    #
+    # Docker container is hard coded to use the AMD64 installer.
+    # - name: "Linux, Bionic, ARM64"
+    #  os: linux
+    #  dist: bionic
+    #  arch: arm64
+    #
+    #- name: "Linux, Xenial, ARM64"
+    #  os: linux
+    #  dist: xenial
+    #  arch: arm64
+
+services:
+  - docker
+
+script:
+  - ./sandbox up $CHANNEL
