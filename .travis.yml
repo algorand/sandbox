@@ -1,18 +1,70 @@
 jobs:
   include:
-    - name: "Linux, Bionic, AMD64"
+    # Bionic
+    - stage: "Linux, Bionic, AMD64"
       os: linux
       dist: bionic
       arch: amd64
+      env : CHANNEL=
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CHANNEL=mainnet
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CHANNEL=betanet
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CHANNEL=testnet
 
-    - name: "Linux, Xenial, AMD64"
+    # Xenial
+    - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
       arch: amd64
+      env : CHANNEL=
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CHANNEL=mainnet
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CHANNEL=betanet
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CHANNEL=testnet
 
-    - name: "Linux, Trusty, AMD64"
+    # Trusty
+    - stage: "Linux, Trusty, AMD64"
       os: linux
       dist: trusty
+      arch: amd64
+      env : CHANNEL=
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CHANNEL=mainnet
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CHANNEL=betanet
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CHANNEL=testnet
 
     # Docker not supported.
     #- name: "Linux, Precise, AMD64"
@@ -29,12 +81,6 @@ jobs:
     #  os: linux
     #  dist: xenial
     #  arch: arm64
-
-env:
-  - CHANNEL=
-  - CHANNEL=mainnet
-  - CHANNEL=testnet
-  - CHANNEL=betanet
 
 services:
   - docker
