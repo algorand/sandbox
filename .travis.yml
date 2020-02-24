@@ -1,20 +1,27 @@
 jobs:
   include:
-    - os: linux
+    - name: "Linux, Bionic, AMD64"
+      os: linux
       dist: bionic
       arch: amd64
-    - os: linux
+    - name: "Linux, Xenial, AMD64"
+      os: linux
       dist: xenial
       arch: amd64
-    - os: linux
+
+    - name: "Linux, Trusty, AMD64"
+      os: linux
       dist: trusty
-    - os: linux
+    - name: "Linux, Precise, AMD64"
+      os: linux
       dist: precise
 
-    - os: linux
+    - name: "Linux, Bionic, ARM64"
+      os: linux
       dist: bionic
       arch: arm64
-    - os: linux
+    - name: "Linux, Xenial, ARM64"
+      os: linux
       dist: xenial
       arch: arm64
 
