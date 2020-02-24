@@ -2,15 +2,24 @@ jobs:
   include:
     - os: linux
       dist: bionic
+      arch: amd64
     - os: linux
       dist: xenial
+      arch: amd64
     - os: linux
       dist: trusty
     - os: linux
       dist: precise
 
+    - os: linux
+      dist: bionic
+      arch: arm64
+    - os: linux
+      dist: xenial
+      arch: arm64
+
 services:
   - docker
 
 script:
-  - sandbox up
+  - ./sandbox up
