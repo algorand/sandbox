@@ -1,0 +1,16 @@
+jobs:
+  include:
+    - os: linux
+      dist: bionic
+    - os: linux
+      dist: xenial
+    - os: linux
+      dist: trusty
+    - os: linux
+      dist: precise
+
+services:
+  - docker
+
+script:
+  - sandbox up
