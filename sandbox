@@ -182,7 +182,7 @@ sandbox () {
           else
             statusline "\nDownloading $NETWORK snapshot..."
             rm -f latest.tar.gz
-            curl -O $SNAPSHOT_URL -o latest.tar.gz
+            curl -s -S -O $SNAPSHOT_URL -o latest.tar.gz
             mkdir -p data/${GENESIS_VERSION}
             tar xvf latest.tar.gz -C data/${GENESIS_VERSION}
             rm latest.tar.gz
