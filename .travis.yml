@@ -4,6 +4,7 @@ jobs:
       os: linux
       dist: bionic
       arch: amd64
+
     - name: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
@@ -12,21 +13,31 @@ jobs:
     - name: "Linux, Trusty, AMD64"
       os: linux
       dist: trusty
-    - name: "Linux, Precise, AMD64"
-      os: linux
-      dist: precise
 
-    - name: "Linux, Bionic, ARM64"
-      os: linux
-      dist: bionic
-      arch: arm64
-    - name: "Linux, Xenial, ARM64"
-      os: linux
-      dist: xenial
-      arch: arm64
+    # Docker not supported.
+    #- name: "Linux, Precise, AMD64"
+    #  os: linux
+    #  dist: precise
+    #
+    # Docker container is hard coded to use the AMD64 installer.
+    # - name: "Linux, Bionic, ARM64"
+    #  os: linux
+    #  dist: bionic
+    #  arch: arm64
+    #
+    #- name: "Linux, Xenial, ARM64"
+    #  os: linux
+    #  dist: xenial
+    #  arch: arm64
+
+env:
+  - CHANNEL=
+  - CHANNEL=mainnet
+  - CHANNEL=testnet
+  - CHANNEL=betanet
 
 services:
   - docker
 
 script:
-  - ./sandbox up
+  - ./sandbox up $CHANNEL
