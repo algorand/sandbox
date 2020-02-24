@@ -83,7 +83,7 @@ USE_SNAPSHOT=1
 
 sandbox () {
   status () {
-    docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/algorand/node/data
+    docker exec sandbox /opt/algorand/node/goal node status -d /opt/algorand/node/data
   }
 
   clean () {
