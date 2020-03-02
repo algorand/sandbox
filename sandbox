@@ -94,6 +94,7 @@ sandbox () {
     docker rm sandbox > /dev/null 2>&1 || true
     docker rmi $(docker images --filter=reference=algorand-sandbox -q) > /dev/null 2>&1 || true
     docker rmi $(docker images -f "dangling=true" -q) > /dev/null 2>&1 || true
+    docker volume ls | grep -q algorand-sandbox-data && docker volume rm algorand-sandbox-data || true
 
     statusline "Removing algorand sandbox data..."
     rm -rf data
@@ -102,7 +103,7 @@ sandbox () {
   # Enter attaches users to a shell in the desired container
   enter () {
     statusline "Entering /bin/bash session in the sandbox container..."
-    docker exec -w /opt/algorand/node -it --user="root" sandbox /bin/bash
+    docker exec -w /opt/algorand/node -it sandbox /bin/bash
   }
 
   # Logs streams the logs from the container to the shell
@@ -172,6 +173,14 @@ sandbox () {
       fi
       set -e
     else
+      statusline "\nBuilding a new Docker Image..."
+      docker build \
+        --build-arg channel=$CHANNEL \
+        -t \
+        algorand-sandbox:$CHANNEL \
+        . \
+        -f images/Dockerfile
+        
       # Create a new data directory
       if [ ! -d data ]; then
         statusline "Initializing data directory for $NETWORK..."
@@ -182,7 +191,7 @@ sandbox () {
           else
             statusline "\nDownloading $NETWORK snapshot..."
             rm -f latest.tar.gz
-            curl -s -S -O $SNAPSHOT_URL -o latest.tar.gz
+            curl -s -S $SNAPSHOT_URL -o latest.tar.gz
             mkdir -p data/${GENESIS_VERSION}
             tar xvf latest.tar.gz -C data/${GENESIS_VERSION}
             rm latest.tar.gz
@@ -196,28 +205,27 @@ sandbox () {
         cp config/token data/kmd-v0.5/kmd.token
         chmod 700 data/kmd-v0.5
         cp genesis/${NETWORK}/genesis.json data
+
+        # Copy to the Docker container
+        tar -cf - data | docker run --name sandbox \
+          --mount source="algorand-sandbox-data",target=/opt/algorand/node/data \
+          --entrypoint="" \
+          -i \
+          algorand-sandbox:$CHANNEL \
+          tar -C /opt/algorand/node -x
+        docker rm sandbox
+
+        # Remember the used network
         echo "$NETWORK" > data/network
       fi
 
-      statusline "\nBuilding a new Docker Image..."
-      docker build \
-        --build-arg channel=$CHANNEL \
-        --build-arg USER_ID=$(id -u ${USER}) \
-        --build-arg GROUP_ID=$(id -g ${USER}) \
-        --build-arg OSTYPE=$(uname) \
-        -t \
-        algorand-sandbox:$CHANNEL \
-        . \
-        -f images/Dockerfile
-
       statusline "\nStarting a new Docker Container..."
       docker run \
-        -u $(id -u ${USER}):$(id -g ${USER}) \
-        -d \
         -p 4001:4001 \
         -p 4002:4002 \
         --name sandbox \
-        --mount type=bind,source="$(pwd)"/data,target=/opt/algorand/node/data \
+        --mount source="algorand-sandbox-data",target=/opt/algorand/node/data \
+        -d \
         algorand-sandbox:$CHANNEL
 
       statusline "\nSandbox started! Printing status..."
