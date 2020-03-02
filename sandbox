@@ -7,8 +7,10 @@ set -euo pipefail
 #   see http://www.mingw.org/wiki/Posix_path_conversion
 # 2. Use $PTY_DOCKER for all commands that require a PTY (-t)
 PTY_DOCKER=docker
-if [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || \
-   [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
+if [ "$(uname)" == "Darwin" ]; then
+  true
+elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || \
+     [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
   PTY_DOCKER="winpty docker"
 fi
 
