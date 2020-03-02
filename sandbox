@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Compatibility with Windows / MSYS2
+# 1. Use // to prevent msys to convert to Windows PATH on Windows
+#   when using inside Docker
+#   see http://www.mingw.org/wiki/Posix_path_conversion
+# 2. Use $PTY_DOCKER for all commands that require a PTY (-t)
+PTY_DOCKER=docker
+if [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || \
+   [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
+  PTY_DOCKER="winpty docker"
+fi
+
 red=`echo -en "\e[31m"`
 green=`echo -en "\e[32m"`
 default=`echo -en "\e[39m"`
@@ -83,7 +94,7 @@ USE_SNAPSHOT=1
 
 sandbox () {
   status () {
-    docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/algorand/node/data
+    $PTY_DOCKER exec -it sandbox goal node status
   }
 
   clean () {
@@ -103,15 +114,15 @@ sandbox () {
   # Enter attaches users to a shell in the desired container
   enter () {
     statusline "Entering /bin/bash session in the sandbox container..."
-    docker exec -w /opt/algorand/node -it sandbox /bin/bash
+    $PTY_DOCKER exec -w //opt/algorand/node -it sandbox //bin/bash
   }
 
   # Logs streams the logs from the container to the shell
   logs () {
     if [[ $# -gt 1 && $2 == "raw" ]]; then
-      docker exec -it sandbox tail -f /opt/algorand/node/data/node.log
+      $PTY_DOCKER exec -it sandbox tail -f //opt/algorand/node/data/node.log
     else
-      docker exec -it sandbox /opt/algorand/node/carpenter -d /opt/algorand/node/data
+      $PTY_DOCKER exec -it sandbox carpenter -D
     fi
   }
 
@@ -208,11 +219,11 @@ sandbox () {
 
         # Copy to the Docker container
         tar -cf - data | docker run --name sandbox \
-          --mount source="algorand-sandbox-data",target=/opt/algorand/node/data \
+          --mount source="algorand-sandbox-data",target=//opt/algorand/node/data \
           --entrypoint="" \
           -i \
           algorand-sandbox:$CHANNEL \
-          tar -C /opt/algorand/node -x
+          tar -C //opt/algorand/node -x
         docker rm sandbox
 
         # Remember the used network
@@ -224,7 +235,7 @@ sandbox () {
         -p 4001:4001 \
         -p 4002:4002 \
         --name sandbox \
-        --mount source="algorand-sandbox-data",target=/opt/algorand/node/data \
+        --mount source="algorand-sandbox-data",target=//opt/algorand/node/data \
         -d \
         algorand-sandbox:$CHANNEL
 
@@ -316,13 +327,13 @@ EOF
 
     goal)
       shift
-      docker exec -w /opt/algorand/node/data -it sandbox /opt/algorand/node/goal "$@" -d .
+      $PTY_DOCKER exec -w //opt/algorand/node/data -it sandbox goal "$@"
       ;;
 
     dryrun)
       shift
       cp $1 data
-      docker exec -w /opt/algorand/node/data -it sandbox /opt/algorand/node/goal clerk dryrun -t "$(basename $1)" -d .
+      $PTY_DOCKER exec -w //opt/algorand/node/data -it sandbox goal clerk dryrun -t "$(basename $1)"
       ;;
 
     introduction)
