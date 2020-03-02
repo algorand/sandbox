@@ -1,36 +1,25 @@
-#BLACK=$(tput setaf 0)
-#RED=$(tput setaf 1)
-#GREEN=$(tput setaf 2)
-#YELLOW=$(tput setaf 3)
-#BLUE=$(tput setaf 4)
-#PINK=$(tput setaf 5)
-#CYAN=$(tput setaf 6)
-#WHITE=$(tput setaf 7)
-RED=`echo -en "\e[41m"`
-GREEN=`echo -en "\e[42m"`
-ORANGE=`echo -en "\e[43m"`
-BLUE=`echo -en "\e[44m"`
-PURPLE=`echo -en "\e[45m"`
-AQUA=`echo -en "\e[46m"`
-GRAY=`echo -en "\e[47m"`
-DARKGRAY=`echo -en "\e[100m"`
-DEFAULT=`echo -en "\e[49m"`
-red=`echo -en "\e[31m"`
-green=`echo -en "\e[32m"`
-orange=`echo -en "\e[33m"`
-blue=`echo -en "\e[34m"`
-purple=`echo -en "\e[35m"`
-aqua=`echo -en "\e[36m"`
-gray=`echo -en "\e[37m"`
-darkgray=`echo -en "\e[90m"`
-lightred=`echo -en "\e[91m"`
-lightgreen=`echo -en "\e[92m"`
-lightyellow=`echo -en "\e[93m"`
-lightblue=`echo -en "\e[94m"`
-lightpurple=`echo -en "\e[95m"`
-lightaqua=`echo -en "\e[96m"`
-white=`echo -en "\e[97m"`
-default=`echo -en "\e[39m"`
+#!/usr/bin/env bash
+
+BLACK="$(tput setab 0)"
+RED="$(tput setab 1)"
+GREEN="$(tput setab 2)"
+YELLOW="$(tput setab 3)"
+BLUE="$(tput setab 4)"
+PINK="$(tput setab 5)"
+CYAN="$(tput setab 6)"
+GRAY="$(tput setab 245)"
+
+black="$(tput setaf 0)"
+red="$(tput setaf 1)"
+green="$(tput setaf 2)"
+yellow="$(tput setaf 3)"
+blue="$(tput setaf 4)"
+pink="$(tput setaf 5)"
+cyan="$(tput setaf 6)"
+gray="$(tput setaf 245)"
+
+DEFAULT="$(tput sgr0)"
+default="$(tput sgr0)"
 
 
 PROMPT="${blue}${GRAY}~$ ${DEFAULT}${default}"
@@ -86,7 +75,7 @@ script provides a "goal" option to forward these commands to the sandbox.
 
 Try running this simple goal command to get information about your node
 
-${aqua}[./sandbox goal node status]${default}
+${cyan}[./sandbox goal node status]${default}
 
 EOF
 
@@ -102,7 +91,7 @@ Algorand accounts are secured inside a wallet and managed by a key management
 daemon, named KMD. You can interact with KMD using the 'goal' command. Lets
 check if there are any wallets registered with your node:
 
-${aqua}[./sandbox goal wallet list]${default}
+${cyan}[./sandbox goal wallet list]${default}
 
 EOF
 
@@ -116,7 +105,7 @@ ${red}---------------------
 
 That command probably wasn't very interesting, lets create a wallet.
 
-${aqua}[./sandbox goal wallet new <wallet-name>]${default}
+${cyan}[./sandbox goal wallet new <wallet-name>]${default}
 
 EOF
 
@@ -131,7 +120,7 @@ ${red}--------------------------
 Now we can list the wallets and see something more interesting. Try creating a
 couple and see how the results change.
 
-${aqua}[./sandbox goal wallet list]${default}
+${cyan}[./sandbox goal wallet list]${default}
 
 EOF
 
@@ -146,7 +135,7 @@ ${red}-----------------------
 Now that we have a wallet (and hopefully set it as the default wallet), we can
 create some accounts.
 
-${aqua}[./sandbox goal account new ; ./sandbox goal account new]${default}
+${cyan}[./sandbox goal account new ; ./sandbox goal account new]${default}
 
 EOF
 
@@ -160,7 +149,7 @@ ${red}------------------------
 
 Similar to how you would list your wallets, you can list your accounts.
 
-${aqua}[./sandbox goal account list]${default}
+${cyan}[./sandbox goal account list]${default}
 
 EOF
 
@@ -182,7 +171,7 @@ aware that it takes several seconds for a block to be created, so you may need
 to wait a moment. Try running the command yourself a couple times until the
 Bank transaction has been confirmed.
 
-${aqua}[./sandbox goal account list]${default}
+${cyan}[./sandbox goal account list]${default}
 
 EOF
 
@@ -201,7 +190,7 @@ You should now be the proud owner of 100000000 microAlgos, lets create a
 transaction with them. Fill in the blanks with your account addresses (the 58
 character string) to send a transaction:
 
-${aqua}./sandbox goal clerk send -a <amount-of-microAlgos> -f <from-account> -t <to-account>${default}
+${cyan}./sandbox goal clerk send -a <amount-of-microAlgos> -f <from-account> -t <to-account>${default}
 
 EOF
 
@@ -216,7 +205,7 @@ ${red}--------------------------
 
 List the accounts one more time to verify that your transaction has been sent.
 
-${aqua}[./sandbox goal account list]${default}
+${cyan}[./sandbox goal account list]${default}
 
 EOF
 
