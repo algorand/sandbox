@@ -4,6 +4,8 @@ This is a fast way to create and configure an Algorand node and start developing
 
 You will need to install **Docker**, [instructions are available here](https://docs.docker.com/v17.09/engine/installation/).
 
+**Warning**: Algorand Sandbox is *not* meant for production environments and should *not* be used to store secure Algorand keys. Updates may reset all the data and keys that are stored.
+
 # Usage
 
 Use the **sandbox** command to interact with the Algorand Sandbox.
