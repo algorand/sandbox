@@ -363,5 +363,5 @@ while (( "$#" )); do
 done
 
 pushd `dirname $0` > /dev/null
-sandbox "${PARAMS[@]}"
+sandbox "${PARAMS[@]-}"
 popd > /dev/null
