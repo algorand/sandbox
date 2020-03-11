@@ -172,10 +172,12 @@ sandbox () {
     # Resume or initialize sandbox
     if [[ -d data ]]; then
       statusline "Starting the existing sandbox..."
-      set +e
-      docker start sandbox > /dev/null
+      # Use variable $ERROR instead of status $?
+      # as we are using set -e which aborts in case of non-zero status
+      ERROR=0
+      docker start sandbox > /dev/null || ERROR=1
 
-      if [[ $? -ne 0 ]]; then
+      if [[ $ERROR -ne 0 ]]; then
         err "Detected an error from the docker command."
         if [[ $# -eq 0 ]]; then
           NETWORK=$(cat data/network)
@@ -184,7 +186,6 @@ sandbox () {
         statusline "Starting '$NETWORK' sandbox..."
         up $NETWORK
       fi
-      set -e
     else
       statusline "\nBuilding a new Docker Image..."
       docker build \
