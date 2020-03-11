@@ -178,6 +178,13 @@ sandbox () {
       docker start sandbox > /dev/null || ERROR=1
 
       if [[ $ERROR -ne 0 ]]; then
+        # Check if the error is not just due to docker daemon not running
+        if ! docker info 2>/dev/null > /dev/null; then
+          err 'Docker is not running. Run `docker info` for more information.'
+          exit 1
+        fi
+
+        # This is another error that may require reset of the sandbox
         err "Detected an error from the docker command."
         if [[ $# -eq 0 ]]; then
           NETWORK=$(cat data/network)
