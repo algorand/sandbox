@@ -61,7 +61,7 @@ This is an interactive tutorial which follows a number of commands designed to
 complete the task. Each command is a step of the tutorial and will contain an
 explanation of what will happen, followed by the command in square brackets.
 
-When you see the $PROMPT anything you enter will be executed, this way you can
+When you see the $PROMPT, anything you enter will be executed. This way, you can
 experiment with what is described. When you're ready to continue, enter the
 command in square brackets.
 
@@ -71,9 +71,9 @@ ${red}--------
 
 The goal utility is used to interact with the Algorand software. It coordinates
 different daemons and has many tools to automate various tasks. The sandbox
-script provides a "goal" option to forward these commands to the sandbox.
+script provides a 'goal' option to forward these commands to the sandbox.
 
-Try running this simple goal command to get information about your node
+Try running this simple goal command to get information about your node:
 
 ${cyan}[./sandbox goal node status]${default}
 
@@ -88,7 +88,7 @@ ${red}----------------------------------------------
 ----------------------------------------------${default}
 
 Algorand accounts are secured inside a wallet and managed by a key management
-daemon, named KMD. You can interact with KMD using the 'goal' command. Lets
+daemon, named KMD. You can interact with KMD using the 'goal' command. Let's
 check if there are any wallets registered with your node:
 
 ${cyan}[./sandbox goal wallet list]${default}
@@ -103,7 +103,7 @@ ${red}---------------------
 | Creating a wallet |
 ---------------------${default}
 
-That command probably wasn't very interesting, lets create a wallet.
+That command probably wasn't very interesting, let's create a wallet:
 
 ${cyan}[./sandbox goal wallet new <wallet-name>]${default}
 
@@ -118,7 +118,7 @@ ${red}--------------------------
 --------------------------${default}
 
 Now we can list the wallets and see something more interesting. Try creating a
-couple and see how the results change.
+couple and see how the results change:
 
 ${cyan}[./sandbox goal wallet list]${default}
 
@@ -133,7 +133,7 @@ ${red}-----------------------
 -----------------------${default}
 
 Now that we have a wallet (and hopefully set it as the default wallet), we can
-create some accounts.
+create some accounts:
 
 ${cyan}[./sandbox goal account new ; ./sandbox goal account new]${default}
 
@@ -147,7 +147,7 @@ ${red}------------------------
 | Listing the accounts |
 ------------------------${default}
 
-Similar to how you would list your wallets, you can list your accounts.
+Similar to how you would list your wallets, you can list your accounts:
 
 ${cyan}[./sandbox goal account list]${default}
 
@@ -169,7 +169,7 @@ https://bank.testnet.algorand.network/
 Once funded, you can list your accounts to see that the balance has changed. Be
 aware that it takes several seconds for a block to be created, so you may need
 to wait a moment. Try running the command yourself a couple times until the
-Bank transaction has been confirmed.
+Bank transaction has been confirmed:
 
 ${cyan}[./sandbox goal account list]${default}
 
@@ -186,7 +186,7 @@ ${red}------------------------
 | Making a transaction |
 ------------------------${default}
 
-You should now be the proud owner of 100000000 microAlgos, lets create a
+You should now be the proud owner of 100000000 microAlgos, let's create a
 transaction with them. Fill in the blanks with your account addresses (the 58
 character string) to send a transaction:
 
@@ -203,7 +203,7 @@ ${red}--------------------------
 | Verify the transaction |
 --------------------------${default}
 
-List the accounts one more time to verify that your transaction has been sent.
+List the accounts one more time to verify that your transaction has been sent:
 
 ${cyan}[./sandbox goal account list]${default}
 
