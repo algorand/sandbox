@@ -166,7 +166,7 @@ sandbox () {
     DONE=false
     STARTED=false
     while [ $DONE == "false" ]; do
-      sleep 1
+      sleep 0.1
 
       local RES
       local TOTAL
@@ -201,7 +201,7 @@ sandbox () {
     DONE=false
     STARTED=false
     while [ $DONE == "false" ]; do
-      sleep 1
+      sleep 0.1
 
       local RES
       local TOTAL
@@ -240,10 +240,11 @@ sandbox () {
     docker rm sandbox > /dev/null 2>&1 || true
     docker rmi $(docker images --filter=reference=algorand-sandbox -q) > /dev/null 2>&1 || true
     docker rmi $(docker images -f "dangling=true" -q) > /dev/null 2>&1 || true
-    docker volume ls | grep -q algorand-sandbox-data && docker volume rm algorand-sandbox-data || true
+    docker volume rm algorand-sandbox-data > /deve/null 2>&1 || true
 
     statusline "Removing algorand sandbox data..."
     rm -rf data
+
   }
 
   # Enter attaches users to a shell in the desired container
@@ -297,8 +298,9 @@ sandbox () {
       fi
     fi
 
+
     # Resume or initialize sandbox
-    if [[ -d data ]]; then
+    if [[ -f data ]]; then
       statusline "Starting the existing sandbox..."
       # Use variable $ERROR instead of status $?
       # as we are using set -e which aborts in case of non-zero status
@@ -330,7 +332,7 @@ sandbox () {
         -f images/Dockerfile >> sandbox.log) & spinner
 
       # Create a new data directory
-      if [ ! -d data ]; then
+      if [ ! -f data ]; then
         statusline "\nInitializing data directory for $NETWORK..."
 
         # Configure the node
@@ -362,7 +364,7 @@ sandbox () {
         --name sandbox \
         --mount source="algorand-sandbox-data",target=//opt/algorand/node/data \
         -d \
-        algorand-sandbox:$CHANNEL
+        algorand-sandbox:$CHANNEL >> sandbox.log
 
       statusline "\nSandbox started! Printing status..."
 
@@ -441,12 +443,12 @@ EOF
       status_helper
 
       printc $red "\nTest Algod REST API..."
-      printc $default "~$ ${green}curl localhost:4001/v1/status -H \"X-Algo-API-Token: \$(cat data/algod.token)\""
-      curl localhost:4001/v1/status -H "X-Algo-API-Token: $(cat data/algod.token)"
+      printc $default "~$ ${green}curl localhost:4001/v1/status -H \"X-Algo-API-Token: \$(cat config/token)\""
+      curl localhost:4001/v1/status -H "X-Algo-API-Token: $(cat config/token)"
 
       printc $red "\nTest KMD REST API..."
-      printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: \$(cat data/kmd-v0.5/kmd.token)\""
-      curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat data/kmd-v0.5/kmd.token)"
+      printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: \$(cat config/token)\""
+      curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat config/token)"
 
       printf "\n\n"
       ;;
