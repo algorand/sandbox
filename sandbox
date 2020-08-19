@@ -230,6 +230,8 @@ sandbox () {
 
     # Clear progress bar line and print success text.
     overwrite "Blocks downloaded."
+
+    sleep 1
   }
 
   clean () {
@@ -240,7 +242,7 @@ sandbox () {
     docker rm sandbox > /dev/null 2>&1 || true
     docker rmi $(docker images --filter=reference=algorand-sandbox -q) > /dev/null 2>&1 || true
     docker rmi $(docker images -f "dangling=true" -q) > /dev/null 2>&1 || true
-    docker volume rm algorand-sandbox-data > /deve/null 2>&1 || true
+    docker volume rm algorand-sandbox-data > /dev/null 2>&1 || true
 
     statusline "Removing algorand sandbox data..."
     rm -rf data
