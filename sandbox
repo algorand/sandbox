@@ -149,7 +149,7 @@ sandbox () {
   }
 
   goal_helper () {
-    $PTY_DOCKER exec -w //opt/algorand/node/data -it sandbox goal "$@"
+    $PTY_DOCKER exec --workdir //opt/algorand/node/data -it sandbox goal "$@"
   }
 
   perform_fast_catchup () {
@@ -252,7 +252,7 @@ sandbox () {
   # Enter attaches users to a shell in the desired container
   enter () {
     statusline "Entering /bin/bash session in the sandbox container..."
-    $PTY_DOCKER exec -w //opt/algorand/node -it sandbox //bin/bash
+    $PTY_DOCKER exec --workdir //opt/algorand/node -it sandbox //bin/bash
   }
 
   # Logs streams the logs from the container to the shell
@@ -475,7 +475,7 @@ EOF
     dryrun)
       shift
       cp $1 data
-      $PTY_DOCKER exec -w //opt/algorand/node/data -it sandbox goal clerk dryrun -t "$(basename $1)"
+      $PTY_DOCKER exec --workdir //opt/algorand/node/data -it sandbox goal clerk dryrun -t "$(basename $1)"
       ;;
 
     introduction)
