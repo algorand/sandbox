@@ -244,6 +244,7 @@ sandbox () {
       docker run \
         -p 4001:4001 \
         -p 4002:4002 \
+        -p 9392:9392 \
         --name sandbox \
         --mount source="algorand-sandbox-data",target=//opt/algorand/node/data \
         -d \
@@ -338,6 +339,11 @@ EOF
     goal)
       shift
       $PTY_DOCKER exec -w //opt/algorand/node/data -it sandbox goal "$@"
+      ;;
+
+    tealdbg)
+      shift
+      $PTY_DOCKER exec -w //opt/algorand/node/data -it sandbox tealdbg "$@"
       ;;
 
     dryrun)

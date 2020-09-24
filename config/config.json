@@ -1,3 +1,4 @@
 {
-  "EndpointAddress": ":4001"
+  "EndpointAddress": ":4001",
+  "EnableDeveloperAPI": true
 }
