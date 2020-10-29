@@ -14,7 +14,7 @@ start_with_algod() {
   echo "Starting indexer against algod."
 
   for i in 1 2 3 4 5; do
-    wget algod:60000/genesis -O genesis.json && break
+    wget algod:4001/genesis -O genesis.json && break
     echo "Algod not responding... waiting."
     sleep 15
   done
@@ -22,7 +22,7 @@ start_with_algod() {
   /tmp/algorand-indexer daemon \
     --server ":$PORT" \
     -P "$CONNECTION_STRING" \
-    --algod-net "algod:60000" \
+    --algod-net "algod:4001" \
     --algod-token aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
     --genesis "genesis.json"
 }

@@ -12,8 +12,8 @@ ARG BOOTSTRAP_URL=""
 #ARG URL=https://github.com/algorand/go-algorand
 #ARG BRANCH=master
 
-ARG ALGOD_PORT="60000"
-ARG KMD_PORT="60001"
+ARG ALGOD_PORT="4001"
+ARG KMD_PORT="4002"
 ARG TOKEN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 ARG TEMPLATE="/tmp/images/algod/future_template.json"
 
