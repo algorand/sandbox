@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+
+# Script to install algod in all sorts of different ways.
+#
+# Parameters:
+#    -d    : Location where binaries will be installed.
+#    -c    : Channel to install. Mutually exclusive with source options.
+#    -u    : Git repository URL. Mutually exclusice with -c.
+#    -b    : Git branch. Mutually exclusive with -c.
+#    -s    : (optional) Git Commit SHA hash. Mutually exclusive with -c.
+
 set -e
 
 rootdir=`dirname $0`

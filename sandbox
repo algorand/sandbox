@@ -299,7 +299,7 @@ sandbox () {
   help () {
       cat <<-EOF
 sandbox commands:
-  up      -> spin up the sandbox environment, uses testnet by default.
+  up      -> spin up the sandbox environment.
   down    -> tear down the sandbox environment
   restart -> restart the sandbox
   enter   -> enter the sandbox container

@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+# Script to help configure and run different algorand configurations.
+# Notably this script can configure an algorand installation to run as a
+# private network, or as a node connected to a long-running network.
+#
+# For parameter information run with './setup.py -h'
+#
+# Parameter error handling is not great with this script. It wont complain
+# if you provide arguments unused parameters.
+
 import argparse
 import os
 import pprint

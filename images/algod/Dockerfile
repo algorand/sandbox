@@ -19,17 +19,16 @@ ARG TEMPLATE="/tmp/images/algod/future_template.json"
 
 RUN echo "Installing from source. ${URL} -- ${BRANCH}"
 ENV BIN_DIR="$HOME/node"
+ENV ALGORAND_DATA="/opt/testnetwork/Node"
 
-ENV DEBIAN_FRONTEND noninteractive
 
 # Basic dependencies.
 ENV HOME /opt
+ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y apt-utils curl git git-core bsdmainutils python3
 
-# Copy everything into the container.
+# Copy lots of things into the container. The gitignore indicates which directories.
 COPY . /tmp
-
-RUN rm -rf "${BIN_DIR}" && mkdir -p "${BIN_DIR}"
 
 # Install algod binaries.
 RUN /tmp/images/algod/install.sh \
@@ -39,14 +38,10 @@ RUN /tmp/images/algod/install.sh \
     -b "${BRANCH}" \
     -s "${SHA}"
 
-RUN find "${BIN_DIR}"
-
-RUN find /tmp
-
 # Configure network
 RUN python3 /tmp/images/algod/setup.py configure \
  --bin-dir "$BIN_DIR" \
- --network-dir /opt/testnetwork \
+ --network-dir "/opt/testnetwork" \
  --network-template "${TEMPLATE}" \
  --network-token "${TOKEN}" \
  --algod-port "${ALGOD_PORT}" \
@@ -54,6 +49,5 @@ RUN python3 /tmp/images/algod/setup.py configure \
  --bootstrap-url "${BOOTSTRAP_URL}" \
  --genesis-file "/tmp/${GENESIS_FILE}"
 
-RUN find /tmp
 # Start algod
 CMD ["/usr/bin/env", "bash", "-c", "/tmp/images/algod/setup.py start --bin-dir \"$BIN_DIR\" --network-dir \"/opt/testnetwork\""]
