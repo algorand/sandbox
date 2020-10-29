@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  algod:
+    container_name: "algorand-sandbox-algod"
+    build:
+      context: .
+      dockerfile: ./images/algod/Dockerfile
+      args:
+        CHANNEL: "${ALGOD_CHANNEL}"
+        URL: "${ALGOD_URL}"
+        BRANCH: "${ALGOD_BRANCH}"
+        SHA: "${ALGOD_SHA}"
+        BOOTSTRAP_URL: "${ALGOD_BOOTSTRAP_URL}"
+    ports:
+      - 60000:60000
+      - 60001:60001
+  indexer:
+    container_name: "algorand-sandbox-indexer"
+    build:
+      context: .
+      dockerfile: ./images/indexer/Dockerfile
+      args:
+        URL: "${INDEXER_URL}"
+        BRANCH: "${INDEXER_BRANCH}"
+        SHA: "${INDEXER_SHA}"
+    ports:
+      - 8980:8980
+    restart: unless-stopped
+    environment:
+      DISABLED: "${INDEXER_DISABLED}"
+      PORT: "8980"
+      SNAPSHOT: ""
+      CONNECTION_STRING: "host=indexer-db port=5432 user=algorand password=algorand dbname=indexer_db sslmode=disable"
+    depends_on:
+      - indexer-db
+
+  indexer-db:
+    image: "postgres"
+    container_name: "algorand-sandbox-postgres"
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: algorand
+      POSTGRES_PASSWORD: algorand
+      POSTGRES_DB: indexer_db
