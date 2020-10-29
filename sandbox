@@ -1,19 +1,423 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#####################
+# Script constants. #
+#####################
+DEFAULT_CONFIG='nightly'
+
+FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/CHANNEL/latest.catchpoint'
+
+# Global flags
+USE_FAST_CATCHUP=1
+
+
+#########################
+# Helpers and utilities #
+#########################
+
+# Compatibility with Windows / MSYS2
+# 1. Use // to prevent msys to convert to Windows PATH on Windows
+#   when using inside Docker
+#   see http://www.mingw.org/wiki/Posix_path_conversion
+# 2. Use $PTY_DOCKER for all commands that require a PTY (-t)
+PTY_DOCKER=docker
+if [ "$(uname)" == "Darwin" ]; then
+  true
+elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || \
+     [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
+  PTY_DOCKER="winpty docker"
+fi
+
+# Console colorized print helpers
+red=`echo -en "\e[31m"`
+green=`echo -en "\e[32m"`
+default=`echo -en "\e[39m"`
+
+function printc () {
+  printf "$1$2${default}\n"
+}
+
+function statusline () {
+  printc "${green}" "$1"
+}
+
+function err_noexit () {
+  printf "${red}$1${default}\n"
+}
+function err () {
+  err_noexit "$1"
+  exit 1
+}
+
+# Overwrite the current line on the terminal
+function overwrite() {
+  echo -e "\r\033[1A\033[0K$@";
+}
+
+
+# Interactive yes/no prompt
+function ask () {
+    # https://djm.me/ask
+    local prompt default reply
+
+    if [ "${2:-}" = "Y" ]; then
+        prompt="Y/n"
+        default=Y
+    elif [ "${2:-}" = "N" ]; then
+        prompt="y/N"
+        default=N
+    else
+        prompt="y/n"
+        default=
+    fi
+
+    while true; do
+
+        # Ask the question (not using "read -p" as it uses stderr not stdout)
+        echo -n "$1 [$prompt] "
+
+        # Read the answer (use /dev/tty in case stdin is redirected from somewhere else)
+        read reply </dev/tty
+
+        # Default?
+        if [ -z "$reply" ]; then
+            reply=$default
+        fi
+
+        # Check if the reply is valid
+        case "$reply" in
+            Y*|y*) return 0 ;;
+            N*|n*) return 1 ;;
+        esac
+
+    done
+}
+
+# Spinner - https://stackoverflow.com/a/20369590
+# Show a spinner for long running commands:
+#   (command) & spinner
+function spinner()
+{
+  local pid=$!
+  local delay=0.75
+  local spinstr='|/-\'
+  while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+    local temp=${spinstr#?}
+    printf " [%c]  " "$spinstr"
+    local spinstr=$temp${spinstr%"$temp"}
+    sleep $delay
+    printf "\b\b\b\b\b\b"
+  done
+  printf "    \b\b\b\b"
+}
+
+# Progress bar - https://stackoverflow.com/a/28044986
+# 1. Create progress_bar function
+# 1.1 Input is prefixString($1) currentState($2) and totalState($3)
+function progress_bar {
+  local progress
+  local done
+  local left
+  local fill
+  local empty
+
+  # Process data
+  progress=$(( $(( ${2} * 100 / ${3} * 100)) / 100))
+  done=$(( $(( ${progress} * 4 )) / 10 ))
+  left=$(( 40 - $done ))
+
+  # Build progressbar string lengths
+  fill=$(printf "%${done}s")
+  empty=$(printf "%${left}s")
+
+  # 1.2 Build progressbar strings and print the progress_bar line
+  # 1.2.1 Output example:
+  # 1.2.1.1 Progress : [****************************************] 100%
+  overwrite "$1 : [${fill// /▇}${empty// / }] [$2/$3] ${progress}%"
+}
+
+sandbox () {
+  status_helper () {
+    goal_helper node status
+  }
+
+  goal_helper () {
+    docker-compose exec algod /node/goal -d /opt/testnetwork/Node "$@"
+  }
+
+  perform_fast_catchup () {
+    local CATCHPOINT
+    CATCHPOINT=$(curl -s -S $FAST_CATCHUP_URL)
+    goal_helper node catchup "$CATCHPOINT"
+
+    if [ $? -ne 0 ]; then
+      err "There was a problem starting fast catchup."
+    fi
+
+    # Newline for the progress bar to use.
+    echo ""
+    DONE=false
+    STARTED=false
+    while [ $DONE == "false" ]; do
+      sleep 0.1
+
+      local RES
+      local TOTAL
+      local PROGRESS
+
+      RES="$(status_helper)"
+      TOTAL=1000
+      PROGRESS=0
+
+      # If progress has been made, update the progress.
+      if [[ "$RES" == *"Catchpoint total accounts"* ]]; then
+        STARTED=true
+        TOTAL=$(echo $RES | grep -o 'Catchpoint total accounts: [[:digit:]]*' | cut -d':' -f 2 )
+        PROGRESS=$(echo $RES | grep -o 'Catchpoint accounts processed: [[:digit:]]*' | cut -d':' -f 2 )
+      elif [ $STARTED == "true" ]; then
+        DONE=true
+        PROGRESS=$TOTAL
+      fi
+
+      if [ $TOTAL == $PROGRESS ]; then
+        DONE=true
+      else
+        progress_bar "Processing accounts:" "$PROGRESS" "$TOTAL"
+      fi
+    done
+
+    overwrite "Account processing complete."
+
+    # Newline for the progress bar to use.
+    echo ""
+
+    DONE=false
+    STARTED=false
+    while [ $DONE == "false" ]; do
+      sleep 0.1
+
+      local RES
+      local TOTAL
+      local PROGRESS
+
+      RES="$(status_helper)"
+      TOTAL=1000
+      PROGRESS=0
+
+      # If progress has been made, update the progress.
+      if [[ "$RES" == *"Catchpoint downloaded blocks"* ]]; then
+        STARTED=true
+        TOTAL=$(echo $RES | grep -o 'Catchpoint total blocks: [[:digit:]]*' | cut -d ':' -f 2 )
+        PROGRESS=$(echo $RES | grep -o 'Catchpoint downloaded blocks: [[:digit:]]*' | cut -d ':' -f 2 )
+      elif [ $STARTED == "true" ]; then
+        DONE=true
+        PROGRESS=$TOTAL
+      fi
+
+      if [ $TOTAL == $PROGRESS ]; then
+        DONE=true
+      else
+        progress_bar "Downloading blocks:" "$PROGRESS" "$TOTAL"
+      fi
+    done
+
+    # Clear progress bar line and print success text.
+    overwrite "Blocks downloaded."
+
+    sleep 1
+  }
+
+  # Enter attaches users to a shell in the desired container
+  enter () {
+    case $2 in
+      algod)
+        statusline "Entering /bin/bash session in the algod container..."
+        docker-compose exec algod /bin/bash
+        ;;
+      indexer)
+        statusline "Entering /bin/bash session in the indexer container..."
+        docker-compose exec indexer /bin/bash
+        ;;
+      indexer-db)
+        statusline "Entering /bin/bash session in the indexer-db container..."
+        docker-compose exec indexer /bin/bash
+        ;;
+    esac
+  }
+
+
+  # Logs streams the logs from the container to the shell
+  logs () {
+    if [[ $# -gt 1 && $2 == "raw" ]]; then
+      docker-compose exec algod tail -f /opt/testnetwork/Node/node.log
+    else
+      docker-compose exec algod /node/carpenter -d /opt/testnetwork/Node/
+    fi
+  }
+
+  # Start the algorand node
+  up () {
+      
+      if [ "$#" -eq 0 ]; then
+        CONFIG_FILE="config.$DEFAULT_CONFIG"
+      else
+        CONFIG_FILE="config.$1"
+      fi
+
+      if [ ! -f "$CONFIG_FILE" ]; then
+        SANDBOX_CONFIG_OPTIONS=$(ls -l config.* | cut -f 2 -d'.' |  sed 's/^/ /'| paste -sd',')
+        err "Could not find config file for '$1'.\nValid options:$SANDBOX_CONFIG_OPTIONS"
+      fi
+
+      statusline "Starting container with config file: $CONFIG_FILE"
+     
+
+      source "$CONFIG_FILE"
+
+      docker-compose rm --force || true
+      docker-compose build --no-cache
+      docker-compose up
+
+      # TODO: After up is working we'll want to run the catchup code.
+      #sleep 1
+      #status_helper
+
+      #if [[ $USE_FAST_CATCHUP == 1 ]]; then
+      #  statusline "\nStarting fast-catchup..."
+      #  if [[ ${FAST_CATCHUP_URL:=""} == "" || ${GENESIS_VERSION:=""} == "" ]]; then
+      #    err_noexit "Fast catchup is not available for $NETWORK, continuing without catchup."
+      #  else
+      #    perform_fast_catchup
+
+      #    statusline "\nFast-catchup complete! Printing status..."
+      #    status_helper
+      #  fi
+      #fi
+  }
+
+  help () {
+      cat <<-EOF
+sandbox commands:
+  up      -> spin up the sandbox environment, uses testnet by default.
+  down    -> tear down the sandbox environment
+  restart -> restart the sandbox
+  enter   -> enter the sandbox container
+  clean   -> stops and deletes containers and data directory
+  test    -> runs some tests to make sure everything is working correctly
+algorand commands:
+  logs        -> stream algorand logs with the carpenter utility
+  status      -> get node status
+  goal (args) -> run goal command like 'goal node status'
+EOF
+  }
+
+  if [ $# -eq 0 ]; then
+    help
+    exit 1
+  fi
+
+  case $1 in
+    up)
+      shift
+      up "$@"
+      ;;
+
+    down)
+      statusline "Stopping sandbox containers..."
+      docker-compose down
+      ;;
+
+    restart)
+      statusline "Stopping all sandbox processes..."
+      docker-compose down > /dev/null 2>&1
+      statusline "Starting all sandbox processes..."
+      docker-compose up -d --build > /dev/null 2>&1
+      statusline "Services available!"
+
+      ;;
+
+    clean)
+      statusline "Stopping and removing running sandbox containers..."
+      docker-compose down
+      statusline "Removing sandbox images..."
+      docker-compose rm -f
+      docker rmi $(docker images -f "dangling=true" -q)
+
+      ;;
+
+    test)
+      printc $red "Test command forwarding..."
+      printc $default "~$ ${green}docker exec -it sandbox uname -a"
+      docker-compose exec algod uname -a
+
+      printc $red "\nTest algod..."
+      printc $default "~$ ${green}docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/testnetwork/Node/data"
+      status_helper
+
+      printc $red "\nTest Algod REST API..."
+      printc $default "~$ ${green}curl localhost:4001/v2/status?pretty -H \"X-Algo-API-Token: \$(cat config/token)\""
+      curl "localhost:4001/v2/status?pretty" -H "X-Algo-API-Token: $(cat config/token)"
+
+      printc $red "\nTest KMD REST API..."
+      printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: \$(cat config/token)\""
+      curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat config/token)"
+
+      printc $red "\nTest Indexer REST API..."
+      printc $default "~$ ${green}curl localhost:8980/health?pretty\""
+      curl "localhost:8980/health?pretty"
+
+      printf "\n\n"
+      ;;
+
+    enter)
+      enter "$@"
+      ;;
+
+    logs)
+      logs "$@"
+      ;;
+
+    status)
+      status_helper
+      ;;
+
+    goal)
+      shift
+      goal_helper "$@"
+      ;;
+
+    *)
+      help
+      ;;
+  esac
+}
+
+##############
+# Entrypoint #
+##############
+
+# Process flags
+PARAMS=()
+while (( "$#" )); do
+  case "$1" in
+    -s|--skip-fast-catchup)
+      USE_FAST_CATCHUP=0
+      shift
+      ;;
+    *) # preserve positional arguments
+      PARAMS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+
 if ! [ -x "$(command -v docker-compose)" ]; then
   echo 'Error: docker-compose is not installed.' >&2
   exit 1
 fi
 
-#source "config.latest"
-#source "config.nightly"
-source "config.devnet"
-#source "config.testnet"
-#source "config.betanet"
-#source "config.mainnet"
-
-
-#docker-compose rm --force || true
-docker-compose build --no-cache
-docker-compose up
+pushd `dirname $0` > /dev/null
+sandbox "${PARAMS[@]-}"
+popd > /dev/null
