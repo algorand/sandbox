@@ -12,6 +12,7 @@ services:
         BRANCH: "${ALGOD_BRANCH}"
         SHA: "${ALGOD_SHA}"
         BOOTSTRAP_URL: "${ALGOD_BOOTSTRAP_URL}"
+        GENESIS_FILE: "${ALGOD_GENESIS_FILE}"
     ports:
       - 60000:60000
       - 60001:60001

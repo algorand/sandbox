@@ -25,8 +25,8 @@ configure.add_argument('--network-token', required=True, help='Valid token to us
 configure.add_argument('--algod-port', required=True, help='Port to use for algod.')
 configure.add_argument('--kmd-port', required=True, help='Port to use for kmd.')
 configure.add_argument('--network-dir', required=True, help='Path to create network.')
-configure.add_argument('--network', required=True, help='One of [devnet, testnet, mainnet, betanet]')
-configure.add_argument('--bootstrap-url', required=True, help='DNS Bootstrap URL, empty for private networks."')
+configure.add_argument('--bootstrap-url', required=True, help='DNS Bootstrap URL, empty for private networks.')
+configure.add_argument('--genesis-file', required=True, help='Genesis file used by the network.')
 
 start = subparsers.add_parser('start', parents=[base_parser], help='Start the network.')
 start.add_argument('--network-dir', required=True, help='Path to create network.')
@@ -40,8 +40,15 @@ def algod_directories(network_dir):
     """
     data_dir=join(network_dir, 'Node')
 
-    kmd_dir = [filename for filename in os.listdir(data_dir) if filename.startswith('kmd')][0]
-    kmd_dir=join(data_dir, kmd_dir)
+    kmd_dir = None
+    options = [filename for filename in os.listdir(data_dir) if filename.startswith('kmd')]
+
+    # When setting up the real network the kmd dir doesn't exist yet because algod hasn't been started.
+    if len(options) == 0:
+        kmd_dir=join(data_dir, 'kmd-v0.5')
+        os.mkdir(kmd_dir)
+    else:
+        kmd_dir=join(data_dir, options[0])
 
     return data_dir, kmd_dir
 
@@ -51,17 +58,26 @@ def write_start_script(network_dir, commands):
         f.writelines(commands)
 
 
-def create_real_network(bin_dir, network_dir, template):
+def create_real_network(bin_dir, network_dir, template, genesis_file):
+    print("Setting up real retwork.")
     data_dir_src=join(bin_dir, 'data')
-    data_dir_target=join(network_dir, 'Node')
-    if os.path.exists(data_dir_target):
-        shutil.rmtree(data_dir_target)
+    target=join(network_dir, 'Node')
 
-    shutil.copytree(data_dir_src, data_dir_target)
+    # Reset in case it exists
+    if os.path.exists(target):
+        shutil.rmtree(target)
 
+    # We have a blank data directory from the initial install script.
+    shutil.copytree(data_dir_src, target)
+
+    # Copy in the genesis file...
+    shutil.copy(genesis_file, target)
+
+    data_dir, kmd_dir = algod_directories(network_dir)
     write_start_script(network_dir, [
             '%s/goal node start -d %s\n' % (bin_dir, data_dir),
-            '%s/kmd start -t 0 -d %s\n' % (bin_dir, kmd_dir)
+            '%s/kmd start -t 0 -d %s\n' % (bin_dir, kmd_dir),
+            'sleep infinity\n'
         ])
 
 
@@ -69,6 +85,7 @@ def create_private_network(bin_dir, network_dir, template):
     """
     Create a private network.
     """
+    print("Creating a private network.")
     # Reset network dir before creating a new one.
     if os.path.exists(args.network_dir):
         shutil.rmtree(args.network_dir)
@@ -80,7 +97,8 @@ def create_private_network(bin_dir, network_dir, template):
 
     write_start_script(network_dir, [
             '%s/goal network start -r %s\n' % (bin_dir, network_dir),
-            '%s/kmd start -t 0 -d %s\n' % (bin_dir, kmd_dir)
+            '%s/kmd start -t 0 -d %s\n' % (bin_dir, kmd_dir),
+            'sleep infinity\n'
         ])
 
 
@@ -104,10 +122,10 @@ def configure_handler(args):
     """
     configure subcommand - configure a private network using the installed binaries.
     """
-    if args.network == None or args.network == "":
+    if args.genesis_file == None or args.genesis_file == "" or os.path.isdir(args.genesis_file):
         create_private_network(args.bin_dir, args.network_dir, args.network_template)
     else:
-        create_real_network(args.bin_dir, args.network_dir, args.network_template)
+        create_real_network(args.bin_dir, args.network_dir, args.network_template, args.genesis_file)
 
     configure_data_dir(args.network_dir, args.network_token, args.algod_port, args.kmd_port, args.bootstrap_url)
 
@@ -122,6 +140,9 @@ def start_handler(args):
 if __name__ == '__main__':
     configure.set_defaults(func=configure_handler)
     start.set_defaults(func=start_handler)
-
     args = parser.parse_args()
+
+    print("Running algod helper script with the following arguments:")
+    pp.pprint(vars(args))
+
     args.func(args)

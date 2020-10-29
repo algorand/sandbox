@@ -44,9 +44,9 @@ export INDEXER_BRANCH=""
 export INDEXER_SHA=""
 
 #source "config.latest"
-#source "config.nightly"
+source "config.nightly"
 #source "config.dev"
-source "config.noindexer"
+#source "config.testnet"
 
 #ALGOD_CHANNEL="nightly"
 #INDEXER_URL="https://github.com/algorand/indexer"

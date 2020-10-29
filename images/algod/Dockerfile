@@ -4,6 +4,9 @@ ARG CHANNEL=nightly
 ARG URL=
 ARG BRANCH=
 ARG SHA=
+
+# When these are set attempt to connect to a network.
+ARG GENESIS_FILE=""
 ARG BOOTSTRAP_URL=""
 
 #ARG URL=https://github.com/algorand/go-algorand
@@ -38,6 +41,8 @@ RUN /tmp/images/algod/install.sh \
 
 RUN find "${BIN_DIR}"
 
+RUN find /tmp
+
 # Configure network
 RUN python3 /tmp/images/algod/setup.py configure \
  --bin-dir "$BIN_DIR" \
@@ -46,8 +51,9 @@ RUN python3 /tmp/images/algod/setup.py configure \
  --network-token "${TOKEN}" \
  --algod-port "${ALGOD_PORT}" \
  --kmd-port "${KMD_PORT}" \
- --network "${NETWORK}" \
- --bootstrap-url "${ALGOD_BOOTSTRAP_URL}"
+ --bootstrap-url "${BOOTSTRAP_URL}" \
+ --genesis-file "/tmp/${GENESIS_FILE}"
 
+RUN find /tmp
 # Start algod
 CMD ["/usr/bin/env", "bash", "-c", "/tmp/images/algod/setup.py start --bin-dir \"$BIN_DIR\" --network-dir \"/opt/testnetwork\""]
