@@ -1,57 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-function start_algod() {
-  ID=""
-
-  # Algod with branch/repo
-  ALGOD_URL="https://github.com/winder/go-algorand"
-  ALGOD_BRANCH="will/test"
-  ALGOD_SHA="ffb3b20dfe1b8aa803229d5622fcf1a880616969"
-  ID="source"
-
-  # Algod with channel.
-  # CHANNEL=nightly
-  # ID=$CHANNEL
-
-  docker build \
-    --build-arg CHANNEL="$ALGOD_CHANNEL" \
-    --build-arg URL="$ALGOD_URL" \
-    --build-arg BRANCH="$ALGOD_BRANCH" \
-    --build-arg SHA="$ALGOD_SHA" \
-    -t "algorand-sandbox:$ID" \
-    . \
-    -f images/algod/Dockerfile
-
-  docker run \
-    -p 60000:60000 \
-    -p 60001:60001 \
-    --name sandbox \
-    -d "algorand-sandbox:$ID"
-}
-
 if ! [ -x "$(command -v docker-compose)" ]; then
   echo 'Error: docker-compose is not installed.' >&2
   exit 1
 fi
 
-export ALGOD_CHANNEL=""
-export ALGOD_URL=""
-export ALGOD_BRANCH=""
-export ALGOD_SHA=""
-export INDEXER_URL=""
-export INDEXER_BRANCH=""
-export INDEXER_SHA=""
-
 #source "config.latest"
-source "config.nightly"
-#source "config.dev"
+#source "config.nightly"
+source "config.devnet"
 #source "config.testnet"
+#source "config.betanet"
+#source "config.mainnet"
 
-#ALGOD_CHANNEL="nightly"
-#INDEXER_URL="https://github.com/algorand/indexer"
-#INDEXER_BRANCH="develop"
-#INDEXER_SHA="847479cca217d71213a27bc17c4d6e2da6d310e9"
 
 #docker-compose rm --force || true
 docker-compose build --no-cache
