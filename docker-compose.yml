@@ -13,6 +13,9 @@ services:
         SHA: "${ALGOD_SHA}"
         BOOTSTRAP_URL: "${ALGOD_BOOTSTRAP_URL}"
         GENESIS_FILE: "${ALGOD_GENESIS_FILE}"
+        TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ALGOD_PORT: "4001"
+        KMD_PORT: "4002"
     ports:
       - 4001:4001
       - 4002:4002
@@ -33,6 +36,8 @@ services:
       PORT: "8980"
       SNAPSHOT: ""
       CONNECTION_STRING: "host=indexer-db port=5432 user=algorand password=algorand dbname=indexer_db sslmode=disable"
+      ALGOD_ADDR: "algod:4001"
+      ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     depends_on:
       - indexer-db
 

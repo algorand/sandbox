@@ -9,17 +9,15 @@ ARG SHA=
 ARG GENESIS_FILE=""
 ARG BOOTSTRAP_URL=""
 
-#ARG URL=https://github.com/algorand/go-algorand
-#ARG BRANCH=master
-
-ARG ALGOD_PORT="4001"
-ARG KMD_PORT="4002"
-ARG TOKEN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+# Options for algod config
+ARG ALGOD_PORT=""
+ARG KMD_PORT=""
+ARG TOKEN=""
 ARG TEMPLATE="/tmp/images/algod/future_template.json"
 
 RUN echo "Installing from source. ${URL} -- ${BRANCH}"
 ENV BIN_DIR="$HOME/node"
-ENV ALGORAND_DATA="/opt/testnetwork/Node"
+ENV ALGORAND_DATA="/opt/data"
 
 
 # Basic dependencies.
@@ -39,8 +37,10 @@ RUN /tmp/images/algod/install.sh \
     -s "${SHA}"
 
 # Configure network
-RUN python3 /tmp/images/algod/setup.py configure \
+RUN /tmp/images/algod/setup.py \
  --bin-dir "$BIN_DIR" \
+ --data-dir "/opt/data" \
+ --start-script "/opt/start_algod.sh" \
  --network-dir "/opt/testnetwork" \
  --network-template "${TEMPLATE}" \
  --network-token "${TOKEN}" \
@@ -50,4 +50,4 @@ RUN python3 /tmp/images/algod/setup.py configure \
  --genesis-file "/tmp/${GENESIS_FILE}"
 
 # Start algod
-CMD ["/usr/bin/env", "bash", "-c", "/tmp/images/algod/setup.py start --bin-dir \"$BIN_DIR\" --network-dir \"/opt/testnetwork\""]
+CMD ["/opt/start_algod.sh"]

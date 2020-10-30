@@ -8,13 +8,15 @@
 #   CONNECTION_STRING - the postgres connection string to use.
 #   SNAPSHOT          - snapshot to import, if set don't connect to algod.
 #   PORT              - port to start indexer on.
+#   ALGOD_ADDR        - host:port to connect to for algod.
+#   ALGOD_TOKEN       - token to use when connecting to algod.
 set -e
 
 start_with_algod() {
   echo "Starting indexer against algod."
 
   for i in 1 2 3 4 5; do
-    wget algod:4001/genesis -O genesis.json && break
+    wget "${ALGOD_ADDR}"/genesis -O genesis.json && break
     echo "Algod not responding... waiting."
     sleep 15
   done
@@ -22,8 +24,8 @@ start_with_algod() {
   /tmp/algorand-indexer daemon \
     --server ":$PORT" \
     -P "$CONNECTION_STRING" \
-    --algod-net "algod:4001" \
-    --algod-token aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+    --algod-net "${ALGOD_ADDR}" \
+    --algod-token "${ALGOD_TOKEN}" \
     --genesis "genesis.json"
 }
 
@@ -38,7 +40,7 @@ import_and_start_readonly() {
 
   /tmp/algorand-indexer import \
     -P "$CONNECTION_STRING" \
-    --genesis "/tmp/algod/genesis.json" \
+    --genesis "/tmp/indexer-snapshot/algod/genesis.json" \
     /tmp/indexer-snapshot/blocktars/*
 
   /tmp/algorand-indexer daemon \

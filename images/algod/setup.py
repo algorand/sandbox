@@ -20,25 +20,21 @@ import json
 import urllib.request
 from os.path import expanduser, join
 
-parser = argparse.ArgumentParser(description='Install, configure, and start algod.')
+from typing import List
 
-# Shared parameters
-base_parser = argparse.ArgumentParser(add_help=False)
-base_parser.add_argument('--bin-dir', required=True, help='Location to install algod binaries.')
-
-subparsers = parser.add_subparsers()
-
-configure = subparsers.add_parser('configure', parents=[base_parser], help='Configure private network for SDK.')
-configure.add_argument('--network-template', required=True, help='Path to private network template file.')
-configure.add_argument('--network-token', required=True, help='Valid token to use for algod/kmd.')
-configure.add_argument('--algod-port', required=True, help='Port to use for algod.')
-configure.add_argument('--kmd-port', required=True, help='Port to use for kmd.')
-configure.add_argument('--network-dir', required=True, help='Path to create network.')
-configure.add_argument('--bootstrap-url', required=True, help='DNS Bootstrap URL, empty for private networks.')
-configure.add_argument('--genesis-file', required=True, help='Genesis file used by the network.')
-
-start = subparsers.add_parser('start', parents=[base_parser], help='Start the network.')
-start.add_argument('--network-dir', required=True, help='Path to create network.')
+parser = argparse.ArgumentParser(description='''\
+        Configure private network for SDK and prepare it to run. A start script and
+        symlink to data directory will be generated to make it easier to use.''')
+parser.add_argument('--bin-dir', required=True, help='Location to install algod binaries.')
+parser.add_argument('--data-dir', required=True, help='Location to place a symlink to the data directory.')
+parser.add_argument('--start-script', required=True, help='Path to start script, including the script name.')
+parser.add_argument('--network-template', required=True, help='Path to private network template file.')
+parser.add_argument('--network-token', required=True, help='Valid token to use for algod/kmd.')
+parser.add_argument('--algod-port', required=True, help='Port to use for algod.')
+parser.add_argument('--kmd-port', required=True, help='Port to use for kmd.')
+parser.add_argument('--network-dir', required=True, help='Path to create network.')
+parser.add_argument('--bootstrap-url', required=True, help='DNS Bootstrap URL, empty for private networks.')
+parser.add_argument('--genesis-file', required=True, help='Genesis file used by the network.')
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -62,13 +58,7 @@ def algod_directories(network_dir):
     return data_dir, kmd_dir
 
 
-def write_start_script(network_dir, commands):
-    with open(join(network_dir, 'start.sh'), 'w') as f:
-        f.writelines(commands)
-
-
-def create_real_network(bin_dir, network_dir, template, genesis_file):
-    print("Setting up real retwork.")
+def create_real_network(bin_dir, network_dir, template, genesis_file) -> List[str]:
     data_dir_src=join(bin_dir, 'data')
     target=join(network_dir, 'Node')
 
@@ -83,32 +73,25 @@ def create_real_network(bin_dir, network_dir, template, genesis_file):
     shutil.copy(genesis_file, target)
 
     data_dir, kmd_dir = algod_directories(network_dir)
-    write_start_script(network_dir, [
-            '%s/goal node start -d %s\n' % (bin_dir, data_dir),
-            '%s/kmd start -t 0 -d %s\n' % (bin_dir, kmd_dir),
-            'sleep infinity\n'
-        ])
+
+    return ['%s/goal node start -d %s' % (bin_dir, data_dir),
+            '%s/kmd start -t 0 -d %s' % (bin_dir, kmd_dir)]
 
 
-def create_private_network(bin_dir, network_dir, template):
+def create_private_network(bin_dir, network_dir, template) -> List[str]:
     """
     Create a private network.
     """
-    print("Creating a private network.")
     # Reset network dir before creating a new one.
     if os.path.exists(args.network_dir):
         shutil.rmtree(args.network_dir)
 
-    # $BIN_DIR/goal network create -n testnetwork -r $NETWORK_DIR -t network_config/$TEMPLATE
+    # Use goal to create the private network.
     subprocess.check_call(['%s/goal network create -n testnetwork -r %s -t %s' % (bin_dir, network_dir, template)], shell=True)
 
     data_dir, kmd_dir = algod_directories(network_dir)
-
-    write_start_script(network_dir, [
-            '%s/goal network start -r %s\n' % (bin_dir, network_dir),
-            '%s/kmd start -t 0 -d %s\n' % (bin_dir, kmd_dir),
-            'sleep infinity\n'
-        ])
+    return ['%s/goal network start -r %s' % (bin_dir, network_dir),
+            '%s/kmd start -t 0 -d %s' % (bin_dir, kmd_dir)]
 
 
 def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url):
@@ -127,31 +110,37 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url):
         f.write('{  "address":"0.0.0.0:%s",  "allowed_origins":["*"]}' % kmd_port)
 
 
-def configure_handler(args):
-    """
-    configure subcommand - configure a private network using the installed binaries.
-    """
-    if args.genesis_file == None or args.genesis_file == "" or os.path.isdir(args.genesis_file):
-        create_private_network(args.bin_dir, args.network_dir, args.network_template)
-    else:
-        create_real_network(args.bin_dir, args.network_dir, args.network_template, args.genesis_file)
-
-    configure_data_dir(args.network_dir, args.network_token, args.algod_port, args.kmd_port, args.bootstrap_url)
-
-
-def start_handler(args):
-    """
-    start subcommand - start algod + kmd using start script created during setup.
-    """
-    subprocess.check_call(['bash %s/start.sh' % args.network_dir], shell=True)
-
-
 if __name__ == '__main__':
-    configure.set_defaults(func=configure_handler)
-    start.set_defaults(func=start_handler)
     args = parser.parse_args()
 
-    print("Running algod helper script with the following arguments:")
+    print('Configuring network with the following arguments:')
     pp.pprint(vars(args))
 
-    args.func(args)
+
+    # Setup network
+    privateNetworkMode = args.genesis_file == None or args.genesis_file == '' or os.path.isdir(args.genesis_file)
+    if privateNetworkMode:
+        print('Creating a private network.')
+        startCommands = create_private_network(args.bin_dir, args.network_dir, args.network_template)
+    else:
+        print('Setting up real retwork.')
+        startCommands = create_real_network(args.bin_dir, args.network_dir, args.network_template, args.genesis_file)
+
+    # Write start script
+    print(f'Start commands for {args.start_script}:')
+    pp.pprint(startCommands)
+    with open(args.start_script, 'w') as f:
+        f.write('#!/usr/bin/env bash\n')
+        for line in startCommands:
+            f.write(f'{line}\n')
+        f.write('sleep infinity\n')
+    os.chmod(args.start_script, 0o755)
+
+    # Create symlink
+    data_dir, _ = algod_directories(args.network_dir)
+    print(f'Creating symlink {args.data_dir} -> {data_dir}')
+    os.symlink(data_dir, args.data_dir)
+
+    # Configure network
+    configure_data_dir(args.network_dir, args.network_token, args.algod_port, args.kmd_port, args.bootstrap_url)
+
