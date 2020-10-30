@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#########################
+# Helpers and utilities #
+#########################
+
 # Compatibility with Windows / MSYS2
 # 1. Use // to prevent msys to convert to Windows PATH on Windows
 #   when using inside Docker
@@ -14,13 +18,10 @@ elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || \
   PTY_DOCKER="winpty docker"
 fi
 
+# Console colorized print helpers
 red=`echo -en "\e[31m"`
 green=`echo -en "\e[32m"`
 default=`echo -en "\e[39m"`
-SNAPSHOT_URL_PREFIX="https://algorand-snapshots.s3.us-east-1.amazonaws.com/network"
-SNAPSHOT_MAINNET_URL=$SNAPSHOT_URL_PREFIX/"mainnet-v1.0/latest.tar.gz"
-SNAPSHOT_TESTNET_URL=$SNAPSHOT_URL_PREFIX/"testnet-v1.0/latest.tar.gz"
-SNAPSHOT_BETANET_URL=$SNAPSHOT_URL_PREFIX/"betanet-v1.0/latest.tar.gz"
 
 function printc () {
   printf "$1$2${default}\n"
@@ -30,10 +31,21 @@ function statusline () {
   printf "${green}$1${default}\n"
 }
 
-function err () {
+function err_noexit () {
   printf "${red}$1${default}\n"
 }
+function err () {
+  printf "${red}$1\n\nSee sandbox.log for more details.${default}\n"
+  exit 1
+}
 
+# Overwrite the current line on the terminal
+function overwrite() {
+  echo -e "\r\033[1A\033[0K$@";
+}
+
+
+# Yes/no prompt around the clean command
 function ask_clean () {
   if ask "$1"; then
     clean
@@ -42,6 +54,7 @@ function ask_clean () {
   fi
 }
 
+# Interactive yes/no prompt
 function ask () {
     # https://djm.me/ask
     local prompt default reply
@@ -79,24 +92,146 @@ function ask () {
     done
 }
 
+# Spinner - https://stackoverflow.com/a/20369590
+# Show a spinner for long running commands:
+#   (command) & spinner
+function spinner()
+{
+  local pid=$!
+  local delay=0.75
+  local spinstr='|/-\'
+  while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+    local temp=${spinstr#?}
+    printf " [%c]  " "$spinstr"
+    local spinstr=$temp${spinstr%"$temp"}
+    sleep $delay
+    printf "\b\b\b\b\b\b"
+  done
+  printf "    \b\b\b\b"
+}
 
-if ! [ -x "$(command -v docker)" ]; then
-  err 'Error: docker is not installed.' >&2
-  exit 1
-fi
+# Progress bar - https://stackoverflow.com/a/28044986
+# 1. Create progress_bar function
+# 1.1 Input is prefixString($1) currentState($2) and totalState($3)
+function progress_bar {
+  local progress
+  local done
+  local left
+  local fill
+  local empty
 
-# Not using docker-compose at the moment
-#if ! [ -x "$(command -v docker-compose)" ]; then
-#  echo 'Error: docker-compose is not installed.' >&2
-#  exit 1
-#fi
+  # Process data
+  progress=$(( $(( ${2} * 100 / ${3} * 100)) / 100))
+  done=$(( $(( ${progress} * 4 )) / 10 ))
+  left=$(( 40 - $done ))
+
+  # Build progressbar string lengths
+  fill=$(printf "%${done}s")
+  empty=$(printf "%${left}s")
+
+  # 1.2 Build progressbar strings and print the progress_bar line
+  # 1.2.1 Output example:
+  # 1.2.1.1 Progress : [****************************************] 100%
+  overwrite "$1 : [${fill// /▇}${empty// / }] [$2/$3] ${progress}%"
+}
+
+#####################
+# Script constants. #
+#####################
+FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/CHANNEL/latest.catchpoint'
 
 # Global flags
-USE_SNAPSHOT=1
+USE_FAST_CATCHUP=1
 
 sandbox () {
-  status () {
-    $PTY_DOCKER exec -it sandbox goal node status
+  status_helper () {
+    $PTY_DOCKER exec -i sandbox goal node status
+  }
+
+  goal_helper () {
+    $PTY_DOCKER exec --workdir //opt/algorand/node/data -it sandbox goal "$@"
+  }
+
+  perform_fast_catchup () {
+    local CATCHPOINT
+    CATCHPOINT=$(curl -s -S $FAST_CATCHUP_URL)
+    goal_helper node catchup "$CATCHPOINT"
+
+    if [ $? -ne 0 ]; then
+      err "There was a problem starting fast catchup."
+    fi
+
+    # Newline for the progress bar to use.
+    echo ""
+    DONE=false
+    STARTED=false
+    while [ $DONE == "false" ]; do
+      sleep 0.1
+
+      local RES
+      local TOTAL
+      local PROGRESS
+
+      RES="$(status_helper)"
+      TOTAL=1000
+      PROGRESS=0
+
+      # If progress has been made, update the progress.
+      if [[ "$RES" == *"Catchpoint total accounts"* ]]; then
+        STARTED=true
+        TOTAL=$(echo $RES | grep -o 'Catchpoint total accounts: [[:digit:]]*' | cut -d':' -f 2 )
+        PROGRESS=$(echo $RES | grep -o 'Catchpoint accounts processed: [[:digit:]]*' | cut -d':' -f 2 )
+      elif [ $STARTED == "true" ]; then
+        DONE=true
+        PROGRESS=$TOTAL
+      fi
+
+      if [ $TOTAL == $PROGRESS ]; then
+        DONE=true
+      else
+        progress_bar "Processing accounts:" "$PROGRESS" "$TOTAL"
+      fi
+    done
+
+    overwrite "Account processing complete."
+
+    # Newline for the progress bar to use.
+    echo ""
+
+    DONE=false
+    STARTED=false
+    while [ $DONE == "false" ]; do
+      sleep 0.1
+
+      local RES
+      local TOTAL
+      local PROGRESS
+
+      RES="$(status_helper)"
+      TOTAL=1000
+      PROGRESS=0
+
+      # If progress has been made, update the progress.
+      if [[ "$RES" == *"Catchpoint downloaded blocks"* ]]; then
+        STARTED=true
+        TOTAL=$(echo $RES | grep -o 'Catchpoint total blocks: [[:digit:]]*' | cut -d ':' -f 2 )
+        PROGRESS=$(echo $RES | grep -o 'Catchpoint downloaded blocks: [[:digit:]]*' | cut -d ':' -f 2 )
+      elif [ $STARTED == "true" ]; then
+        DONE=true
+        PROGRESS=$TOTAL
+      fi
+
+      if [ $TOTAL == $PROGRESS ]; then
+        DONE=true
+      else
+        progress_bar "Downloading blocks:" "$PROGRESS" "$TOTAL"
+      fi
+    done
+
+    # Clear progress bar line and print success text.
+    overwrite "Blocks downloaded."
+
+    sleep 1
   }
 
   clean () {
@@ -107,16 +242,17 @@ sandbox () {
     docker rm sandbox > /dev/null 2>&1 || true
     docker rmi $(docker images --filter=reference=algorand-sandbox -q) > /dev/null 2>&1 || true
     docker rmi $(docker images -f "dangling=true" -q) > /dev/null 2>&1 || true
-    docker volume ls | grep -q algorand-sandbox-data && docker volume rm algorand-sandbox-data || true
+    docker volume rm algorand-sandbox-data > /dev/null 2>&1 || true
 
     statusline "Removing algorand sandbox data..."
     rm -rf data
+
   }
 
   # Enter attaches users to a shell in the desired container
   enter () {
     statusline "Entering /bin/bash session in the sandbox container..."
-    $PTY_DOCKER exec -w //opt/algorand/node -it sandbox //bin/bash
+    $PTY_DOCKER exec --workdir //opt/algorand/node -it sandbox //bin/bash
   }
 
   # Logs streams the logs from the container to the shell
@@ -133,44 +269,40 @@ sandbox () {
     # Set default to testnet case a network wasn't provided
     NETWORK=${2:-testnet}
 
+    GENESIS_VERSION="$NETWORK-v1.0"
+    FAST_CATCHUP_URL="${FAST_CATCHUP_URL/CHANNEL/$NETWORK}"
     case $NETWORK in
       mainnet)
         CHANNEL=stable
-        GENESIS_VERSION=mainnet-v1.0
         CONFIG=config.json
-        SNAPSHOT_URL=$SNAPSHOT_MAINNET_URL
         ;;
       testnet)
         CHANNEL=stable
-        GENESIS_VERSION=testnet-v1.0
         CONFIG=config.json
-        SNAPSHOT_URL=$SNAPSHOT_TESTNET_URL
         ;;
       betanet)
         CHANNEL=beta
-        GENESIS_VERSION=betanet-v1.0
         CONFIG=beta.config.json
-        SNAPSHOT_URL=$SNAPSHOT_BETANET_URL
         ;;
       *)
         err "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']."
-        exit 1
         ;;
     esac
 
     # Validate/repair data directory
     if [[ -d data ]]; then
       if [[ ! -f data/network ]]; then
-        err "Detected a corrupt data directory..."
+        err_noexit "Detected a corrupt data directory..."
         ask_clean "Would you like to remove it and continue?"
       elif [[ $# -gt 1 && -f data/network && "$(cat data/network)" != $2 && "$(docker ps -a --filter name=sandbox -q)" ]]; then
-        err "The sandbox is already configured to run '$(cat data/network)'."
+        err_noexit "The sandbox is already configured to run '$(cat data/network)'."
         ask_clean "Would you like to reset the sandbox to run '$2'?"
       fi
     fi
 
+
     # Resume or initialize sandbox
-    if [[ -d data ]]; then
+    if [[ -f data ]]; then
       statusline "Starting the existing sandbox..."
       # Use variable $ERROR instead of status $?
       # as we are using set -e which aborts in case of non-zero status
@@ -181,11 +313,10 @@ sandbox () {
         # Check if the error is not just due to docker daemon not running
         if ! docker info 2>/dev/null > /dev/null; then
           err 'Docker is not running. Run `docker info` for more information.'
-          exit 1
         fi
 
         # This is another error that may require reset of the sandbox
-        err "Detected an error from the docker command."
+        err_noexit "Detected an error from the docker command."
         if [[ $# -eq 0 ]]; then
           NETWORK=$(cat data/network)
         fi
@@ -195,30 +326,18 @@ sandbox () {
       fi
     else
       statusline "\nBuilding a new Docker Image..."
-      docker build \
+      (docker build \
         --build-arg channel=$CHANNEL \
         -t \
         algorand-sandbox:$CHANNEL \
         . \
-        -f images/Dockerfile
-        
+        -f images/Dockerfile >> sandbox.log) & spinner
+
       # Create a new data directory
-      if [ ! -d data ]; then
-        statusline "Initializing data directory for $NETWORK..."
+      if [ ! -f data ]; then
+        statusline "\nInitializing data directory for $NETWORK..."
 
-        if [[ $USE_SNAPSHOT == 1 ]]; then
-          if [[ ${SNAPSHOT_URL:=""} == "" || ${GENESIS_VERSION:=""} == "" ]]; then
-            err "A snapshot is not available for $NETWORK."
-          else
-            statusline "\nDownloading $NETWORK snapshot..."
-            rm -f latest.tar.gz
-            curl -s -S $SNAPSHOT_URL -o latest.tar.gz
-            mkdir -p data/${GENESIS_VERSION}
-            tar xvf latest.tar.gz -C data/${GENESIS_VERSION}
-            rm latest.tar.gz
-          fi
-        fi
-
+        # Configure the node
         mkdir -p data/kmd-v0.5
         cp config/$CONFIG data/config.json
         cp config/token data/algod.token
@@ -234,9 +353,9 @@ sandbox () {
           -i \
           algorand-sandbox:$CHANNEL \
           tar -C //opt/algorand/node -x
-        docker rm sandbox
+        docker rm sandbox > /dev/null
 
-        # Remember the used network
+        # Remember the network being used
         echo "$NETWORK" > data/network
       fi
 
@@ -247,11 +366,24 @@ sandbox () {
         --name sandbox \
         --mount source="algorand-sandbox-data",target=//opt/algorand/node/data \
         -d \
-        algorand-sandbox:$CHANNEL
+        algorand-sandbox:$CHANNEL >> sandbox.log
 
       statusline "\nSandbox started! Printing status..."
+
       sleep 1
-      status
+      status_helper
+
+      if [[ $USE_FAST_CATCHUP == 1 ]]; then
+        statusline "\nStarting fast-catchup..."
+        if [[ ${FAST_CATCHUP_URL:=""} == "" || ${GENESIS_VERSION:=""} == "" ]]; then
+          err_noexit "Fast catchup is not available for $NETWORK, continuing without catchup."
+        else
+          perform_fast_catchup
+
+          statusline "\nFast-catchup complete! Printing status..."
+          status_helper
+        fi
+      fi
     fi
   }
 
@@ -296,7 +428,7 @@ EOF
 
     restart)
       statusline "Restarting sandbox process..."
-      docker restart sandbox
+      docker restart sandbox > /dev/null
       ;;
 
     clean)
@@ -310,15 +442,15 @@ EOF
 
       printc $red "\nTest algod..."
       printc $default "~$ ${green}docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/algorand/node/data"
-      status
+      status_helper
 
       printc $red "\nTest Algod REST API..."
-      printc $default "~$ ${green}curl localhost:4001/v1/status -H \"X-Algo-API-Token: \$(cat data/algod.token)\""
-      curl localhost:4001/v1/status -H "X-Algo-API-Token: $(cat data/algod.token)"
+      printc $default "~$ ${green}curl localhost:4001/v1/status -H \"X-Algo-API-Token: \$(cat config/token)\""
+      curl localhost:4001/v1/status -H "X-Algo-API-Token: $(cat config/token)"
 
       printc $red "\nTest KMD REST API..."
-      printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: \$(cat data/kmd-v0.5/kmd.token)\""
-      curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat data/kmd-v0.5/kmd.token)"
+      printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: \$(cat config/token)\""
+      curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat config/token)"
 
       printf "\n\n"
       ;;
@@ -332,18 +464,18 @@ EOF
       ;;
 
     status)
-      status
+      status_helper
       ;;
 
     goal)
       shift
-      $PTY_DOCKER exec -w //opt/algorand/node/data -it sandbox goal "$@"
+      goal_helper "$@"
       ;;
 
     dryrun)
       shift
       cp $1 data
-      $PTY_DOCKER exec -w //opt/algorand/node/data -it sandbox goal clerk dryrun -t "$(basename $1)"
+      $PTY_DOCKER exec --workdir //opt/algorand/node/data -it sandbox goal clerk dryrun -t "$(basename $1)"
       ;;
 
     introduction)
@@ -356,11 +488,16 @@ EOF
   esac
 }
 
+##############
+# Entrypoint #
+##############
+
+# Process flags
 PARAMS=()
 while (( "$#" )); do
   case "$1" in
-    -s|--skip-snapshot)
-      USE_SNAPSHOT=0
+    -s|--skip-fast-catchup)
+      USE_FAST_CATCHUP=0
       shift
       ;;
     *) # preserve positional arguments
@@ -369,6 +506,11 @@ while (( "$#" )); do
       ;;
   esac
 done
+
+# Make sure docker is installed
+if ! [ -x "$(command -v docker)" ]; then
+  err 'Error: docker is not installed.' >&2
+fi
 
 pushd `dirname $0` > /dev/null
 sandbox "${PARAMS[@]-}"

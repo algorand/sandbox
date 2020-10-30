@@ -44,27 +44,27 @@ jobs:
       arch: amd64
       env : CHANNEL=testnet
 
-    # Trusty
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CHANNEL=
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CHANNEL=mainnet
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CHANNEL=betanet
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CHANNEL=testnet
+    # Trusty - The version of docker is too old, doesn't support '--workdir'
+    #- stage: "Linux, Trusty, AMD64"
+    #  os: linux
+    #  dist: trusty
+    #  arch: amd64
+    #  env : CHANNEL=
+    #- stage: "Linux, Trusty, AMD64"
+    #  os: linux
+    #  dist: trusty
+    #  arch: amd64
+    #  env : CHANNEL=mainnet
+    #- stage: "Linux, Trusty, AMD64"
+    #  os: linux
+    #  dist: trusty
+    #  arch: amd64
+    #  env : CHANNEL=betanet
+    #- stage: "Linux, Trusty, AMD64"
+    #  os: linux
+    #  dist: trusty
+    #  arch: amd64
+    #  env : CHANNEL=testnet
 
     # Docker not supported.
     #- name: "Linux, Precise, AMD64"
