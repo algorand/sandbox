@@ -21,6 +21,11 @@ start_with_algod() {
     sleep 15
   done
 
+  if [ ! -f genesis.json ]; then
+    echo "Failed to create genesis file!"
+    exit 1
+  fi
+
   /tmp/algorand-indexer daemon \
     --server ":$PORT" \
     -P "$CONNECTION_STRING" \

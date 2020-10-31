@@ -40,9 +40,10 @@ services:
       ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     depends_on:
       - indexer-db
+      - algod
 
   indexer-db:
-    image: "postgres"
+    image: "postgres:13-alpine"
     container_name: "algorand-sandbox-postgres"
     ports:
       - 5433:5432

@@ -5,11 +5,13 @@ set -euo pipefail
 # Script constants. #
 #####################
 DEFAULT_CONFIG='nightly'
+ACTIVE_CONFIG_FILE='.active_config'
 
 FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/CHANNEL/latest.catchpoint'
 
 # Global flags
 USE_FAST_CATCHUP=1
+INTERACTIVE_MODE=0
 
 
 #########################
@@ -55,6 +57,14 @@ function overwrite() {
   echo -e "\r\033[1A\033[0K$@";
 }
 
+# Yes/no prompt around the clean command
+function ask_clean () {
+  if ask "$1"; then
+    clean
+  else
+    exit 1
+  fi
+}
 
 # Interactive yes/no prompt
 function ask () {
@@ -147,9 +157,7 @@ sandbox () {
   }
 
   perform_fast_catchup () {
-    local CATCHPOINT
-    CATCHPOINT=$(curl -s -S $FAST_CATCHUP_URL)
-    goal_helper node catchup "$CATCHPOINT"
+    goal_helper node catchup "$1"
 
     if [ $? -ne 0 ]; then
       err "There was a problem starting fast catchup."
@@ -228,6 +236,15 @@ sandbox () {
     sleep 1
   }
 
+  clean () {
+    statusline "Stopping and removing running sandbox containers..."
+    docker-compose down                               > /dev/null 2>&1 || true
+    docker rmi sandbox_algod sandbox_indexer          > /dev/null 2>&1 || true
+    docker-compose rm -f                              > /dev/null 2>&1 || true
+    docker rmi $(docker images -f "dangling=true" -q) > /dev/null 2>&1 || true
+    rm "$ACTIVE_CONFIG_FILE"                          > /dev/null 2>&1 || true
+  }
+
   # Enter attaches users to a shell in the desired container
   enter () {
     case $2 in
@@ -258,30 +275,67 @@ sandbox () {
 
   # Start the algorand node
   up () {
-      
       if [ "$#" -eq 0 ]; then
-        CONFIG_FILE="config.$DEFAULT_CONFIG"
+        NEW_CONFIG="$DEFAULT_CONFIG"
       else
-        CONFIG_FILE="config.$1"
+        NEW_CONFIG="$1"
       fi
+      CONFIG_FILE="config.$NEW_CONFIG"
 
       if [ ! -f "$CONFIG_FILE" ]; then
         SANDBOX_CONFIG_OPTIONS=$(ls -l config.* | cut -f 2 -d'.' |  sed 's/^/ /'| paste -sd',')
-        err "Could not find config file for '$1'.\nValid options:$SANDBOX_CONFIG_OPTIONS"
+        err "Could not find config file for '$NEW_CONFIG'.\nValid options:$SANDBOX_CONFIG_OPTIONS"
       fi
 
+      FRESH_INSTALL=1
+
+      # Check for active network
+      if [ -f "$ACTIVE_CONFIG_FILE" ]; then
+        ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
+        if [ "$NEW_CONFIG" != "$ACTIVE_CONFIG" ]; then
+          err_noexit "Sandbox was already started for '$ACTIVE_CONFIG'."
+          ask_clean "Would you like to reset the local sandbox with '$NEW_CONFIG'?"
+          up "$@"
+          return
+        else
+          FRESH_INSTALL=0
+        fi
+      fi
+      echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
+
       statusline "Starting container with config file: $CONFIG_FILE"
-     
 
+      # network configured with the environment exported by $CONFIG_FILE
       source "$CONFIG_FILE"
+      if [ $INTERACTIVE_MODE == 1 ]; then
+        docker-compose up
+      else
+        docker-compose up -d  >> docker.log 2>&1
+      fi
 
-      docker-compose rm --force || true
-      docker-compose build --no-cache
-      docker-compose up
+      sleep 1
+      status_helper
 
-      # TODO: After up is working we'll want to run the catchup code.
-      #sleep 1
-      #status_helper
+      # Run fast-catchup if applicable
+      if [ ! -z $ALGOD_GENESIS_FILE ]; then
+        if [ $USE_FAST_CATCHUP == 1 ] && [ $FRESH_INSTALL == 1 ]; then
+          CATCHPOINT=$(curl ${FAST_CATCHUP_URL/CHANNEL/$NEW_CONFIG})
+          echo "Found catchpoint: $CATCHPOINT"
+          
+          if [[ "$(echo $CATCHPOINT | wc -l)" != "1" ]]; then
+            err_noexit "Fast catchup is not available for $NEW_CONFIG, continuing without catchup."
+          else
+            statusline "\nStarting fast-catchup..."
+
+            perform_fast_catchup $CATCHPOINT
+
+            statusline "\nFast-catchup complete! Printing status..."
+            status_helper
+          fi
+        else
+          statusline "\nSkipping fast catchup"
+        fi
+      fi
 
       #if [[ $USE_FAST_CATCHUP == 1 ]]; then
       #  statusline "\nStarting fast-catchup..."
@@ -301,7 +355,6 @@ sandbox () {
 sandbox commands:
   up      -> spin up the sandbox environment.
   down    -> tear down the sandbox environment
-  restart -> restart the sandbox
   enter   -> enter the sandbox container
   clean   -> stops and deletes containers and data directory
   test    -> runs some tests to make sure everything is working correctly
@@ -328,22 +381,8 @@ EOF
       docker-compose down
       ;;
 
-    restart)
-      statusline "Stopping all sandbox processes..."
-      docker-compose down > /dev/null 2>&1
-      statusline "Starting all sandbox processes..."
-      docker-compose up -d --build > /dev/null 2>&1
-      statusline "Services available!"
-
-      ;;
-
     clean)
-      statusline "Stopping and removing running sandbox containers..."
-      docker-compose down
-      statusline "Removing sandbox images..."
-      docker-compose rm -f
-      docker rmi $(docker images -f "dangling=true" -q)
-
+      clean
       ;;
 
     test)
@@ -403,13 +442,16 @@ while (( "$#" )); do
   case "$1" in
     -s|--skip-fast-catchup)
       USE_FAST_CATCHUP=0
-      shift
+      ;;
+    -i|--interactive)
+      statusline "Note: interactive mode is incompatible with fast-catchup."
+      INTERACTIVE_MODE=1
       ;;
     *) # preserve positional arguments
       PARAMS+=("$1")
-      shift
       ;;
   esac
+  shift
 done
 
 
