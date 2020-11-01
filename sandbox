@@ -6,30 +6,32 @@ set -euo pipefail
 #####################
 DEFAULT_CONFIG='nightly'
 ACTIVE_CONFIG_FILE='.active_config'
-
+DOCKER_LOG='docker.log'
 FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/CHANNEL/latest.catchpoint'
 
 # Global flags
 USE_FAST_CATCHUP=1
 INTERACTIVE_MODE=0
 
+#########################
+# Config file variables #
+#########################
+export ALGOD_CHANNEL=""
+export ALGOD_URL=""
+export ALGOD_BRANCH=""
+export ALGOD_SHA=""
+export ALGOD_BOOTSTRAP_URL=""
+export ALGOD_GENESIS_FILE=""
+export INDEXER_URL=""
+export INDEXER_BRANCH=""
+export INDEXER_SHA=""
+export INDEXER_DISABLED=""
+
+
 
 #########################
 # Helpers and utilities #
 #########################
-
-# Compatibility with Windows / MSYS2
-# 1. Use // to prevent msys to convert to Windows PATH on Windows
-#   when using inside Docker
-#   see http://www.mingw.org/wiki/Posix_path_conversion
-# 2. Use $PTY_DOCKER for all commands that require a PTY (-t)
-PTY_DOCKER=docker
-if [ "$(uname)" == "Darwin" ]; then
-  true
-elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || \
-     [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
-  PTY_DOCKER="winpty docker"
-fi
 
 # Console colorized print helpers
 red=`echo -en "\e[31m"`
@@ -47,6 +49,7 @@ function statusline () {
 function err_noexit () {
   printf "${red}$1${default}\n"
 }
+
 function err () {
   err_noexit "$1"
   exit 1
@@ -153,9 +156,10 @@ sandbox () {
   }
 
   goal_helper () {
-    docker-compose exec algod /node/goal -d /opt/testnetwork/Node "$@"
+    docker-compose exec algod /node/goal "$@"
   }
 
+  # Given a network name attempts to fetch a catchpoint and catchup.
   perform_fast_catchup () {
     goal_helper node catchup "$1"
 
@@ -237,12 +241,14 @@ sandbox () {
   }
 
   clean () {
-    statusline "Stopping and removing running sandbox containers..."
-    docker-compose down                               > /dev/null 2>&1 || true
-    docker rmi sandbox_algod sandbox_indexer          > /dev/null 2>&1 || true
-    docker-compose rm -f                              > /dev/null 2>&1 || true
-    docker rmi $(docker images -f "dangling=true" -q) > /dev/null 2>&1 || true
-    rm "$ACTIVE_CONFIG_FILE"                          > /dev/null 2>&1 || true
+    statusline "Cleaning up sandbox environment..."
+    echo "* stopping containers."
+    docker-compose down
+    echo "* removing images"                    | tee -a "$DOCKER_LOG"
+    docker rmi sandbox_algod sandbox_indexer          >> "$DOCKER_LOG" 2>&1 || \
+    docker-compose rm -f                              >> "$DOCKER_LOG" 2>&1 || \
+    docker rmi $(docker images -f "dangling=true" -q) >> "$DOCKER_LOG" 2>&1 || true & spinner
+    rm "$ACTIVE_CONFIG_FILE"
   }
 
   # Enter attaches users to a shell in the desired container
@@ -269,63 +275,89 @@ sandbox () {
     if [[ $# -gt 1 && $2 == "raw" ]]; then
       docker-compose exec algod tail -f /opt/testnetwork/Node/node.log
     else
-      docker-compose exec algod /node/carpenter -d /opt/testnetwork/Node/
+      docker-compose exec algod /node/carpenter
+    fi
+  }
+
+  set_catchpoint () {
+    # TODO: Might be useful to allow providing the catchpoint with '-c'
+    CATCHPOINT=$(curl ${FAST_CATCHUP_URL/CHANNEL/$1})
+    # If the catchpoint wasn't returned there is a multiline error.
+    if [[ "$(echo $CATCHPOINT | wc -l)" != "1" ]]; then
+      CATCHPOINT=""
     fi
   }
 
   # Start the algorand node
   up () {
+      FRESH_INSTALL=1
+
+      # Grab active config if there is one
+      ACTIVE_CONFIG=""
+      if [ -f "$ACTIVE_CONFIG_FILE" ]; then
+        ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
+      fi
+
+      # Initialize new config, accounting for no-argument up command.
       if [ "$#" -eq 0 ]; then
-        NEW_CONFIG="$DEFAULT_CONFIG"
+        if [ ! -z $ACTIVE_CONFIG ]; then
+          statusline "Bringing up existing sandbox: '$ACTIVE_CONFIG'"
+          FRESH_INSTALL=0
+          NEW_CONFIG="$ACTIVE_CONFIG"
+        else
+          statusline "Starting default sandbox: $DEFAULT_CONFIG"
+          NEW_CONFIG="$DEFAULT_CONFIG"
+        fi
       else
+        statusline "Starting sandbox for: $1"
         NEW_CONFIG="$1"
       fi
       CONFIG_FILE="config.$NEW_CONFIG"
 
+      # Verify config exists
       if [ ! -f "$CONFIG_FILE" ]; then
         SANDBOX_CONFIG_OPTIONS=$(ls -l config.* | cut -f 2 -d'.' |  sed 's/^/ /'| paste -sd',')
         err "Could not find config file for '$NEW_CONFIG'.\nValid options:$SANDBOX_CONFIG_OPTIONS"
       fi
 
-      FRESH_INSTALL=1
-
-      # Check for active network
-      if [ -f "$ACTIVE_CONFIG_FILE" ]; then
-        ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
-        if [ "$NEW_CONFIG" != "$ACTIVE_CONFIG" ]; then
-          err_noexit "Sandbox was already started for '$ACTIVE_CONFIG'."
-          ask_clean "Would you like to reset the local sandbox with '$NEW_CONFIG'?"
-          up "$@"
-          return
-        else
-          FRESH_INSTALL=0
-        fi
+      # Handle mismatched argument + active config
+      if [ ! -z "$ACTIVE_CONFIG" ] && [ "$NEW_CONFIG" != "$ACTIVE_CONFIG" ]; then
+        err_noexit "Sandbox was already started for '$ACTIVE_CONFIG'."
+        ask_clean "Would you like to reset the local sandbox with '$NEW_CONFIG'?"
+        # If we get here the active config was cleared out.
+        up "$@"
+        return
       fi
-      echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
 
-      statusline "Starting container with config file: $CONFIG_FILE"
+      #################
+      # START NETWORK #
+      #################
 
       # network configured with the environment exported by $CONFIG_FILE
+      echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
       source "$CONFIG_FILE"
       if [ $INTERACTIVE_MODE == 1 ]; then
         docker-compose up
       else
-        docker-compose up -d  >> docker.log 2>&1
+        echo "* docker-compose up -d" >> "$DOCKER_LOG"
+        docker-compose up -d          >> "$DOCKER_LOG" 2>&1 & spinner
       fi
 
       sleep 1
       status_helper
 
-      # Run fast-catchup if applicable
+      ################################
+      # FAST CATCHUP (if applicable) #
+      ################################
+
       if [ ! -z $ALGOD_GENESIS_FILE ]; then
         if [ $USE_FAST_CATCHUP == 1 ] && [ $FRESH_INSTALL == 1 ]; then
-          CATCHPOINT=$(curl ${FAST_CATCHUP_URL/CHANNEL/$NEW_CONFIG})
-          echo "Found catchpoint: $CATCHPOINT"
-          
-          if [[ "$(echo $CATCHPOINT | wc -l)" != "1" ]]; then
+          set_catchpoint $NEW_CONFIG
+
+          if [ -z $CATCHPOINT ]; then
             err_noexit "Fast catchup is not available for $NEW_CONFIG, continuing without catchup."
           else
-            statusline "\nStarting fast-catchup..."
+            statusline "\nStarting fast-catchup with catchpoint: $CATCHPOINT"
 
             perform_fast_catchup $CATCHPOINT
 
@@ -336,18 +368,6 @@ sandbox () {
           statusline "\nSkipping fast catchup"
         fi
       fi
-
-      #if [[ $USE_FAST_CATCHUP == 1 ]]; then
-      #  statusline "\nStarting fast-catchup..."
-      #  if [[ ${FAST_CATCHUP_URL:=""} == "" || ${GENESIS_VERSION:=""} == "" ]]; then
-      #    err_noexit "Fast catchup is not available for $NETWORK, continuing without catchup."
-      #  else
-      #    perform_fast_catchup
-
-      #    statusline "\nFast-catchup complete! Printing status..."
-      #    status_helper
-      #  fi
-      #fi
   }
 
   help () {
@@ -378,7 +398,22 @@ EOF
 
     down)
       statusline "Stopping sandbox containers..."
-      docker-compose down
+      docker-compose stop
+      ;;
+
+    reset)
+      # Make sure fast-catchup runs when resetting a real network.
+      if [ -f "$ACTIVE_CONFIG_FILE" ]; then
+        ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
+        # up only runs fast-catchup for fresh installs.
+        # removing the active config file will trick it.
+        rm "$ACTIVE_CONFIG_FILE"
+      else
+        err "No active sandbox to reset."
+      fi
+      sandbox down
+      docker-compose rm -f
+      sandbox up "$ACTIVE_CONFIG"
       ;;
 
     clean)
@@ -391,15 +426,15 @@ EOF
       docker-compose exec algod uname -a
 
       printc $red "\nTest algod..."
-      printc $default "~$ ${green}docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/testnetwork/Node/data"
+      printc $default "~$ ${green}docker exec -it sandbox /opt/algorand/node/goal node status"
       status_helper
 
       printc $red "\nTest Algod REST API..."
-      printc $default "~$ ${green}curl localhost:4001/v2/status?pretty -H \"X-Algo-API-Token: \$(cat config/token)\""
+      printc $default "~$ ${green}curl localhost:4001/v2/status?pretty -H \"X-Algo-API-Token: $(cat config/token)\""
       curl "localhost:4001/v2/status?pretty" -H "X-Algo-API-Token: $(cat config/token)"
 
       printc $red "\nTest KMD REST API..."
-      printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: \$(cat config/token)\""
+      printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: $(cat config/token)\""
       curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat config/token)"
 
       printc $red "\nTest Indexer REST API..."
