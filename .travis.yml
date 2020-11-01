@@ -63,22 +63,22 @@ jobs:
       dist: xenial
       arch: amd64
       env : CONFIG=testnet
-    - stage: "Linux, Bionic, AMD64"
+    - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=dev
-    - stage: "Linux, Bionic, AMD64"
+    - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=beta
-    - stage: "Linux, Bionic, AMD64"
+    - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=latest
-    - stage: "Linux, Bionic, AMD64"
+    - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
       arch: amd64
@@ -105,22 +105,22 @@ jobs:
       dist: trusty
       arch: amd64
       env : CONFIG=testnet
-    - stage: "Linux, Bionic, AMD64"
+    - stage: "Linux, Trusty, AMD64"
       os: linux
       dist: trusty
       arch: amd64
       env : CONFIG=dev
-    - stage: "Linux, Bionic, AMD64"
+    - stage: "Linux, Trusty, AMD64"
       os: linux
       dist: trusty
       arch: amd64
       env : CONFIG=beta
-    - stage: "Linux, Bionic, AMD64"
+    - stage: "Linux, Trusty, AMD64"
       os: linux
       dist: trusty
       arch: amd64
       env : CONFIG=latest
-    - stage: "Linux, Bionic, AMD64"
+    - stage: "Linux, Trusty, AMD64"
       os: linux
       dist: trusty
       arch: amd64
