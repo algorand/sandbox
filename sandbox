@@ -348,12 +348,12 @@ sandbox () {
         #####################
         goal_helper wallet -f unencrypted-default-wallet > /dev/null 2>&1
 
-        statusline "Available accounts (./sandbox goal account list):"
         ACCOUNTS_OUTPUT=$(goal_helper account list)
-        echo "$ACCOUNTS_OUTPUT"
-
         readarray -t ACCOUNTS < <(echo "$ACCOUNTS_OUTPUT" | cut -f 2 |tr -s " ")
 
+        printc $red "\nAvailable accounts"
+        printc $default "~$ ${green}./sandbox goal account list"
+        echo "$ACCOUNTS_OUTPUT"
         printc $red "\nExample command to send between two accounts:"
         printc $default "~$ ${green}./sandbox goal clerk send -a 100000000000001 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
         printc $red "\nSoon after sending the transaction it will appear in indexer:"
@@ -451,7 +451,7 @@ EOF
       fi
       sandbox down
       docker-compose rm -f
-      sandbox up "$ACTIVE_CONFIG"
+      sandbox up "$ACTIVE_CONFIG" "$@"
       ;;
 
     clean)
