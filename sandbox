@@ -295,7 +295,7 @@ sandbox () {
       fi
 
       # Initialize new config, accounting for no-argument up command.
-      if [ "$#" -eq 0 ]; then
+      if [ "$#" -eq 1 ]; then
         if [ ! -z $ACTIVE_CONFIG ]; then
           statusline "Bringing up existing sandbox: '$ACTIVE_CONFIG'"
           FRESH_INSTALL=0
