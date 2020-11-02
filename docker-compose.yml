@@ -19,6 +19,7 @@ services:
     ports:
       - 4001:4001
       - 4002:4002
+
   indexer:
     container_name: "algorand-sandbox-indexer"
     build:
