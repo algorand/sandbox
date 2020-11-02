@@ -27,8 +27,6 @@ export INDEXER_BRANCH=""
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 
-
-
 #########################
 # Helpers and utilities #
 #########################
@@ -43,7 +41,7 @@ function printc () {
 }
 
 function statusline () {
-  printc "${green}" "$1"
+  printc "${green}" "\n$1"
 }
 
 function err_noexit () {
@@ -242,9 +240,7 @@ sandbox () {
 
   clean () {
     statusline "Cleaning up sandbox environment..."
-    echo "* stopping containers."
     docker-compose down
-    echo "* removing images"                    | tee -a "$DOCKER_LOG"
     docker rmi sandbox_algod sandbox_indexer          >> "$DOCKER_LOG" 2>&1 || \
     docker-compose rm -f                              >> "$DOCKER_LOG" 2>&1 || \
     docker rmi $(docker images -f "dangling=true" -q) >> "$DOCKER_LOG" 2>&1 || true & spinner
@@ -281,7 +277,7 @@ sandbox () {
 
   set_catchpoint () {
     # TODO: Might be useful to allow providing the catchpoint with '-c'
-    CATCHPOINT=$(curl ${FAST_CATCHUP_URL/CHANNEL/$1})
+    CATCHPOINT=$(curl -s ${FAST_CATCHUP_URL/CHANNEL/$1})
     # If the catchpoint wasn't returned there is a multiline error.
     if [[ "$(echo $CATCHPOINT | wc -l)" != "1" ]]; then
       CATCHPOINT=""
@@ -339,33 +335,46 @@ sandbox () {
       if [ $INTERACTIVE_MODE == 1 ]; then
         docker-compose up
       else
-        echo "* docker-compose up -d" >> "$DOCKER_LOG"
-        docker-compose up -d          >> "$DOCKER_LOG" 2>&1 & spinner
+        echo "* docker-compose up -d"   >> "$DOCKER_LOG"
+        docker-compose up -d            >> "$DOCKER_LOG" 2>&1 & spinner
+        sleep 1                                               & spinner
       fi
 
-      sleep 1
       status_helper
 
-      ################################
-      # FAST CATCHUP (if applicable) #
-      ################################
+      if [ -z $ALGOD_GENESIS_FILE ]; then
+        #####################
+        # INITIALIZE WALLET #
+        #####################
+        goal_helper wallet -f unencrypted-default-wallet > /dev/null 2>&1
 
-      if [ ! -z $ALGOD_GENESIS_FILE ]; then
+        statusline "Available accounts (./sandbox goal account list):"
+        ACCOUNTS_OUTPUT=$(goal_helper account list)
+        echo "$ACCOUNTS_OUTPUT"
+
+        readarray -t ACCOUNTS < <(echo "$ACCOUNTS_OUTPUT" | cut -f 2 |tr -s " ")
+
+        statusline "example command to send between two accounts:"
+        echo "./sandbox goal clerk send -a 100000000000001 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
+      else
+        ################################
+        # FAST CATCHUP (if applicable) #
+        ################################
         if [ $USE_FAST_CATCHUP == 1 ] && [ $FRESH_INSTALL == 1 ]; then
           set_catchpoint $NEW_CONFIG
 
           if [ -z $CATCHPOINT ]; then
             err_noexit "Fast catchup is not available for $NEW_CONFIG, continuing without catchup."
           else
-            statusline "\nStarting fast-catchup with catchpoint: $CATCHPOINT"
+            statusline "Starting fast-catchup with catchpoint: $CATCHPOINT"
 
             perform_fast_catchup $CATCHPOINT
 
-            statusline "\nFast-catchup complete! Printing status..."
+            statusline "Fast-catchup complete! Printing status..."
             status_helper
           fi
         else
-          statusline "\nSkipping fast catchup"
+          statusline "Skipping fast catchup"
         fi
       fi
   }
@@ -374,14 +383,20 @@ sandbox () {
       cat <<-EOF
 sandbox commands:
   up      -> spin up the sandbox environment.
-  down    -> tear down the sandbox environment
-  enter   -> enter the sandbox container
-  clean   -> stops and deletes containers and data directory
-  test    -> runs some tests to make sure everything is working correctly
+  down    -> tear down the sandbox environment.
+  enter   -> enter the sandbox container.
+  reset   -> reset the containers to their initial state.
+  clean   -> stops and deletes containers and data directory.
+  test    -> runs some tests to demonstrate usage.
+
 algorand commands:
-  logs        -> stream algorand logs with the carpenter utility
-  status      -> get node status
-  goal (args) -> run goal command like 'goal node status'
+  logs        -> stream algorand logs with the carpenter utility.
+  status      -> get node status.
+  goal (args) -> run goal command like 'goal node status'.
+
+special flags for 'up' command:
+  -s|--skip-fast-catchup -> skip catchup when connecting to real network.
+  -i|--interactive       -> start docker-compose in interactive mode.
 EOF
   }
 
@@ -392,16 +407,37 @@ EOF
 
   case $1 in
     up)
+      # Remove "up"
       shift
-      up "$@"
+
+      # Process flags
+      PARAMS=()
+      while (( "$#" )); do
+        case "$1" in
+          -s|--skip-fast-catchup)
+            USE_FAST_CATCHUP=0
+            ;;
+          -i|--interactive)
+            statusline "Note: interactive mode is incompatible with fast-catchup."
+            INTERACTIVE_MODE=1
+            ;;
+          *) # preserve positional arguments
+            PARAMS+=("$1")
+            ;;
+        esac
+        shift
+      done
+
+      # Call up with remaining parameters
+      up  "${PARAMS[@]-}"
       ;;
 
-    down)
+    stop|down)
       statusline "Stopping sandbox containers..."
       docker-compose stop
       ;;
 
-    reset)
+    restart|reset)
       # Make sure fast-catchup runs when resetting a real network.
       if [ -f "$ACTIVE_CONFIG_FILE" ]; then
         ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
@@ -471,30 +507,11 @@ EOF
 # Entrypoint #
 ##############
 
-# Process flags
-PARAMS=()
-while (( "$#" )); do
-  case "$1" in
-    -s|--skip-fast-catchup)
-      USE_FAST_CATCHUP=0
-      ;;
-    -i|--interactive)
-      statusline "Note: interactive mode is incompatible with fast-catchup."
-      INTERACTIVE_MODE=1
-      ;;
-    *) # preserve positional arguments
-      PARAMS+=("$1")
-      ;;
-  esac
-  shift
-done
-
-
 if ! [ -x "$(command -v docker-compose)" ]; then
   echo 'Error: docker-compose is not installed.' >&2
   exit 1
 fi
 
 pushd `dirname $0` > /dev/null
-sandbox "${PARAMS[@]-}"
+sandbox "$@"
 popd > /dev/null
