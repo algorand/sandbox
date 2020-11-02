@@ -146,4 +146,5 @@ services:
   - docker
 
 script:
+  - echo "Configuration: $CONFIG"
   - ./sandbox up $CONFIG
