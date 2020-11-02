@@ -354,8 +354,10 @@ sandbox () {
 
         readarray -t ACCOUNTS < <(echo "$ACCOUNTS_OUTPUT" | cut -f 2 |tr -s " ")
 
-        statusline "example command to send between two accounts:"
-        echo "./sandbox goal clerk send -a 100000000000001 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
+        printc $red "\nExample command to send between two accounts:"
+        printc $default "~$ ${green}./sandbox goal clerk send -a 100000000000001 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
+        printc $red "\nSoon after sending the transaction it will appear in indexer:"
+        printc $default "~$ ${green}curl \"localhost:8980/v2/transactions?pretty\""
       else
         ################################
         # FAST CATCHUP (if applicable) #
@@ -458,11 +460,11 @@ EOF
 
     test)
       printc $red "Test command forwarding..."
-      printc $default "~$ ${green}docker exec -it sandbox uname -a"
+      printc $default "~$ ${green}docker exec -it algod uname -a"
       docker-compose exec algod uname -a
 
       printc $red "\nTest algod..."
-      printc $default "~$ ${green}docker exec -it sandbox /opt/algorand/node/goal node status"
+      printc $default "~$ ${green}docker-compose exec algod /node/goal node status"
       status_helper
 
       printc $red "\nTest Algod REST API..."
