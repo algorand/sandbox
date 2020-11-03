@@ -240,7 +240,7 @@ sandbox () {
 
   clean () {
     echo "* docker-compose down"
-    docker-compose down                                        || true
+    docker-compose down -t 0                                   || true
     echo "* docker rmi sandbox_algod sandbox_indexer"
     docker rmi sandbox_algod sandbox_indexer                   || true
     echo "* docker-compose rm -f"
@@ -439,7 +439,7 @@ EOF
 
     stop|down)
       statusline "Stopping sandbox containers..."
-      docker-compose stop
+      docker-compose stop -t 0
       ;;
 
     restart|reset)
