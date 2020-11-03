@@ -411,7 +411,7 @@ EOF
   fi
 
   case $1 in
-    up)
+    start|up)
       # Remove "up"
       shift
 
@@ -434,7 +434,7 @@ EOF
       done
 
       # Call up with remaining parameters
-      up  "${PARAMS[@]-}"
+      up "${PARAMS[@]-}"
       ;;
 
     stop|down)
