@@ -240,14 +240,14 @@ sandbox () {
 
   clean () {
     echo "* docker-compose down"
-    docker-compose down
+    docker-compose down                                        || true
     echo "* docker rmi sandbox_algod sandbox_indexer"
-    docker rmi sandbox_algod sandbox_indexer
+    docker rmi sandbox_algod sandbox_indexer                   || true
     echo "* docker-compose rm -f"
-    docker-compose rm -f
+    docker-compose rm -f                                       || true
     echo "* docker rmi $(docker images -f "dangling=true" -q)"
-    docker rmi $(docker images -f "dangling=true" -q)
-    rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1 || true
+    docker rmi $(docker images -f "dangling=true" -q)          || true
+    rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1                  || true
   }
 
   # Enter attaches users to a shell in the desired container
