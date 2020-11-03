@@ -61,7 +61,7 @@ function overwrite() {
 # Yes/no prompt around the clean command
 function ask_clean () {
   if ask "$1"; then
-    clean >> "$SANDBOX_LOG"
+    sandbox clean
   else
     exit 1
   fi
@@ -239,7 +239,6 @@ sandbox () {
   }
 
   clean () {
-    statusline "Cleaning up sandbox environment..."
     echo "* docker-compose down"
     docker-compose down
     echo "* docker rmi sandbox_algod sandbox_indexer"
@@ -459,6 +458,7 @@ EOF
       ;;
 
     clean)
+      statusline "Cleaning up sandbox environment..."
       clean >> "$SANDBOX_LOG" 2>&1
       ;;
 
