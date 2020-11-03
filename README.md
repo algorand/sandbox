@@ -109,3 +109,7 @@ export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 ```
+
+## Errors
+
+If something goes wrong, check the `sandbox.log` file for details.
