@@ -480,7 +480,7 @@ EOF
       curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat config/token)"
 
       printc $red "\nTest Indexer REST API..."
-      printc $default "~$ ${green}curl localhost:8980/health?pretty\""
+      printc $default "~$ ${green}curl \"localhost:8980/health?pretty\""
       curl "localhost:8980/health?pretty"
 
       printf "\n\n"
