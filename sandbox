@@ -240,11 +240,11 @@ sandbox () {
 
   clean () {
     statusline "Cleaning up sandbox environment..."
-    docker-compose down
+    docker-compose down                               >> "$DOCKER_LOG" 2>&1 || \
     docker rmi sandbox_algod sandbox_indexer          >> "$DOCKER_LOG" 2>&1 || \
     docker-compose rm -f                              >> "$DOCKER_LOG" 2>&1 || \
     docker rmi $(docker images -f "dangling=true" -q) >> "$DOCKER_LOG" 2>&1 || true & spinner
-    rm "$ACTIVE_CONFIG_FILE"
+    rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1 || true
   }
 
   # Enter attaches users to a shell in the desired container
@@ -445,7 +445,7 @@ EOF
         ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
         # up only runs fast-catchup for fresh installs.
         # removing the active config file will trick it.
-        rm "$ACTIVE_CONFIG_FILE"
+        rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1 || true
       else
         err "No active sandbox to reset."
       fi
