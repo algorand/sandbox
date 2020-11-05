@@ -27,6 +27,7 @@ start_with_algod() {
   fi
 
   /tmp/algorand-indexer daemon \
+    --dev-mode \
     --server ":$PORT" \
     -P "$CONNECTION_STRING" \
     --algod-net "${ALGOD_ADDR}" \
@@ -49,6 +50,7 @@ import_and_start_readonly() {
     /tmp/indexer-snapshot/blocktars/*
 
   /tmp/algorand-indexer daemon \
+    --dev-mode \
     --server ":$PORT" \
     -P "$CONNECTION_STRING"
 }
