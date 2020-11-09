@@ -272,9 +272,9 @@ sandbox () {
   # Logs streams the logs from the container to the shell
   logs () {
     if [[ $# -gt 1 && $2 == "raw" ]]; then
-      docker-compose exec algod tail -f /opt/testnetwork/Node/node.log
+      docker-compose exec algod tail -f /opt/data/node.log
     else
-      docker-compose exec algod /node/carpenter
+      docker-compose exec algod /node/carpenter -D
     fi
   }
 
