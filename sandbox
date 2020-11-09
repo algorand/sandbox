@@ -411,7 +411,7 @@ EOF
   fi
 
   case $1 in
-    start|up)
+    start|up|resume)
       # Remove "up"
       shift
 
@@ -437,7 +437,7 @@ EOF
       up "${PARAMS[@]-}"
       ;;
 
-    stop|down)
+    stop|down|pause)
       statusline "Stopping sandbox containers..."
       docker-compose stop -t 0
       ;;
