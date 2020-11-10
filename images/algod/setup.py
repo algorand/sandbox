@@ -87,7 +87,7 @@ def create_private_network(bin_dir, network_dir, template) -> List[str]:
         shutil.rmtree(args.network_dir)
 
     # Use goal to create the private network.
-    subprocess.check_call(['%s/goal network create -n testnetwork -r %s -t %s' % (bin_dir, network_dir, template)], shell=True)
+    subprocess.check_call(['%s/goal network create -n sandnet -r %s -t %s' % (bin_dir, network_dir, template)], shell=True)
 
     data_dir, kmd_dir = algod_directories(network_dir)
     return ['%s/goal network start -r %s' % (bin_dir, network_dir),

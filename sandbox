@@ -32,16 +32,23 @@ export INDEXER_DISABLED=""
 #########################
 
 # Console colorized print helpers
-red=`echo -en "\e[31m"`
-green=`echo -en "\e[32m"`
-default=`echo -en "\e[39m"`
+default="\033[0m"
+
+red="\033[0;31m"
+green="\033[0;32m"
+blue="\033[0;34m"
+teal="\033[0;36m"
+
+# bold
+Bgreen="\033[1;32m"
+
 
 function printc () {
   printf "$1$2${default}\n"
 }
 
 function statusline () {
-  printc "${green}" "\n$1"
+  printc "${Bgreen}" "\n$1"
 }
 
 function err_noexit () {
@@ -352,15 +359,15 @@ sandbox () {
         goal_helper wallet -f unencrypted-default-wallet > /dev/null 2>&1
 
         ACCOUNTS_OUTPUT=$(goal_helper account list)
-        readarray -t ACCOUNTS < <(echo "$ACCOUNTS_OUTPUT" | cut -f 2 |tr -s " ")
+        readarray -t ACCOUNTS < <(echo "$ACCOUNTS_OUTPUT" | cut -f 3 |tr -s " ")
 
-        printc $red "\nAvailable accounts"
-        printc $default "~$ ${green}./sandbox goal account list"
+        statusline "Available accounts"
+        printc $default "~$ ${blue}./sandbox ${teal}goal account list"
         echo "$ACCOUNTS_OUTPUT"
-        printc $red "\nExample command to send between two accounts:"
-        printc $default "~$ ${green}./sandbox goal clerk send -a 100000000000001 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
-        printc $red "\nSoon after sending the transaction it will appear in indexer:"
-        printc $default "~$ ${green}curl \"localhost:8980/v2/transactions?pretty\""
+        statusline "Example command to send between two accounts:"
+        printc $default "~$ ${blue}./sandbox ${teal}goal clerk send -a 100000000000001 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
+        statusline "Soon after sending the transaction it will appear in indexer:"
+        printc $default "~$ ${blue}curl ${teal}\"localhost:8980/v2/transactions?pretty\""
       else
         ################################
         # FAST CATCHUP (if applicable) #
