@@ -157,11 +157,14 @@ function progress_bar {
 
 sandbox () {
   status_helper () {
+    statusline "algod - goal node status"
     goal_helper node status
+    statusline "indexer - health"
+    curl "localhost:8980/health?pretty"
   }
 
   goal_helper () {
-    docker-compose exec algod /node/goal "$@"
+    docker-compose exec algod goal "$@"
   }
 
   # Given a network name attempts to fetch a catchpoint and catchup.
@@ -263,25 +266,30 @@ sandbox () {
       algod)
         statusline "Entering /bin/bash session in the algod container..."
         docker-compose exec algod /bin/bash
+        return
         ;;
       indexer)
         statusline "Entering /bin/bash session in the indexer container..."
         docker-compose exec indexer /bin/bash
+        return
         ;;
       indexer-db)
         statusline "Entering /bin/bash session in the indexer-db container..."
-        docker-compose exec indexer /bin/bash
+        docker-compose exec indexer-db /bin/bash
+        return
         ;;
     esac
+
+    err "Cannot enter '$2'. Available containers: algod, indexer, indexer-db"
   }
 
 
   # Logs streams the logs from the container to the shell
   logs () {
     if [[ $# -gt 1 && $2 == "raw" ]]; then
-      docker-compose exec algod tail -f /opt/data/node.log
+      docker-compose exec algod tail -f node.log
     else
-      docker-compose exec algod /node/carpenter -D
+      docker-compose exec algod carpenter -D
     fi
   }
 
@@ -394,12 +402,13 @@ sandbox () {
   help () {
       cat <<-EOF
 sandbox commands:
-  up      -> spin up the sandbox environment.
-  down    -> tear down the sandbox environment.
-  enter   -> enter the sandbox container.
-  reset   -> reset the containers to their initial state.
-  clean   -> stops and deletes containers and data directory.
-  test    -> runs some tests to demonstrate usage.
+  up    [config] -> start the sandbox environment.
+  down           -> tear down the sandbox environment.
+  reset          -> reset the containers to their initial state.
+  clean          -> stops and deletes containers and data directory.
+  test           -> runs some tests to demonstrate usage.
+  enter [algod||indexer||indexer-db]
+                 -> enter the sandbox container.
 
 algorand commands:
   logs        -> stream algorand logs with the carpenter utility.
@@ -475,7 +484,7 @@ EOF
       docker-compose exec algod uname -a
 
       printc $red "\nTest algod..."
-      printc $default "~$ ${green}docker-compose exec algod /node/goal node status"
+      printc $default "~$ ${green}docker-compose exec algod goal node status"
       status_helper
 
       printc $red "\nTest Algod REST API..."

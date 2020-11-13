@@ -49,5 +49,8 @@ RUN /tmp/images/algod/setup.py \
  --bootstrap-url "${BOOTSTRAP_URL}" \
  --genesis-file "/tmp/${GENESIS_FILE}"
 
+ENV PATH="$BIN_DIR:${PATH}"
+WORKDIR /opt/data
+
 # Start algod
 CMD ["/opt/start_algod.sh"]
