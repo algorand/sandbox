@@ -160,7 +160,7 @@ sandbox () {
     statusline "algod - goal node status"
     goal_helper node status
     statusline "indexer - health"
-    curl "localhost:8980/health?pretty"
+    curl -s "localhost:8980/health?pretty"
   }
 
   goal_helper () {
