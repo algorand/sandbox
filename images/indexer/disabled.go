@@ -21,7 +21,7 @@ func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request){
 		w.WriteHeader(code)
-		fmt.Fprintf(w, message)
+		fmt.Fprintf(w, "%s\n", message)
 	})
 
 

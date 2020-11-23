@@ -123,12 +123,11 @@ function spinner()
   local spinstr='|/-\'
   while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
     local temp=${spinstr#?}
-    printf " [%c]  " "$spinstr"
+    overwrite " [${spinstr::1}] "
     local spinstr=$temp${spinstr%"$temp"}
     sleep $delay
-    printf "\b\b\b\b\b\b"
   done
-  printf "    \b\b\b\b"
+  overwrite ""
 }
 
 # Progress bar - https://stackoverflow.com/a/28044986
@@ -356,6 +355,7 @@ sandbox () {
         docker-compose up
       else
         echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
+        echo "" # The spinner will rewrite this line.
         docker-compose up -d            >> "$SANDBOX_LOG" 2>&1 & spinner
         sleep 1                                                & spinner
       fi
