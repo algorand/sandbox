@@ -67,9 +67,6 @@ def create_real_network(bin_dir, network_dir, template, genesis_file) -> List[st
         shutil.rmtree(target)
     os.makedirs(target, exist_ok=True)
 
-    # We have a blank data directory from the initial install script.
-    #shutil.copytree(data_dir_src, target)
-
     # Copy in the genesis file...
     shutil.copy(genesis_file, target)
 

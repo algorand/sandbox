@@ -299,7 +299,7 @@ sandbox () {
     # TODO: Might be useful to allow providing the catchpoint with '-c'
     CATCHPOINT=$(curl -s ${FAST_CATCHUP_URL/CHANNEL/$1})
     # If the catchpoint wasn't returned there is a multiline error.
-    if [[ "$(echo $CATCHPOINT | wc -l)" != "1" ]]; then
+    if [[ "$(echo $CATCHPOINT | wc -l | tr -d '')" != "1" ]]; then
       CATCHPOINT=""
     fi
   }
@@ -350,6 +350,7 @@ sandbox () {
       #################
 
       # network configured with the environment exported by $CONFIG_FILE
+      echo "see sandbox.log for detailed progress."
       echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
       source "$CONFIG_FILE"
       if [ $INTERACTIVE_MODE == 1 ]; then
