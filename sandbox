@@ -167,6 +167,15 @@ sandbox () {
     docker-compose exec algod goal "$@"
   }
 
+  version_helper () {
+    statusline "algod version"
+    docker-compose exec algod goal -v
+    statusline "Indexer version"
+    INDEXER_VERSION=$(docker-compose exec indexer cmd/algorand-indexer/algorand-indexer -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
+    statusline "Postgres version"
+    docker-compose exec indexer-db postgres --version
+  }
+
   # Given a network name attempts to fetch a catchpoint and catchup.
   perform_fast_catchup () {
     goal_helper node catchup "$1"
@@ -207,7 +216,7 @@ sandbox () {
       fi
     done
 
-    overwrite "Account processing complete."
+    overwrite "* Account processing complete."
 
     # Newline for the progress bar to use.
     echo ""
@@ -243,7 +252,7 @@ sandbox () {
     done
 
     # Clear progress bar line and print success text.
-    overwrite "Blocks downloaded."
+    overwrite "* Blocks downloaded."
 
     sleep 1
   }
@@ -358,8 +367,10 @@ sandbox () {
         echo "" # The spinner will rewrite this line.
         docker-compose up -d            >> "$SANDBOX_LOG" 2>&1 & spinner
         sleep 1                                                & spinner
+        overwrite "* started!"
       fi
 
+      version_helper
       status_helper
 
       if [ -z $NETWORK_GENESIS_FILE ]; then
@@ -413,6 +424,7 @@ sandbox commands:
   test           -> runs some tests to demonstrate usage.
   enter [algod||indexer||indexer-db]
                  -> enter the sandbox container.
+  version        -> print binary versions.
 
 algorand commands:
   logs        -> stream algorand logs with the carpenter utility.
@@ -516,6 +528,10 @@ EOF
 
     status)
       status_helper
+      ;;
+
+    version)
+      version_helper
       ;;
 
     goal)
