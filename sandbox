@@ -20,8 +20,9 @@ export ALGOD_CHANNEL=""
 export ALGOD_URL=""
 export ALGOD_BRANCH=""
 export ALGOD_SHA=""
-export ALGOD_BOOTSTRAP_URL=""
-export ALGOD_GENESIS_FILE=""
+export NETWORK=""
+export NETWORK_BOOTSTRAP_URL=""
+export NETWORK_GENESIS_FILE=""
 export INDEXER_URL=""
 export INDEXER_BRANCH=""
 export INDEXER_SHA=""
@@ -161,6 +162,7 @@ sandbox () {
     goal_helper node status
     statusline "indexer - health"
     curl -s "localhost:8980/health?pretty"
+    echo ""
   }
 
   goal_helper () {
@@ -360,7 +362,7 @@ sandbox () {
 
       status_helper
 
-      if [ -z $ALGOD_GENESIS_FILE ]; then
+      if [ -z $NETWORK_GENESIS_FILE ]; then
         #####################
         # INITIALIZE WALLET #
         #####################
@@ -380,11 +382,11 @@ sandbox () {
         ################################
         # FAST CATCHUP (if applicable) #
         ################################
-        if [ $USE_FAST_CATCHUP == 1 ] && [ $FRESH_INSTALL == 1 ]; then
-          set_catchpoint $NEW_CONFIG
+        if [ $USE_FAST_CATCHUP == 1 ] && [ $FRESH_INSTALL == 1 ] && [ ! -z "$NETWORK" ]; then
+          set_catchpoint $NETWORK
 
           if [ -z $CATCHPOINT ]; then
-            err_noexit "Fast catchup is not available for $NEW_CONFIG, continuing without catchup."
+            err_noexit "Fast catchup is not available for $NETWORK, continuing without catchup."
           else
             statusline "Starting fast-catchup with catchpoint: $CATCHPOINT"
 
