@@ -162,7 +162,6 @@ sandbox () {
     goal_helper node status
     statusline "indexer - health"
     curl -s "localhost:8980/health?pretty"
-    echo ""
   }
 
   goal_helper () {
@@ -365,12 +364,14 @@ sandbox () {
 
       if [ -z $NETWORK_GENESIS_FILE ]; then
         #####################
-        # INITIALIZE WALLET #
+        # PRINT WALLET INFO #
         #####################
         goal_helper wallet -f unencrypted-default-wallet > /dev/null 2>&1
 
         ACCOUNTS_OUTPUT=$(goal_helper account list)
-        readarray -t ACCOUNTS < <(echo "$ACCOUNTS_OUTPUT" | cut -f 3 |tr -s " ")
+        for acct in $(echo "$ACCOUNTS_OUTPUT" | cut -f 3 |tr -s ' '); do
+          ACCOUNTS+=($acct)
+        done
 
         statusline "Available accounts"
         printc $default "~$ ${blue}./sandbox ${teal}goal account list"
