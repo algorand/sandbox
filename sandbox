@@ -306,7 +306,7 @@ sandbox () {
     # TODO: Might be useful to allow providing the catchpoint with '-c'
     CATCHPOINT=$(curl -s ${FAST_CATCHUP_URL/CHANNEL/$1})
     # If the catchpoint wasn't returned there is a multiline error.
-    if [[ "$(echo $CATCHPOINT | wc -l | tr -d '')" != "1" ]]; then
+    if [[ "$(echo $CATCHPOINT | wc -l | tr -d ' ')" != "1" ]]; then
       CATCHPOINT=""
     fi
   }
