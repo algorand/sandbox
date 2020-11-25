@@ -499,10 +499,6 @@ EOF
       printc $default "~$ ${green}docker exec -it algod uname -a"
       docker-compose exec algod uname -a
 
-      printc $red "\nTest algod..."
-      printc $default "~$ ${green}docker-compose exec algod goal node status"
-      status_helper
-
       printc $red "\nTest Algod REST API..."
       printc $default "~$ ${green}curl localhost:4001/v2/status?pretty -H \"X-Algo-API-Token: $(cat config/token)\""
       curl "localhost:4001/v2/status?pretty" -H "X-Algo-API-Token: $(cat config/token)"
@@ -511,11 +507,9 @@ EOF
       printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: $(cat config/token)\""
       curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat config/token)"
 
-      printc $red "\nTest Indexer REST API..."
+      printc $red "\n\nTest Indexer REST API..."
       printc $default "~$ ${green}curl \"localhost:8980/health?pretty\""
       curl "localhost:8980/health?pretty"
-
-      printf "\n\n"
       ;;
 
     enter)
