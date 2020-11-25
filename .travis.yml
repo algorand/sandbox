@@ -6,41 +6,41 @@ jobs:
       dist: bionic
       arch: amd64
       env : CONFIG=
-    - stage: "Linux, Bionic, AMD64"
-      os: linux
-      dist: bionic
-      arch: amd64
-      env : CONFIG=mainnet
+      #    - stage: "Linux, Bionic, AMD64"
+      #      os: linux
+      #      dist: bionic
+      #      arch: amd64
+      #      env : CONFIG=mainnet
     - stage: "Linux, Bionic, AMD64"
       os: linux
       dist: bionic
       arch: amd64
       env : CONFIG=betanet
-      #    - stage: "Linux, Bionic, AMD64"
-      #      os: linux
-      #      dist: bionic
-      #      arch: amd64
-      #      env : CONFIG=testnet
-      #    - stage: "Linux, Bionic, AMD64"
-      #      os: linux
-      #      dist: bionic
-      #      arch: amd64
-      #      env : CONFIG=devnet
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CONFIG=testnet
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CONFIG=devnet
     - stage: "Linux, Bionic, AMD64"
       os: linux
       dist: bionic
       arch: amd64
       env : CONFIG=dev
-      #    - stage: "Linux, Bionic, AMD64"
-      #      os: linux
-      #      dist: bionic
-      #      arch: amd64
-      #      env : CONFIG=beta
-      #    - stage: "Linux, Bionic, AMD64"
-      #      os: linux
-      #      dist: bionic
-      #      arch: amd64
-      #      env : CONFIG=release
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CONFIG=beta
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CONFIG=release
     - stage: "Linux, Bionic, AMD64"
       os: linux
       dist: bionic
@@ -53,41 +53,41 @@ jobs:
       dist: xenial
       arch: amd64
       env : CONFIG=
-    - stage: "Linux, Xenial, AMD64"
-      os: linux
-      dist: xenial
-      arch: amd64
-      env : CONFIG=mainnet
+      #    - stage: "Linux, Xenial, AMD64"
+      #      os: linux
+      #      dist: xenial
+      #      arch: amd64
+      #      env : CONFIG=mainnet
     - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=betanet
-      #    - stage: "Linux, Xenial, AMD64"
-      #      os: linux
-      #      dist: xenial
-      #      arch: amd64
-      #      env : CONFIG=testnet
-      #    - stage: "Linux, Xenial, AMD64"
-      #      os: linux
-      #      dist: xenial
-      #      arch: amd64
-      #      env : CONFIG=devnet
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CONFIG=testnet
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CONFIG=devnet
     - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=dev
-      #    - stage: "Linux, Xenial, AMD64"
-      #      os: linux
-      #      dist: xenial
-      #      arch: amd64
-      #      env : CONFIG=beta
-      #    - stage: "Linux, Xenial, AMD64"
-      #      os: linux
-      #      dist: xenial
-      #      arch: amd64
-      #      env : CONFIG=release
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CONFIG=beta
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CONFIG=release
     - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
@@ -100,41 +100,41 @@ jobs:
       dist: trusty
       arch: amd64
       env : CONFIG=
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CONFIG=mainnet
+      #    - stage: "Linux, Trusty, AMD64"
+      #      os: linux
+      #      dist: trusty
+      #      arch: amd64
+      #      env : CONFIG=mainnet
     - stage: "Linux, Trusty, AMD64"
       os: linux
       dist: trusty
       arch: amd64
       env : CONFIG=betanet
-      #    - stage: "Linux, Trusty, AMD64"
-      #      os: linux
-      #      dist: trusty
-      #      arch: amd64
-      #      env : CONFIG=testnet
-      #    - stage: "Linux, Trusty, AMD64"
-      #      os: linux
-      #      dist: trusty
-      #      arch: amd64
-      #      env : CONFIG=devnet
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=testnet
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=devnet
     - stage: "Linux, Trusty, AMD64"
       os: linux
       dist: trusty
       arch: amd64
       env : CONFIG=dev
-      #    - stage: "Linux, Trusty, AMD64"
-      #      os: linux
-      #      dist: trusty
-      #      arch: amd64
-      #      env : CONFIG=beta
-      #    - stage: "Linux, Trusty, AMD64"
-      #      os: linux
-      #      dist: trusty
-      #      arch: amd64
-      #      env : CONFIG=release
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=beta
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=release
     - stage: "Linux, Trusty, AMD64"
       os: linux
       dist: trusty
