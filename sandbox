@@ -12,6 +12,7 @@ FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channe
 # Global flags
 USE_FAST_CATCHUP=1
 INTERACTIVE_MODE=0
+VERBOSE_MODE=0
 
 #########################
 # Config file variables #
@@ -357,17 +358,22 @@ sandbox () {
       #################
 
       # network configured with the environment exported by $CONFIG_FILE
-      echo "see sandbox.log for detailed progress."
       echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
       source "$CONFIG_FILE"
       if [ $INTERACTIVE_MODE == 1 ]; then
         docker-compose up
-      else
+      elif [ $VERBOSE_MODE == 0 ]; then
+        echo "see sandbox.log for detailed progress."
         echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
         echo "" # The spinner will rewrite this line.
         docker-compose up -d            >> "$SANDBOX_LOG" 2>&1 & spinner
         sleep 1                                                & spinner
         overwrite "* started!"
+      else
+        echo "* docker-compose up -d"
+        echo "" # The spinner will rewrite this line.
+        docker-compose up -d
+        sleep 1
       fi
 
       version_helper
@@ -432,6 +438,7 @@ algorand commands:
   goal (args) -> run goal command like 'goal node status'.
 
 special flags for 'up' command:
+  -v|--verbose           -> display verbose output when starting standbox.
   -s|--skip-fast-catchup -> skip catchup when connecting to real network.
   -i|--interactive       -> start docker-compose in interactive mode.
 EOF
@@ -451,6 +458,9 @@ EOF
       PARAMS=()
       while (( "$#" )); do
         case "$1" in
+          -v|--verbose)
+            VERBOSE_MODE=1
+            ;;
           -s|--skip-fast-catchup)
             USE_FAST_CATCHUP=0
             ;;

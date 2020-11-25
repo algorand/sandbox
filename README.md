@@ -11,12 +11,14 @@ You will need to install **Docker Compose**, [instructions are available here](h
 Use the **sandbox** command to interact with the Algorand Sandbox.
 ```
 sandbox commands:
-  up      -> spin up the sandbox environment.
-  down    -> tear down the sandbox environment.
-  enter   -> enter the sandbox container.
-  reset   -> reset the containers to their initial state.
-  clean   -> stops and deletes containers and data directory.
-  test    -> runs some tests to demonstrate usage.
+  up    [config] -> start the sandbox environment.
+  down           -> tear down the sandbox environment.
+  reset          -> reset the containers to their initial state.
+  clean          -> stops and deletes containers and data directory.
+  test           -> runs some tests to demonstrate usage.
+  enter [algod||indexer||indexer-db]
+                 -> enter the sandbox container.
+  version        -> print binary versions.
 
 algorand commands:
   logs        -> stream algorand logs with the carpenter utility.
@@ -24,6 +26,7 @@ algorand commands:
   goal (args) -> run goal command like 'goal node status'.
 
 special flags for 'up' command:
+  -v|--verbose           -> display verbose output when starting standbox.
   -s|--skip-fast-catchup -> skip catchup when connecting to real network.
   -i|--interactive       -> start docker-compose in interactive mode.
 ```
