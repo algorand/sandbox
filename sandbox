@@ -282,7 +282,7 @@ sandbox () {
         ;;
       betanet)
         CHANNEL=beta
-        CONFIG=beta.config.json
+        CONFIG=config.json
         ;;
       *)
         err "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']."
