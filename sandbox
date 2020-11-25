@@ -1,41 +1,64 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#####################
+# Script constants. #
+#####################
+DEFAULT_CONFIG='nightly'
+ACTIVE_CONFIG_FILE='.active_config'
+SANDBOX_LOG='sandbox.log'
+FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/CHANNEL/latest.catchpoint'
+
+# Global flags
+USE_FAST_CATCHUP=1
+INTERACTIVE_MODE=0
+VERBOSE_MODE=0
+
+#########################
+# Config file variables #
+#########################
+export ALGOD_CHANNEL=""
+export ALGOD_URL=""
+export ALGOD_BRANCH=""
+export ALGOD_SHA=""
+export NETWORK=""
+export NETWORK_BOOTSTRAP_URL=""
+export NETWORK_GENESIS_FILE=""
+export INDEXER_URL=""
+export INDEXER_BRANCH=""
+export INDEXER_SHA=""
+export INDEXER_DISABLED=""
+
 #########################
 # Helpers and utilities #
 #########################
 
-# Compatibility with Windows / MSYS2
-# 1. Use // to prevent msys to convert to Windows PATH on Windows
-#   when using inside Docker
-#   see http://www.mingw.org/wiki/Posix_path_conversion
-# 2. Use $PTY_DOCKER for all commands that require a PTY (-t)
-PTY_DOCKER=docker
-if [ "$(uname)" == "Darwin" ]; then
-  true
-elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || \
-     [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
-  PTY_DOCKER="winpty docker"
-fi
-
 # Console colorized print helpers
-red=`echo -en "\e[31m"`
-green=`echo -en "\e[32m"`
-default=`echo -en "\e[39m"`
+default="\033[0m"
+
+red="\033[0;31m"
+green="\033[0;32m"
+blue="\033[0;34m"
+teal="\033[0;36m"
+
+# bold
+Bgreen="\033[1;32m"
+
 
 function printc () {
   printf "$1$2${default}\n"
 }
 
 function statusline () {
-  printf "${green}$1${default}\n"
+  printc "${Bgreen}" "\n$1"
 }
 
 function err_noexit () {
   printf "${red}$1${default}\n"
 }
+
 function err () {
-  printf "${red}$1\n\nSee sandbox.log for more details.${default}\n"
+  err_noexit "$1"
   exit 1
 }
 
@@ -44,11 +67,10 @@ function overwrite() {
   echo -e "\r\033[1A\033[0K$@";
 }
 
-
 # Yes/no prompt around the clean command
 function ask_clean () {
   if ask "$1"; then
-    clean
+    sandbox clean
   else
     exit 1
   fi
@@ -102,12 +124,11 @@ function spinner()
   local spinstr='|/-\'
   while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
     local temp=${spinstr#?}
-    printf " [%c]  " "$spinstr"
+    overwrite " [${spinstr::1}] "
     local spinstr=$temp${spinstr%"$temp"}
     sleep $delay
-    printf "\b\b\b\b\b\b"
   done
-  printf "    \b\b\b\b"
+  overwrite ""
 }
 
 # Progress bar - https://stackoverflow.com/a/28044986
@@ -135,27 +156,30 @@ function progress_bar {
   overwrite "$1 : [${fill// /▇}${empty// / }] [$2/$3] ${progress}%"
 }
 
-#####################
-# Script constants. #
-#####################
-FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/CHANNEL/latest.catchpoint'
-
-# Global flags
-USE_FAST_CATCHUP=1
-
 sandbox () {
   status_helper () {
-    $PTY_DOCKER exec -i sandbox goal node status
+    statusline "algod - goal node status"
+    goal_helper node status
+    statusline "indexer - health"
+    curl -s "localhost:8980/health?pretty"
   }
 
   goal_helper () {
-    $PTY_DOCKER exec --workdir //opt/algorand/node/data -it sandbox goal "$@"
+    docker-compose exec algod goal "$@"
   }
 
+  version_helper () {
+    statusline "algod version"
+    docker-compose exec algod goal -v
+    statusline "Indexer version"
+    INDEXER_VERSION=$(docker-compose exec indexer cmd/algorand-indexer/algorand-indexer -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
+    statusline "Postgres version"
+    docker-compose exec indexer-db postgres --version
+  }
+
+  # Given a network name attempts to fetch a catchpoint and catchup.
   perform_fast_catchup () {
-    local CATCHPOINT
-    CATCHPOINT=$(curl -s -S $FAST_CATCHUP_URL)
-    goal_helper node catchup "$CATCHPOINT"
+    goal_helper node catchup "$1"
 
     if [ $? -ne 0 ]; then
       err "There was a problem starting fast catchup."
@@ -193,7 +217,7 @@ sandbox () {
       fi
     done
 
-    overwrite "Account processing complete."
+    overwrite "* Account processing complete."
 
     # Newline for the progress bar to use.
     echo ""
@@ -229,185 +253,194 @@ sandbox () {
     done
 
     # Clear progress bar line and print success text.
-    overwrite "Blocks downloaded."
+    overwrite "* Blocks downloaded."
 
     sleep 1
   }
 
   clean () {
-    statusline "Stopping running container..."
-    docker kill sandbox > /dev/null 2>&1 || true
-
-    statusline "Stopping and removing running sandbox container..."
-    docker rm sandbox > /dev/null 2>&1 || true
-    docker rmi $(docker images --filter=reference=algorand-sandbox -q) > /dev/null 2>&1 || true
-    docker rmi $(docker images -f "dangling=true" -q) > /dev/null 2>&1 || true
-    docker volume rm algorand-sandbox-data > /dev/null 2>&1 || true
-
-    statusline "Removing algorand sandbox data..."
-    rm -rf data
-
+    echo "* docker-compose down"
+    docker-compose down -t 0                                   || true
+    echo "* docker rmi sandbox_algod sandbox_indexer"
+    docker rmi sandbox_algod sandbox_indexer                   || true
+    echo "* docker-compose rm -f"
+    docker-compose rm -f                                       || true
+    echo "* docker rmi $(docker images -f "dangling=true" -q)"
+    docker rmi $(docker images -f "dangling=true" -q)          || true
+    rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1                  || true
   }
 
   # Enter attaches users to a shell in the desired container
   enter () {
-    statusline "Entering /bin/bash session in the sandbox container..."
-    $PTY_DOCKER exec --workdir //opt/algorand/node -it sandbox //bin/bash
+    case $2 in
+      algod)
+        statusline "Entering /bin/bash session in the algod container..."
+        docker-compose exec algod /bin/bash
+        return
+        ;;
+      indexer)
+        statusline "Entering /bin/bash session in the indexer container..."
+        docker-compose exec indexer /bin/bash
+        return
+        ;;
+      indexer-db)
+        statusline "Entering /bin/bash session in the indexer-db container..."
+        docker-compose exec indexer-db /bin/bash
+        return
+        ;;
+    esac
+
+    err "Cannot enter '$2'. Available containers: algod, indexer, indexer-db"
   }
+
 
   # Logs streams the logs from the container to the shell
   logs () {
     if [[ $# -gt 1 && $2 == "raw" ]]; then
-      $PTY_DOCKER exec -it sandbox tail -f //opt/algorand/node/data/node.log
+      docker-compose exec algod tail -f node.log
     else
-      $PTY_DOCKER exec -it sandbox carpenter -D
+      docker-compose exec algod carpenter -D
+    fi
+  }
+
+  set_catchpoint () {
+    # TODO: Might be useful to allow providing the catchpoint with '-c'
+    CATCHPOINT=$(curl -s ${FAST_CATCHUP_URL/CHANNEL/$1})
+    # If the catchpoint wasn't returned there is a multiline error.
+    if [[ "$(echo $CATCHPOINT | wc -l | tr -d ' ')" != "1" ]]; then
+      CATCHPOINT=""
     fi
   }
 
   # Start the algorand node
   up () {
-    # Set default to testnet case a network wasn't provided
-    NETWORK=${2:-testnet}
+      FRESH_INSTALL=1
 
-    GENESIS_VERSION="$NETWORK-v1.0"
-    FAST_CATCHUP_URL="${FAST_CATCHUP_URL/CHANNEL/$NETWORK}"
-    case $NETWORK in
-      mainnet)
-        CHANNEL=stable
-        CONFIG=config.json
-        ;;
-      testnet)
-        CHANNEL=stable
-        CONFIG=config.json
-        ;;
-      betanet)
-        CHANNEL=beta
-        CONFIG=beta.config.json
-        ;;
-      *)
-        err "Invalid network '$2', use one of ['mainnet', 'testnet', 'betanet']."
-        ;;
-    esac
-
-    # Validate/repair data directory
-    if [[ -d data ]]; then
-      if [[ ! -f data/network ]]; then
-        err_noexit "Detected a corrupt data directory..."
-        ask_clean "Would you like to remove it and continue?"
-      elif [[ $# -gt 1 && -f data/network && "$(cat data/network)" != $2 && "$(docker ps -a --filter name=sandbox -q)" ]]; then
-        err_noexit "The sandbox is already configured to run '$(cat data/network)'."
-        ask_clean "Would you like to reset the sandbox to run '$2'?"
+      # Grab active config if there is one
+      ACTIVE_CONFIG=""
+      if [ -f "$ACTIVE_CONFIG_FILE" ]; then
+        ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
       fi
-    fi
 
-
-    # Resume or initialize sandbox
-    if [[ -f data ]]; then
-      statusline "Starting the existing sandbox..."
-      # Use variable $ERROR instead of status $?
-      # as we are using set -e which aborts in case of non-zero status
-      ERROR=0
-      docker start sandbox > /dev/null || ERROR=1
-
-      if [[ $ERROR -ne 0 ]]; then
-        # Check if the error is not just due to docker daemon not running
-        if ! docker info 2>/dev/null > /dev/null; then
-          err 'Docker is not running. Run `docker info` for more information.'
+      # Initialize new config, accounting for no-argument up command.
+      if [ "$1" = "" ]; then
+        if [ ! -z $ACTIVE_CONFIG ]; then
+          statusline "Bringing up existing sandbox: '$ACTIVE_CONFIG'"
+          FRESH_INSTALL=0
+          NEW_CONFIG="$ACTIVE_CONFIG"
+        else
+          statusline "Starting default sandbox: $DEFAULT_CONFIG"
+          NEW_CONFIG="$DEFAULT_CONFIG"
         fi
-
-        # This is another error that may require reset of the sandbox
-        err_noexit "Detected an error from the docker command."
-        if [[ $# -eq 0 ]]; then
-          NETWORK=$(cat data/network)
-        fi
-        ask_clean "Would you like to reset the sandbox and try again?"
-        statusline "Starting '$NETWORK' sandbox..."
-        up $NETWORK
+      else
+        statusline "Starting sandbox for: $1"
+        NEW_CONFIG="$1"
       fi
-    else
-      statusline "\nBuilding a new Docker Image..."
-      (docker build \
-        --build-arg channel=$CHANNEL \
-        -t \
-        algorand-sandbox:$CHANNEL \
-        . \
-        -f images/Dockerfile >> sandbox.log) & spinner
+      CONFIG_FILE="config.$NEW_CONFIG"
 
-      # Create a new data directory
-      if [ ! -f data ]; then
-        statusline "\nInitializing data directory for $NETWORK..."
-
-        # Configure the node
-        mkdir -p data/kmd-v0.5
-        cp config/$CONFIG data/config.json
-        cp config/token data/algod.token
-        cp config/kmd_config.json data/kmd-v0.5
-        cp config/token data/kmd-v0.5/kmd.token
-        chmod 700 data/kmd-v0.5
-        cp genesis/${NETWORK}/genesis.json data
-
-        # Copy to the Docker container
-        tar -cf - data | docker run --name sandbox \
-          --mount source="algorand-sandbox-data",target=//opt/algorand/node/data \
-          --entrypoint="" \
-          -i \
-          algorand-sandbox:$CHANNEL \
-          tar -C //opt/algorand/node -x
-        docker rm sandbox > /dev/null
-
-        # Remember the network being used
-        echo "$NETWORK" > data/network
+      # Verify config exists
+      if [ ! -f "$CONFIG_FILE" ]; then
+        SANDBOX_CONFIG_OPTIONS=$(ls -l config.* | cut -f 2 -d'.' |  sed 's/^/ /'| paste -sd',')
+        err "Could not find config file for '$NEW_CONFIG'.\nValid options:$SANDBOX_CONFIG_OPTIONS"
       fi
 
-      statusline "\nStarting a new Docker Container..."
-      docker run \
-        -p 4001:4001 \
-        -p 4002:4002 \
-        --name sandbox \
-        --mount source="algorand-sandbox-data",target=//opt/algorand/node/data \
-        -d \
-        algorand-sandbox:$CHANNEL >> sandbox.log
+      # Handle mismatched argument + active config
+      if [ ! -z "$ACTIVE_CONFIG" ] && [ "$NEW_CONFIG" != "$ACTIVE_CONFIG" ]; then
+        err_noexit "Sandbox was already started for '$ACTIVE_CONFIG'."
+        ask_clean "Would you like to reset the local sandbox with '$NEW_CONFIG'?"
+        # If we get here the active config was cleared out.
+        up "$@"
+        return
+      fi
 
-      statusline "\nSandbox started! Printing status..."
+      #################
+      # START NETWORK #
+      #################
 
-      sleep 1
+      # network configured with the environment exported by $CONFIG_FILE
+      echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
+      source "$CONFIG_FILE"
+      if [ $INTERACTIVE_MODE == 1 ]; then
+        docker-compose up
+      elif [ $VERBOSE_MODE == 0 ]; then
+        echo "see sandbox.log for detailed progress."
+        echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
+        echo "" # The spinner will rewrite this line.
+        docker-compose up -d            >> "$SANDBOX_LOG" 2>&1 & spinner
+        sleep 1                                                & spinner
+        overwrite "* started!"
+      else
+        echo "* docker-compose up -d"
+        echo "" # The spinner will rewrite this line.
+        docker-compose up -d
+        sleep 1
+      fi
+
+      version_helper
       status_helper
 
-      if [[ $USE_FAST_CATCHUP == 1 ]]; then
-        statusline "\nStarting fast-catchup..."
-        if [[ ${FAST_CATCHUP_URL:=""} == "" || ${GENESIS_VERSION:=""} == "" ]]; then
-          err_noexit "Fast catchup is not available for $NETWORK, continuing without catchup."
-        else
-          perform_fast_catchup
+      if [ -z $NETWORK_GENESIS_FILE ]; then
+        #####################
+        # PRINT WALLET INFO #
+        #####################
+        goal_helper wallet -f unencrypted-default-wallet > /dev/null 2>&1
 
-          statusline "\nFast-catchup complete! Printing status..."
-          status_helper
+        ACCOUNTS_OUTPUT=$(goal_helper account list)
+        for acct in $(echo "$ACCOUNTS_OUTPUT" | cut -f 3 |tr -s ' '); do
+          ACCOUNTS+=($acct)
+        done
+
+        statusline "Available accounts"
+        printc $default "~$ ${blue}./sandbox ${teal}goal account list"
+        echo "$ACCOUNTS_OUTPUT"
+        statusline "Example command to send between two accounts:"
+        printc $default "~$ ${blue}./sandbox ${teal}goal clerk send -a 100000000000001 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
+        statusline "Soon after sending the transaction it will appear in indexer:"
+        printc $default "~$ ${blue}curl ${teal}\"localhost:8980/v2/transactions?pretty\""
+      else
+        ################################
+        # FAST CATCHUP (if applicable) #
+        ################################
+        if [ $USE_FAST_CATCHUP == 1 ] && [ $FRESH_INSTALL == 1 ] && [ ! -z "$NETWORK" ]; then
+          set_catchpoint $NETWORK
+
+          if [ -z $CATCHPOINT ]; then
+            err_noexit "Fast catchup is not available for $NETWORK, continuing without catchup."
+          else
+            statusline "Starting fast-catchup with catchpoint: $CATCHPOINT"
+
+            perform_fast_catchup $CATCHPOINT
+
+            statusline "Fast-catchup complete! Printing status..."
+            status_helper
+          fi
+        else
+          statusline "Skipping fast catchup"
         fi
       fi
-    fi
   }
 
   help () {
       cat <<-EOF
 sandbox commands:
-  up [mainnet||testnet||betanet] [-s||--skip-snapshot]
-          -> spin up the sandbox environment, uses testnet by default.
-             Optionally provide -s to skip initializing with a snapshot.
-  down    -> tear down the sandbox environment
-  restart -> restart the sandbox
-  enter   -> enter the sandbox container
-  clean   -> stops and deletes containers and data directory
-  test    -> runs some tests to make sure everything is working correctly
+  up    [config] -> start the sandbox environment.
+  down           -> tear down the sandbox environment.
+  reset          -> reset the containers to their initial state.
+  clean          -> stops and deletes containers and data directory.
+  test           -> runs some tests to demonstrate usage.
+  enter [algod||indexer||indexer-db]
+                 -> enter the sandbox container.
+  version        -> print binary versions.
 
 algorand commands:
-  logs        -> stream algorand logs with the carpenter utility
-  status      -> get node status
-  goal (args) -> run goal command like 'goal node status'
-  dryrun (tx) -> run 'goal clerk dryrun -t tx' to test a transaction file
+  logs        -> stream algorand logs with the carpenter utility.
+  status      -> get node status.
+  goal (args) -> run goal command like 'goal node status'.
 
-tutorials:
-  introduction -> learn how to get Algos on testnet and create a transaction
-
+special flags for 'up' command:
+  -v|--verbose           -> display verbose output when starting standbox.
+  -s|--skip-fast-catchup -> skip catchup when connecting to real network.
+  -i|--interactive       -> start docker-compose in interactive mode.
 EOF
   }
 
@@ -417,42 +450,76 @@ EOF
   fi
 
   case $1 in
-    up)
-      up "$@"
+    start|up|resume)
+      # Remove "up"
+      shift
+
+      # Process flags
+      PARAMS=()
+      while (( "$#" )); do
+        case "$1" in
+          -v|--verbose)
+            VERBOSE_MODE=1
+            ;;
+          -s|--skip-fast-catchup)
+            USE_FAST_CATCHUP=0
+            ;;
+          -i|--interactive)
+            statusline "Note: interactive mode is incompatible with fast-catchup."
+            INTERACTIVE_MODE=1
+            ;;
+          *) # preserve positional arguments
+            PARAMS+=("$1")
+            ;;
+        esac
+        shift
+      done
+
+      # Call up with remaining parameters
+      up "${PARAMS[@]-}"
       ;;
 
-    down)
-      statusline "Stopping sandbox container..."
-      docker kill sandbox > /dev/null
+    stop|down|pause)
+      statusline "Stopping sandbox containers..."
+      docker-compose stop -t 0
       ;;
 
-    restart)
-      statusline "Restarting sandbox process..."
-      docker restart sandbox > /dev/null
+    restart|reset)
+      # Make sure fast-catchup runs when resetting a real network.
+      if [ -f "$ACTIVE_CONFIG_FILE" ]; then
+        ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
+        # up only runs fast-catchup for fresh installs.
+        # removing the active config file will trick it.
+        rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1 || true
+      else
+        err "No active sandbox to reset."
+      fi
+      sandbox down
+      docker-compose rm -f
+      sandbox up "$ACTIVE_CONFIG" "$@"
       ;;
 
     clean)
-      clean
+      statusline "Cleaning up sandbox environment..."
+      clean >> "$SANDBOX_LOG" 2>&1
       ;;
 
     test)
       printc $red "Test command forwarding..."
-      printc $default "~$ ${green}docker exec -it sandbox uname -a"
-      docker exec -it sandbox uname -a
-
-      printc $red "\nTest algod..."
-      printc $default "~$ ${green}docker exec -it sandbox /opt/algorand/node/goal node status -d /opt/algorand/node/data"
-      status_helper
+      printc $default "~$ ${green}docker exec -it algod uname -a"
+      docker-compose exec algod uname -a
 
       printc $red "\nTest Algod REST API..."
-      printc $default "~$ ${green}curl localhost:4001/v1/status -H \"X-Algo-API-Token: \$(cat config/token)\""
-      curl localhost:4001/v1/status -H "X-Algo-API-Token: $(cat config/token)"
+      printc $default "~$ ${green}curl localhost:4001/v2/status?pretty -H \"X-Algo-API-Token: $(cat config/token)\""
+      curl "localhost:4001/v2/status?pretty" -H "X-Algo-API-Token: $(cat config/token)"
 
       printc $red "\nTest KMD REST API..."
-      printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: \$(cat config/token)\""
+      printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: $(cat config/token)\""
       curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat config/token)"
 
-      printf "\n\n"
+      printc $red "\n\nTest Indexer REST API..."
+      printc $default "~$ ${green}curl \"localhost:8980/health?pretty\""
+      curl "localhost:8980/health?pretty"
       ;;
 
     enter)
@@ -467,19 +534,13 @@ EOF
       status_helper
       ;;
 
+    version)
+      version_helper
+      ;;
+
     goal)
       shift
       goal_helper "$@"
-      ;;
-
-    dryrun)
-      shift
-      cp $1 data
-      $PTY_DOCKER exec --workdir //opt/algorand/node/data -it sandbox goal clerk dryrun -t "$(basename $1)"
-      ;;
-
-    introduction)
-      ./utils/transaction.sh
       ;;
 
     *)
@@ -492,26 +553,11 @@ EOF
 # Entrypoint #
 ##############
 
-# Process flags
-PARAMS=()
-while (( "$#" )); do
-  case "$1" in
-    -s|--skip-fast-catchup)
-      USE_FAST_CATCHUP=0
-      shift
-      ;;
-    *) # preserve positional arguments
-      PARAMS+=("$1")
-      shift
-      ;;
-  esac
-done
-
-# Make sure docker is installed
-if ! [ -x "$(command -v docker)" ]; then
-  err 'Error: docker is not installed.' >&2
+if ! [ -x "$(command -v docker-compose)" ]; then
+  echo 'Error: docker-compose is not installed.' >&2
+  exit 1
 fi
 
 pushd `dirname $0` > /dev/null
-sandbox "${PARAMS[@]-}"
+sandbox "$@"
 popd > /dev/null

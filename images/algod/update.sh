@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# This is a copy of the standalone update script.
+# The latest version is available on github:
+#
+# https://github.com/algorand/go-algorand/blob/97fb6a0fd3f74bcdb3fa0ac8ee49028cecba6e4f/cmd/updater/update.sh
+
 FILENAME=$(basename -- "$0")
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
 UPDATETYPE="update"

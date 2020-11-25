@@ -5,68 +5,143 @@ jobs:
       os: linux
       dist: bionic
       arch: amd64
-      env : CHANNEL=
+      env : CONFIG=
+      #    - stage: "Linux, Bionic, AMD64"
+      #      os: linux
+      #      dist: bionic
+      #      arch: amd64
+      #      env : CONFIG=mainnet
     - stage: "Linux, Bionic, AMD64"
       os: linux
       dist: bionic
       arch: amd64
-      env : CHANNEL=mainnet
+      env : CONFIG=betanet
     - stage: "Linux, Bionic, AMD64"
       os: linux
       dist: bionic
       arch: amd64
-      env : CHANNEL=betanet
+      env : CONFIG=testnet
     - stage: "Linux, Bionic, AMD64"
       os: linux
       dist: bionic
       arch: amd64
-      env : CHANNEL=testnet
+      env : CONFIG=devnet
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CONFIG=dev
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CONFIG=beta
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CONFIG=release
+    - stage: "Linux, Bionic, AMD64"
+      os: linux
+      dist: bionic
+      arch: amd64
+      env : CONFIG=nightly
 
     # Xenial
     - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
       arch: amd64
-      env : CHANNEL=
+      env : CONFIG=
+      #    - stage: "Linux, Xenial, AMD64"
+      #      os: linux
+      #      dist: xenial
+      #      arch: amd64
+      #      env : CONFIG=mainnet
     - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
       arch: amd64
-      env : CHANNEL=mainnet
+      env : CONFIG=betanet
     - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
       arch: amd64
-      env : CHANNEL=betanet
+      env : CONFIG=testnet
     - stage: "Linux, Xenial, AMD64"
       os: linux
       dist: xenial
       arch: amd64
-      env : CHANNEL=testnet
+      env : CONFIG=devnet
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CONFIG=dev
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CONFIG=beta
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CONFIG=release
+    - stage: "Linux, Xenial, AMD64"
+      os: linux
+      dist: xenial
+      arch: amd64
+      env : CONFIG=nightly
 
-    # Trusty - The version of docker is too old, doesn't support '--workdir'
-    #- stage: "Linux, Trusty, AMD64"
-    #  os: linux
-    #  dist: trusty
-    #  arch: amd64
-    #  env : CHANNEL=
-    #- stage: "Linux, Trusty, AMD64"
-    #  os: linux
-    #  dist: trusty
-    #  arch: amd64
-    #  env : CHANNEL=mainnet
-    #- stage: "Linux, Trusty, AMD64"
-    #  os: linux
-    #  dist: trusty
-    #  arch: amd64
-    #  env : CHANNEL=betanet
-    #- stage: "Linux, Trusty, AMD64"
-    #  os: linux
-    #  dist: trusty
-    #  arch: amd64
-    #  env : CHANNEL=testnet
+    # Trusty
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=
+      #    - stage: "Linux, Trusty, AMD64"
+      #      os: linux
+      #      dist: trusty
+      #      arch: amd64
+      #      env : CONFIG=mainnet
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=betanet
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=testnet
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=devnet
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=dev
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=beta
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=release
+    - stage: "Linux, Trusty, AMD64"
+      os: linux
+      dist: trusty
+      arch: amd64
+      env : CONFIG=nightly
 
-    # Docker not supported.
+    # Docker not supported on these...
     #- name: "Linux, Precise, AMD64"
     #  os: linux
     #  dist: precise
@@ -86,4 +161,4 @@ services:
   - docker
 
 script:
-  - ./sandbox up $CHANNEL
+  - ./sandbox up $CONFIG
