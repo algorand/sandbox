@@ -92,7 +92,7 @@ For example, these commands will stage two TEAL programs then use them in a `goa
 ```
 ~$ ./sandbox copy approval.teal
 ~$ ./sandbox copy clear.teal
-~$ ./sandbox goal app create --approval-prog approval.teal --clear-prog clear.teal 
+~$ ./sandbox goal app create --approval-prog approval.teal --clear-prog clear.teal --creator KFATIARWZK66SD5RLSDNI4YRMQCJEMPFEMKZA7JMTQOU5K45Q3N5WHPAKA --approval-prog simple.teal --clear-prog simple.teal --global-byteslices 1 --global-ints 1 --local-byteslices 1 --local-ints 1
 ```
 
 ## Advanced configurations
