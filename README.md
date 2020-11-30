@@ -19,6 +19,7 @@ sandbox commands:
   enter [algod||indexer||indexer-db]
                  -> enter the sandbox container.
   version        -> print binary versions.
+  copy <file>    -> copy <file> into the algod. Useful for TEAL work.
 
 algorand commands:
   logs        -> stream algorand logs with the carpenter utility.
@@ -80,6 +81,19 @@ By default you will be given access to a private network. This environment is pr
 The `mainnet`, `testnet`, `betanet`, and `devnet` configurations configure the sandbox to connect to one of those long running networks. Once started it will automatically attempt to catchup to the latest round. Catchup tends to take a while and a progress bar will be displayed to keep you informed of the progress.
 
 Due to technical limitations this configuration does not contain preconfigured accounts that you can immediately transact with, and Indexer is not available.
+
+## Working with files
+
+Some Algorand commands require using a file for the input. For example working with TEAL programs.
+
+To stage a file use the `copy` command. The file will be placed in the algod data directory, which is where sandbox executes `goal`. This means the files can be used without specifying their full path.
+
+For example, these commands will stage two TEAL programs then use them in a `goal` command:
+```
+~$ ./sandbox copy approval.teal
+~$ ./sandbox copy clear.teal
+~$ ./sandbox goal app create --approval-prog approval.teal --clear-prog clear.teal 
+```
 
 ## Advanced configurations
 

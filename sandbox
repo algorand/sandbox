@@ -431,6 +431,7 @@ sandbox commands:
   enter [algod||indexer||indexer-db]
                  -> enter the sandbox container.
   version        -> print binary versions.
+  copy <file>    -> copy <file> into the algod. Useful for TEAL work.
 
 algorand commands:
   logs        -> stream algorand logs with the carpenter utility.
@@ -541,6 +542,11 @@ EOF
     goal)
       shift
       goal_helper "$@"
+      ;;
+
+    copy)
+      shift
+      docker cp "$1" "$(docker-compose ps -q algod):/opt/data/$1"
       ;;
 
     *)
