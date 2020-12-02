@@ -506,20 +506,20 @@ EOF
       ;;
 
     test)
-      printc $red "Test command forwarding..."
-      printc $default "~$ ${green}docker exec -it algod uname -a"
+      statusline "Test command forwarding..."
+      printc $default "~$ ${blue}docker exec -it algod uname -a"
       docker-compose exec algod uname -a
 
-      printc $red "\nTest Algod REST API..."
-      printc $default "~$ ${green}curl localhost:4001/v2/status?pretty -H \"X-Algo-API-Token: $(cat config/token)\""
+      statusline "Test Algod REST API..."
+      printc $default "~$ ${blue}curl ${teal}localhost:4001/v2/status?pretty -H \"X-Algo-API-Token: $(cat config/token)\""
       curl "localhost:4001/v2/status?pretty" -H "X-Algo-API-Token: $(cat config/token)"
 
-      printc $red "\nTest KMD REST API..."
-      printc $default "~$ ${green}curl localhost:4002/v1/wallets -H \"X-KMD-API-Token: $(cat config/token)\""
+      statusline "Test KMD REST API..."
+      printc $default "~$ ${blue}curl ${teal}localhost:4002/v1/wallets -H \"X-KMD-API-Token: $(cat config/token)\""
       curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat config/token)"
 
-      printc $red "\n\nTest Indexer REST API..."
-      printc $default "~$ ${green}curl \"localhost:8980/health?pretty\""
+      statusline "\nTest Indexer REST API..."
+      printc $default "~$ ${blue}curl ${teal}\"localhost:8980/health?pretty\""
       curl "localhost:8980/health?pretty"
       ;;
 
