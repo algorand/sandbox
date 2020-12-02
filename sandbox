@@ -363,7 +363,7 @@ sandbox () {
       if [ $INTERACTIVE_MODE == 1 ]; then
         docker-compose up
       elif [ $VERBOSE_MODE == 0 ]; then
-        echo "see sandbox.log for detailed progress."
+        echo "see sandbox.log for detailed progress, or use -v."
         echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
         echo "" # The spinner will rewrite this line.
         docker-compose up -d            >> "$SANDBOX_LOG" 2>&1 & spinner
