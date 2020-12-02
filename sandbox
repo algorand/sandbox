@@ -394,7 +394,7 @@ sandbox () {
         printc $default "~$ ${blue}./sandbox ${teal}goal account list"
         echo "$ACCOUNTS_OUTPUT"
         statusline "Example command to send between two accounts:"
-        printc $default "~$ ${blue}./sandbox ${teal}goal clerk send -a 100000000000001 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
+        printc $default "~$ ${blue}./sandbox ${teal}goal clerk send -a 123456789 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
         statusline "Soon after sending the transaction it will appear in indexer:"
         printc $default "~$ ${blue}curl ${teal}\"localhost:8980/v2/transactions?pretty\""
       else
