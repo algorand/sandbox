@@ -5,8 +5,9 @@ set -euo pipefail
 # Script constants. #
 #####################
 DEFAULT_CONFIG='nightly'
-ACTIVE_CONFIG_FILE='.active_config'
-SANDBOX_LOG='sandbox.log'
+SANDBOX_DIR=$(dirname "$0")
+ACTIVE_CONFIG_FILE="$SANDBOX_DIR/.active_config"
+SANDBOX_LOG="$SANDBOX_DIR/sandbox.log"
 FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/CHANNEL/latest.catchpoint'
 
 # Global flags
@@ -164,17 +165,21 @@ sandbox () {
     curl -s "localhost:8980/health?pretty"
   }
 
+  dc () {
+    docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+  }
+
   goal_helper () {
-    docker-compose exec algod goal "$@"
+    dc exec algod goal "$@"
   }
 
   version_helper () {
     statusline "algod version"
-    docker-compose exec algod goal -v
+    dc exec algod goal -v
     statusline "Indexer version"
-    INDEXER_VERSION=$(docker-compose exec indexer cmd/algorand-indexer/algorand-indexer -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
+    INDEXER_VERSION=$(dc exec indexer cmd/algorand-indexer/algorand-indexer -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
     statusline "Postgres version"
-    docker-compose exec indexer-db postgres --version
+    dc exec indexer-db postgres --version
   }
 
   # Given a network name attempts to fetch a catchpoint and catchup.
@@ -260,11 +265,11 @@ sandbox () {
 
   clean () {
     echo "* docker-compose down"
-    docker-compose down -t 0                                   || true
+    dc down -t 0                                   || true
     echo "* docker rmi sandbox_algod sandbox_indexer"
     docker rmi sandbox_algod sandbox_indexer                   || true
     echo "* docker-compose rm -f"
-    docker-compose rm -f                                       || true
+    dc rm -f                                       || true
     echo "* docker rmi $(docker images -f "dangling=true" -q)"
     docker rmi $(docker images -f "dangling=true" -q)          || true
     rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1                  || true
@@ -275,17 +280,17 @@ sandbox () {
     case $2 in
       algod)
         statusline "Entering /bin/bash session in the algod container..."
-        docker-compose exec algod /bin/bash
+        dc exec algod /bin/bash
         return
         ;;
       indexer)
         statusline "Entering /bin/bash session in the indexer container..."
-        docker-compose exec indexer /bin/bash
+        dc exec indexer /bin/bash
         return
         ;;
       indexer-db)
         statusline "Entering /bin/bash session in the indexer-db container..."
-        docker-compose exec indexer-db /bin/bash
+        dc exec indexer-db /bin/bash
         return
         ;;
     esac
@@ -297,9 +302,9 @@ sandbox () {
   # Logs streams the logs from the container to the shell
   logs () {
     if [[ $# -gt 1 && $2 == "raw" ]]; then
-      docker-compose exec algod tail -f node.log
+      dc exec algod tail -f node.log
     else
-      docker-compose exec algod carpenter -D
+      dc exec algod carpenter -D
     fi
   }
 
@@ -336,11 +341,11 @@ sandbox () {
         statusline "Starting sandbox for: $1"
         NEW_CONFIG="$1"
       fi
-      CONFIG_FILE="config.$NEW_CONFIG"
+      CONFIG_FILE="$SANDBOX_DIR/config.$NEW_CONFIG"
 
       # Verify config exists
       if [ ! -f "$CONFIG_FILE" ]; then
-        SANDBOX_CONFIG_OPTIONS=$(ls -l config.* | cut -f 2 -d'.' |  sed 's/^/ /'| paste -sd',')
+        SANDBOX_CONFIG_OPTIONS=$(ls -l "$SANDBOX_DIR"/config.* | cut -f 2 -d'.' |  sed 's/^/ /'| paste -sd',' -)
         err "Could not find config file for '$NEW_CONFIG'.\nValid options:$SANDBOX_CONFIG_OPTIONS"
       fi
 
@@ -361,18 +366,18 @@ sandbox () {
       echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
       source "$CONFIG_FILE"
       if [ $INTERACTIVE_MODE == 1 ]; then
-        docker-compose up
+        dc up
       elif [ $VERBOSE_MODE == 0 ]; then
         echo "see sandbox.log for detailed progress, or use -v."
         echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
         echo "" # The spinner will rewrite this line.
-        docker-compose up -d            >> "$SANDBOX_LOG" 2>&1 & spinner
+        dc up -d                        >> "$SANDBOX_LOG" 2>&1 & spinner
         sleep 1                                                & spinner
         overwrite "* started!"
       else
         echo "* docker-compose up -d"
         echo "" # The spinner will rewrite this line.
-        docker-compose up -d
+        dc up -d
         sleep 1
       fi
 
@@ -482,7 +487,7 @@ EOF
 
     stop|down|pause)
       statusline "Stopping sandbox containers..."
-      docker-compose stop -t 0
+      dc stop -t 0
       ;;
 
     restart|reset)
@@ -496,7 +501,7 @@ EOF
         err "No active sandbox to reset."
       fi
       sandbox down
-      docker-compose rm -f
+      dc rm -f
       sandbox up "$ACTIVE_CONFIG" "$@"
       ;;
 
@@ -508,15 +513,16 @@ EOF
     test)
       statusline "Test command forwarding..."
       printc $default "~$ ${blue}docker exec -it algod uname -a"
-      docker-compose exec algod uname -a
+      dc exec algod uname -a
 
+      TOKEN=$(cat "$SANDBOX_DIR/config/token")
       statusline "Test Algod REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:4001/v2/status?pretty -H \"X-Algo-API-Token: $(cat config/token)\""
-      curl "localhost:4001/v2/status?pretty" -H "X-Algo-API-Token: $(cat config/token)"
+      printc $default "~$ ${blue}curl ${teal}localhost:4001/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
+      curl "localhost:4001/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
 
       statusline "Test KMD REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:4002/v1/wallets -H \"X-KMD-API-Token: $(cat config/token)\""
-      curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $(cat config/token)"
+      printc $default "~$ ${blue}curl ${teal}localhost:4002/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
+      curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $TOKEN"
 
       statusline "\nTest Indexer REST API..."
       printc $default "~$ ${blue}curl ${teal}\"localhost:8980/health?pretty\""
@@ -544,9 +550,9 @@ EOF
       goal_helper "$@"
       ;;
 
-    copy)
+    copy|cp)
       shift
-      docker cp "$1" "$(docker-compose ps -q algod):/opt/data/$1"
+      docker cp "$1" "$(dc ps -q algod):/opt/data/$1"
       ;;
 
     *)
@@ -564,6 +570,4 @@ if ! [ -x "$(command -v docker-compose)" ]; then
   exit 1
 fi
 
-pushd `dirname $0` > /dev/null
 sandbox "$@"
-popd > /dev/null
