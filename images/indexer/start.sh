@@ -32,7 +32,8 @@ start_with_algod() {
     -P "$CONNECTION_STRING" \
     --algod-net "${ALGOD_ADDR}" \
     --algod-token "${ALGOD_TOKEN}" \
-    --genesis "genesis.json"
+    --genesis "genesis.json" \
+    --logfile "/tmp/indexer-log.txt" >> /tmp/command.txt
 }
 
 import_and_start_readonly() {
@@ -47,12 +48,15 @@ import_and_start_readonly() {
   /tmp/algorand-indexer import \
     -P "$CONNECTION_STRING" \
     --genesis "/tmp/indexer-snapshot/algod/genesis.json" \
-    /tmp/indexer-snapshot/blocktars/*
+    /tmp/indexer-snapshot/blocktars/* \
+    --logfile "/tmp/indexer-log.txt" >> /tmp/command.txt
 
   /tmp/algorand-indexer daemon \
     --dev-mode \
     --server ":$PORT" \
-    -P "$CONNECTION_STRING"
+    -P "$CONNECTION_STRING" \
+    --logfile "/tmp/indexer-log.txt"
+    --logfile "/tmp/indexer-log.txt" >> /tmp/command.txt
 }
 
 disabled() {
