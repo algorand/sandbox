@@ -4,7 +4,7 @@ set -euo pipefail
 #####################
 # Script constants. #
 #####################
-DEFAULT_CONFIG='nightly'
+DEFAULT_CONFIG='release'
 SANDBOX_DIR=$(dirname "$0")
 ACTIVE_CONFIG_FILE="$SANDBOX_DIR/.active_config"
 SANDBOX_LOG="$SANDBOX_DIR/sandbox.log"
