@@ -345,7 +345,7 @@ sandbox () {
 
       # Verify config exists
       if [ ! -f "$CONFIG_FILE" ]; then
-        SANDBOX_CONFIG_OPTIONS=$(ls -l "$SANDBOX_DIR"/config.* | cut -f 2 -d'.' |  sed 's/^/ /'| paste -sd',' -)
+        SANDBOX_CONFIG_OPTIONS=$(ls "$SANDBOX_DIR"/config.* | sed 's/^.*config\./ /'| paste -sd',' -)
         err "Could not find config file for '$NEW_CONFIG'.\nValid options:$SANDBOX_CONFIG_OPTIONS"
       fi
 
