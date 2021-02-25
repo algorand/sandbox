@@ -277,7 +277,11 @@ sandbox () {
 
   # Enter attaches users to a shell in the desired container
   enter () {
-    case $2 in
+    CONTAINER=${2:-}
+    if [ -z "$CONTAINER" ]; then
+        err "'enter' requires a container. Available containers: algod, indexer, indexer-db"
+    fi
+    case $CONTAINER in
       algod)
         statusline "Entering /bin/bash session in the algod container..."
         dc exec algod /bin/bash
@@ -295,7 +299,7 @@ sandbox () {
         ;;
     esac
 
-    err "Cannot enter '$2'. Available containers: algod, indexer, indexer-db"
+    err "Cannot enter '$CONTAINER'. Available containers: algod, indexer, indexer-db"
   }
 
 
