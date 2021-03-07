@@ -55,7 +55,6 @@ import_and_start_readonly() {
     --dev-mode \
     --server ":$PORT" \
     -P "$CONNECTION_STRING" \
-    --logfile "/tmp/indexer-log.txt"
     --logfile "/tmp/indexer-log.txt" >> /tmp/command.txt
 }
 
