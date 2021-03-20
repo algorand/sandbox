@@ -554,7 +554,10 @@ EOF
       shift
       docker cp "$1" "$(dc ps -q algod):/opt/data/$1"
       ;;
-
+    exec)
+      shift
+      docker exec -it "$(dc ps -q algod)" sh -c "$@"
+      ;;
     *)
       help
       ;;
