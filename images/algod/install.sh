@@ -5,7 +5,7 @@
 # Parameters:
 #    -d    : Location where binaries will be installed.
 #    -c    : Channel to install. Mutually exclusive with source options.
-#    -u    : Git repository URL. Mutually exclusice with -c.
+#    -u    : Git repository URL. Mutually exclusive with -c.
 #    -b    : Git branch. Mutually exclusive with -c.
 #    -s    : (optional) Git Commit SHA hash. Mutually exclusive with -c.
 
@@ -41,7 +41,7 @@ if [ ! -z $CHANNEL ] && [ ! -z $BRANCH ]; then
 fi
 
 if [ ! -z $BRANCH ] && [ -z $URL ]; then
-  echo "If using -c <channel>, must also set -u <git url>"
+  echo "If using -b <branch>, must also set -u <git url>"
   exit 1
 fi
 
