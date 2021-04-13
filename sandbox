@@ -460,6 +460,20 @@ sandbox () {
           statusline "Skipping fast catchup"
         fi
       fi
+
+      status_code=$(curl --write-out %{http_code} --silent --output /dev/null localhost:8000/health)
+      if [[ "$status_code" -ne 200 ]] ; then
+        echo "AlgoSearch is disabled or not available."
+      else
+        echo "Opening AlgoSearch in browser"
+        if [ $(uname) == "Darwin" ]; then
+          open http://localhost:8000
+        elif [ $(uname) == "Linux" ]; then
+          xdg-open http://localhost:8000
+        else
+          echo "No browser detected..."
+        fi
+      fi
   }
 
   help () {
