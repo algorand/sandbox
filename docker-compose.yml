@@ -1,28 +1,6 @@
 version: '3'
 
 services:
-  algosearch:
-    container_name: "algorand-sandbox-algosearch"
-    build:
-      context: .
-      dockerfile: ./images/search/Dockerfile
-      args:
-        CHANNEL: "${ALGOD_CHANNEL}"
-        URL: "${ALGOSEARCH_URL}"
-        BRANCH: "${ALGOSEARCH_BRANCH}"
-        SHA: "${ALGOSEARCH_SHA}"
-        BOOTSTRAP_URL: "${NETWORK_BOOTSTRAP_URL}"
-        GENESIS_FILE: "${NETWORK_GENESIS_FILE}"
-        TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        ALGOD_PORT: "4001"
-        KMD_PORT: "4002"
-    ports:
-#      - 8000:4003
-      - 8000:8000
-    depends_on:
-      - search-db
-      - algod
-      - indexer
 
   algod:
     container_name: "algorand-sandbox-algod"
@@ -82,7 +60,28 @@ services:
       POSTGRES_PASSWORD: algorand
       POSTGRES_DB: indexer_db
 
-
+  algosearch:
+    container_name: "algorand-sandbox-algosearch"
+    build:
+      context: .
+      dockerfile: ./images/search/Dockerfile
+      args:
+        CHANNEL: "${ALGOD_CHANNEL}"
+        URL: "${ALGOSEARCH_URL}"
+        BRANCH: "${ALGOSEARCH_BRANCH}"
+        SHA: "${ALGOSEARCH_SHA}"
+        BOOTSTRAP_URL: "${NETWORK_BOOTSTRAP_URL}"
+        GENESIS_FILE: "${NETWORK_GENESIS_FILE}"
+        TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ALGOD_PORT: "4001"
+        KMD_PORT: "4002"
+    ports:
+      #      - 8000:4003
+      - 8000:8000
+    depends_on:
+      - search-db
+      - algod
+      - indexer
 
   search-db:
     image: couchdb:2.3.1
