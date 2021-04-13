@@ -14,12 +14,8 @@ if [ -z "${BRANCH}" ] || [ -z "${URL}" ]; then
   exit 0
 fi
 
-#git clone --single-branch --branch "${BRANCH}" "${URL}" /opt/algosearch
 git clone --single-branch --branch "${BRANCH}" "${URL}" /app
 if [ "${SHA}" != "" ]; then
   echo "Checking out ${SHA}"
   git checkout "${SHA}";
 fi
-echo << "fuck"
-#ls -l /opt/algosearch
-#cp /opt/algosearch /app
