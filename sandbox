@@ -168,6 +168,7 @@ sandbox () {
     statusline "indexer - health"
     curl -s "localhost:8980/health?pretty"
     statusline "algosearch - health"
+    curl -o /dev/null -s -w "%{http_code}\n" "localhost:8000/health"
     curl -s "localhost:8000/health"
   }
 
@@ -582,8 +583,10 @@ EOF
       curl "localhost:8980/health?pretty"
 
       statusline "\nTest AlgoSearch..."
-      printc $default "~$ ${blue}curl ${teal}\"localhost:8000/health\""
-      curl "localhost:8000/health"
+      printc $default "~$ ${blue}curl -o /dev/null -s -w \"%%{http_code}\\\n\" ${teal}\"localhost:8000/health\""
+      curl -o /dev/null -s -w "%{http_code}\n" "localhost:8000/health"
+      printc $default "~$ ${blue}curl -s ${teal}\"localhost:8000/health\""
+      curl -s "localhost:8000/health"
       ;;
 
     enter)

@@ -71,6 +71,8 @@ services:
         SHA: "${ALGOSEARCH_SHA}"
     ports:
       - 8000:8000
+    environment:
+      DISABLED: "${INDEXER_DISABLED}"
     depends_on:
       - search-db
       - algod

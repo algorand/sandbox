@@ -25,13 +25,13 @@ RUN /tmp/install.sh
 RUN cd /app
 
 COPY images/search/global.js ./service/global.js
+COPY images/search/start.sh /app/start.sh
+COPY images/search/disabled.js /app/disabled.js
 
-# install app dependencies
-RUN npm install --silent && npm install pm2 -g
-
-# add app
-RUN npm run build --silent
+# install app dependencies and build the app
+RUN npm install --silent && npm install pm2 -g && npm run build --silent
 
 # start app
 EXPOSE 8000
-CMD ["pm2-runtime", "process.yml"]
+RUN chmod +x /app/start.sh
+CMD ["/app/start.sh"]
