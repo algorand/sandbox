@@ -1,8 +1,32 @@
 version: '3'
 
 services:
+  algosearch:
+    container_name: "algorand-sandbox-algosearch"
+    build:
+      context: .
+      dockerfile: ./images/search/Dockerfile
+      args:
+        CHANNEL: "${ALGOD_CHANNEL}"
+        URL: "${ALGOSEARCH_URL}"
+        BRANCH: "${ALGOSEARCH_BRANCH}"
+        SHA: "${ALGOSEARCH_SHA}"
+        BOOTSTRAP_URL: "${NETWORK_BOOTSTRAP_URL}"
+        GENESIS_FILE: "${NETWORK_GENESIS_FILE}"
+        TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ALGOD_PORT: "4001"
+        KMD_PORT: "4002"
+    ports:
+#      - 8000:4003
+      - 8000:8000
+    depends_on:
+      - search-db
+      - algod
+      - indexer
+
   algod:
     container_name: "algorand-sandbox-algod"
+    hostname: algod.server
     build:
       context: .
       dockerfile: ./images/algod/Dockerfile
@@ -25,6 +49,7 @@ services:
 
   indexer:
     container_name: "algorand-sandbox-indexer"
+    hostname: indexer.server
     build:
       context: .
       dockerfile: ./images/indexer/Dockerfile
@@ -56,3 +81,22 @@ services:
       POSTGRES_USER: algorand
       POSTGRES_PASSWORD: algorand
       POSTGRES_DB: indexer_db
+
+
+
+  search-db:
+    image: couchdb:2.3.1
+    container_name: "algorand-sandbox-couchdb"
+    hostname: couchdb.server
+    ports:
+      - "5984:5984"
+    # Optional
+    # volumes:
+    #   - ./db-data:/opt/couchdb/data
+    # extra_hosts:
+    #   - "dockerhost:$DOCKERHOST"
+    # https://github.com/apache/couchdb-docker/issues/54
+    # command: curl -u admin:password -X PUT 127.0.0.1:5984/_users && curl -u admin:password -X PUT 127.0.0.1:5984/test
+    environment:
+      - COUCHDB_USER=algorand
+      - COUCHDB_PASSWORD=algorand
