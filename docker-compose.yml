@@ -66,17 +66,10 @@ services:
       context: .
       dockerfile: ./images/search/Dockerfile
       args:
-        CHANNEL: "${ALGOD_CHANNEL}"
         URL: "${ALGOSEARCH_URL}"
         BRANCH: "${ALGOSEARCH_BRANCH}"
         SHA: "${ALGOSEARCH_SHA}"
-        BOOTSTRAP_URL: "${NETWORK_BOOTSTRAP_URL}"
-        GENESIS_FILE: "${NETWORK_GENESIS_FILE}"
-        TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        ALGOD_PORT: "4001"
-        KMD_PORT: "4002"
     ports:
-      #      - 8000:4003
       - 8000:8000
     depends_on:
       - search-db
