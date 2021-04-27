@@ -556,7 +556,7 @@ EOF
 
     copy|cp)
       shift
-      docker cp "$1" "$(dc ps -q algod):/opt/data/$1"
+      docker cp "$1" "$(dc ps -q algod):/opt/data/$(basename $1)"
       ;;
 
     *)
