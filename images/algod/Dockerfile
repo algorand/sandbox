@@ -13,7 +13,7 @@ ARG BOOTSTRAP_URL=""
 ARG ALGOD_PORT=""
 ARG KMD_PORT=""
 ARG TOKEN=""
-ARG TEMPLATE="/tmp/images/algod/future_template.json"
+ARG TEMPLATE=""
 
 RUN echo "Installing from source. ${URL} -- ${BRANCH}"
 ENV BIN_DIR="$HOME/node"
