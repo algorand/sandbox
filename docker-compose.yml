@@ -69,7 +69,7 @@ services:
     ports:
       - 8000:8000
     environment:
-      DISABLED: "${INDEXER_DISABLED}"
+      DISABLED: "${ALGOSEARCH_DISABLED}"
     depends_on:
       - search-db
       - algod
