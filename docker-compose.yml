@@ -3,6 +3,11 @@ version: '3'
 services:
   algod:
     container_name: "algorand-sandbox-algod"
+    environment: 
+      - ALGOD_CHANNEL=${ALGOD_CHANNEL}
+      - ALGOD_BRANCH=${ALGOD_BRANCH}
+      - ALGOD_URL=${ALGOD_URL}
+      - INSTALL_SCRIPT_DIR=/tmp/images/algod
     build:
       context: .
       dockerfile: ./images/algod/Dockerfile
@@ -17,6 +22,7 @@ services:
         TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         ALGOD_PORT: "4001"
         KMD_PORT: "4002"
+    command: sh -c "/tmp/images/algod/monitor.sh"
     ports:
       - 4001:4001
       - 4002:4002
