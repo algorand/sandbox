@@ -15,6 +15,9 @@ ARG KMD_PORT=""
 ARG TOKEN=""
 ARG TEMPLATE=""
 
+# Trigger variables for launch script
+ENV UPDATE_TRIGGER="${UPDATE_TRIGGER}"
+
 RUN echo "Installing from source. ${URL} -- ${BRANCH}"
 ENV BIN_DIR="$HOME/node"
 ENV ALGORAND_DATA="/opt/data"
@@ -53,4 +56,4 @@ ENV PATH="$BIN_DIR:${PATH}"
 WORKDIR /opt/data
 
 # Start algod
-CMD ["/opt/start_algod.sh"]
+CMD ["/tmp/images/algod/launch.sh"]

@@ -30,6 +30,11 @@ export INDEXER_BRANCH=""
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 
+###################
+# TRIGGER VARIABLES
+###################
+export UPDATE_TRIGGER=""
+
 #########################
 # Helpers and utilities #
 #########################
@@ -52,6 +57,10 @@ function printc () {
 
 function statusline () {
   printc "${Bgreen}" "\n$1"
+}
+
+function progressline () {
+  printc "${teal}" "$1"
 }
 
 function err_noexit () {
@@ -157,12 +166,21 @@ function progress_bar {
   overwrite "$1 : [${fill// /▇}${empty// / }] [$2/$3] ${progress}%"
 }
 
+function get_health () {
+  # https://stackoverflow.com/questions/12321469/
+  # Retry a Bash command with timeout
+  #   petertc
+  timeout 15s bash -c 'until curl -s "localhost:8980/health?pretty"; do echo -n " . " & sleep 1; done'
+}
+
 sandbox () {
   status_helper () {
     statusline "algod - goal node status"
     goal_helper node status
+
     statusline "indexer - health"
-    curl -s "localhost:8980/health?pretty"
+    progressline "Waiting on reponse from algod ."
+    get_health
   }
 
   dc () {
@@ -177,7 +195,7 @@ sandbox () {
     statusline "algod version"
     dc exec algod goal -v
     statusline "Indexer version"
-    INDEXER_VERSION=$(dc exec indexer cmd/algorand-indexer/algorand-indexer -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
+    INDEXER_VERSION=$(dc exec indexer cmd/algorand-indexer/algorand-indexer -v) && echo ${INDEXER_VERSION} || get_health
     statusline "Postgres version"
     dc exec indexer-db postgres --version
   }
@@ -331,6 +349,7 @@ sandbox () {
         ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
       fi
 
+      echo "$1"
       # Initialize new config, accounting for no-argument up command.
       if [ "$1" = "" ]; then
         if [ ! -z $ACTIVE_CONFIG ]; then
@@ -342,6 +361,7 @@ sandbox () {
           NEW_CONFIG="$DEFAULT_CONFIG"
         fi
       else
+        UPDATE_TRIGGER="$1"
         statusline "Starting sandbox for: $1"
         NEW_CONFIG="$1"
       fi
@@ -370,18 +390,30 @@ sandbox () {
       echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
       source "$CONFIG_FILE"
       if [ $INTERACTIVE_MODE == 1 ]; then
-        dc up
+        if [ "$1" -ne "" ]; then
+          dc up
+        else
+          dc up
+        fi
       elif [ $VERBOSE_MODE == 0 ]; then
         echo "see sandbox.log for detailed progress, or use -v."
         echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
         echo "" # The spinner will rewrite this line.
-        dc up -d                        >> "$SANDBOX_LOG" 2>&1 & spinner
+        if [ "$1" -ne "" ]; then
+          dc up -d                        >> "$SANDBOX_LOG" 2>&1 & spinner
+        else
+          dc up -d                        >> "$SANDBOX_LOG" 2>&1 & spinner
+        fi
         sleep 1                                                & spinner
         overwrite "* started!"
       else
         echo "* docker-compose up -d"
         echo "" # The spinner will rewrite this line.
-        dc up -d
+        if [ "$1" -ne "" ]; then
+          dc up -d
+        else
+          dc up -d
+        fi
         sleep 1
       fi
 

@@ -5,6 +5,9 @@ ARG URL=https://github.com/algorand/indexer
 ARG BRANCH=master
 ARG SHA=""
 
+# Trigger variables for launch script
+ENV UPDATE_TRIGGER="${UPDATE_TRIGGER}"
+
 ENV HOME /opt/indexer
 WORKDIR /opt/indexer
 
@@ -15,8 +18,9 @@ RUN apk add --no-cache git bzip2 make bash
 COPY images/indexer/disabled.go /tmp/disabled.go
 COPY images/indexer/start.sh /tmp/start.sh
 COPY images/indexer/install.sh /tmp/install.sh
+COPY images/indexer/launch.sh /tmp/launch.sh
 
 # Install indexer binaries.
 RUN /tmp/install.sh
 
-CMD ["/tmp/start.sh"]
+CMD ["/tmp/launch.sh"]

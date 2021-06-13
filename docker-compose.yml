@@ -17,6 +17,8 @@ services:
         TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         ALGOD_PORT: "4001"
         KMD_PORT: "4002"
+    environment:
+      UPDATE_TRIGGER: "${UPDATE_TRIGGER}"
     ports:
       - 4001:4001
       - 4002:4002
@@ -40,6 +42,7 @@ services:
       CONNECTION_STRING: "host=indexer-db port=5432 user=algorand password=algorand dbname=indexer_db sslmode=disable"
       ALGOD_ADDR: "algod:4001"
       ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      UPDATE_TRIGGER: "${UPDATE_TRIGGER}"
     depends_on:
       - indexer-db
       - algod
