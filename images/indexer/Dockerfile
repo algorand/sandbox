@@ -15,8 +15,9 @@ RUN apk add --no-cache git bzip2 make bash
 COPY images/indexer/disabled.go /tmp/disabled.go
 COPY images/indexer/start.sh /tmp/start.sh
 COPY images/indexer/install.sh /tmp/install.sh
+COPY images/indexer/launch.sh /tmp/launch.sh
 
 # Install indexer binaries.
 RUN /tmp/install.sh
 
-CMD ["/tmp/start.sh"]
+CMD ["/tmp/launch.sh"]
