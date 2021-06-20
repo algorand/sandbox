@@ -127,6 +127,10 @@ export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 ```
 
+## Updates
+
+Containers automatically check for updates each time you start the sandbox. (i.e. `./sandbox up`). This ensures you're always using the latest version for your release channel.
+
 ## Errors
 
 If something goes wrong, check the `sandbox.log` file for details.
