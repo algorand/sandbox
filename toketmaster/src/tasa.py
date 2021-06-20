@@ -1,37 +1,50 @@
-from client import algod_client, indexer_client
-from models import Wallet
+import time
+from typing import Optional
 
 from algosdk import transaction
 from algosdk.error import IndexerHTTPError
-import time
+
+from toketmaster.src.client import algod_client, indexer_client
+from toketmaster.src.models import Wallet
 
 
-def create_tasa(**kwargs) -> str:
+def create_tasa(creator: Wallet,
+                fee: int,
+                unit_name: str,
+                asset_name: str,
+                url: str,
+                default_frozen: bool = False,
+                decimals: int = 0,
+                manager: Optional[Wallet] = None,
+                reserve: Optional[Wallet] = None,
+                freeze: Optional[Wallet] = None,
+                clawback: Optional[Wallet] = None,
+                ) -> str:
     params = algod_client.suggested_params()
     
     # create TASA
     txn = transaction.AssetConfigTxn(
-        sender=kwargs['sender'],
+        sender=creator.public_key,
         first=params.first,
         last=params.last,
         gh=params.gh,
-        fee=kwargs['fee'],
-        total=kwargs['total'],
-        default_frozen=kwargs['default_frozen'],
-        unit_name=kwargs['unit_name'],
-        asset_name=kwargs['asset_name'],
-        manager=kwargs['manager'],
-        reserve=kwargs['reserve'],
-        freeze=kwargs['freeze'],
-        clawback=kwargs['clawback'],
-        url=kwargs['url'],
-        decimals=kwargs['decimals']
+        fee=fee,
+        total=1,
+        default_frozen=default_frozen,
+        unit_name=unit_name,
+        asset_name=asset_name,
+        manager=None if manager is None else manager.public_key,
+        reserve=None if reserve is None else reserve.public_key,
+        freeze=None if freeze is None else freeze.public_key,
+        clawback=None if clawback is None else clawback.public_key,
+        url=url,
+        decimals=decimals
     )
     # TM signs the TASA for ITO
-    stxn = txn.sign(private_key=kwargs['signing_key'])
+    signed_tx = txn.sign(private_key=creator.secret_key)
     
     # Publish the TASA
-    txid = algod_client.send_transaction(stxn)
+    txid = algod_client.send_transaction(signed_tx)
     
     return txid
 
