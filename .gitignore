@@ -1,3 +1,4 @@
 .active_config
 sandbox.log
 data
+**/__pycache__/**
