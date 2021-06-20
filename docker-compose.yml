@@ -54,14 +54,33 @@ services:
       POSTGRES_PASSWORD: algorand
       POSTGRES_DB: indexer_db
 
-  toketmaster:
-    container_name: "toketmaster"
+  toketmaster-devnet:
+    container_name: "toketmaster-devnet"
     build:
       context: .
       dockerfile: ./images/toketmaster/Dockerfile
     environment:
-      ALGOD_ADDR: "algod:4001"
+      ALGOD_ADDR: "http://localhost:4001"
       ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      MNEMONICS_FILE: "/tmp/config/mnemonics_devnet.txt"
+      NETWORK: "devnet"
+    volumes:
+      - type: bind
+        source: ./toketmaster
+        target: /root/toketmaster
+    depends_on:
+      - algod
+
+  toketmaster-testnet:
+    container_name: "toketmaster-testnet"
+    build:
+      context: .
+      dockerfile: ./images/toketmaster/Dockerfile
+    environment:
+      ALGOD_ADDR: "https://testnet-algorand.api.purestake.io/ps2"
+      ALGOD_TOKEN: "LGlsGlaSiY37Y3xKQly071AsDwS6PeP73mAaFJLF"
+      MNEMONICS_FILE: "/tmp/config/mnemonics_testnet.txt"
+      NETWORK: "testnet"
     volumes:
       - type: bind
         source: ./toketmaster
