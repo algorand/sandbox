@@ -2,3 +2,5 @@
 sandbox.log
 data
 **/__pycache__/**
+
+.idea/
