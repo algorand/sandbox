@@ -48,7 +48,7 @@ Sandbox creates the following API endpoints:
 Run the following to execute all toketmaster tests against the private network,
 
 ```
-docker exec toketmaster-devnet pytest -s
+docker exec toketmaster-privnet pytest -s
 ```
 
 To do the same against the `testnet`, run the following,
