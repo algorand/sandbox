@@ -70,7 +70,7 @@ Run the test command for examples of how to interact with the environment:
 
 ## Private Network vs Real Network
 
-Sandbox supports two primary modes of operation. By default a private network will be created, which is only available from the local environment. There is also a real network mode which will connect you to one of the long running Algorand networks and allow you to interact with it.
+Sandbox supports two primary modes of operation. By default, a private network will be created, which is only available from the local environment. There is also a real network mode which will connect you to one of the long running Algorand networks and allow you to interact with it.
 
 ### Private Network
 
@@ -80,7 +80,7 @@ By default you will be given access to a private network. This environment is pr
 
 The `mainnet`, `testnet`, `betanet`, and `devnet` configurations configure the sandbox to connect to one of those long running networks. Once started it will automatically attempt to catchup to the latest round. Catchup tends to take a while and a progress bar will be displayed to keep you informed of the progress.
 
-Due to technical limitations this configuration does not contain preconfigured accounts that you can immediately transact with, and Indexer is not available.
+Due to technical limitations, this configuration does not contain preconfigured accounts that you can immediately transact with, and Indexer is not available.
 
 ## Working with files
 
@@ -97,7 +97,7 @@ For example, these commands will stage two TEAL programs then use them in a `goa
 
 ## Advanced configurations
 
-The sandbox environment is completely configured using the `config.*` files in the root of this repository. For example the default configuration is **config.nightly**:
+The sandbox environment is completely configured using the `config.*` files in the root of this repository. For example, the default configuration is **config.nightly**:
 ```
 export ALGOD_CHANNEL="nightly"
 export ALGOD_URL=""
@@ -111,7 +111,7 @@ export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 ```
 
-Indexer is always built from source, since it can be done quickly. For most configurations algod will be installed using our standard release channels, but building from source is also available by setting the git URL, Branch and optionally a specific SHA commit hash.
+Indexer is always built from source since it can be done quickly. For most configurations, algod will be installed using our standard release channels, but building from source is also available by setting the git URL, Branch and optionally a specific SHA commit hash.
 
 The **up** command looks for the config extension based on the argument provided. If you have a custom configuration pointed to a fork, you can start the sandbox with your code:
 ```
