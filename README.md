@@ -19,7 +19,8 @@ sandbox commands:
   enter [algod||indexer||indexer-db]
                  -> enter the sandbox container.
   version        -> print binary versions.
-  copy <file>    -> copy <file> into the algod. Useful for TEAL work.
+  copyTo <file>    -> copy <file> into the algod container. Useful for offline transactions & LogicSigs plus TEAL work.
+  copyFrom <file>    -> copy <file> from the algod container. Useful for offline transactions & LogicSigs plus TEAL work.
 
 algorand commands:
   logs        -> stream algorand logs with the carpenter utility.
