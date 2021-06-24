@@ -432,16 +432,16 @@ sandbox () {
   help () {
       cat <<-EOF
 sandbox commands:
-  up    [config] -> start the sandbox environment.
-  down           -> tear down the sandbox environment.
-  reset          -> reset the containers to their initial state.
-  clean          -> stops and deletes containers and data directory.
-  test           -> runs some tests to demonstrate usage.
+  up    [config]  -> start the sandbox environment.
+  down            -> tear down the sandbox environment.
+  reset           -> reset the containers to their initial state.
+  clean           -> stops and deletes containers and data directory.
+  test            -> runs some tests to demonstrate usage.
   enter [algod||indexer||indexer-db]
-                 -> enter the sandbox container.
-  version        -> print binary versions.
-  copyTo <file>    -> copy <file> into the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
-  copyFrom <file>    -> copy <file> from the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
+                  -> enter the sandbox container.
+  version         -> print binary versions.
+  copyTo <file>   -> copy <file> into the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
+  copyFrom <file> -> copy <file> from the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
 
 algorand commands:
   logs        -> stream algorand logs with the carpenter utility.
@@ -566,7 +566,7 @@ EOF
       ;;
 
     *)
-    
+
       help
       ;;
   esac
