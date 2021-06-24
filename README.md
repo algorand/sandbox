@@ -11,15 +11,16 @@ You will need to install **Docker Compose**, [instructions are available here](h
 Use the **sandbox** command to interact with the Algorand Sandbox.
 ```
 sandbox commands:
-  up    [config] -> start the sandbox environment.
-  down           -> tear down the sandbox environment.
-  reset          -> reset the containers to their initial state.
-  clean          -> stops and deletes containers and data directory.
-  test           -> runs some tests to demonstrate usage.
+  up    [config]  -> start the sandbox environment.
+  down            -> tear down the sandbox environment.
+  reset           -> reset the containers to their initial state.
+  clean           -> stops and deletes containers and data directory.
+  test            -> runs some tests to demonstrate usage.
   enter [algod||indexer||indexer-db]
-                 -> enter the sandbox container.
-  version        -> print binary versions.
-  copy <file>    -> copy <file> into the algod. Useful for TEAL work.
+                  -> enter the sandbox container.
+  version         -> print binary versions.
+  copyTo <file>   -> copy <file> into the algod container. Useful for offline transactions & LogicSigs plus TEAL work.
+  copyFrom <file> -> copy <file> from the algod container. Useful for offline transactions & LogicSigs plus TEAL work.
 
 algorand commands:
   logs        -> stream algorand logs with the carpenter utility.
@@ -84,15 +85,24 @@ Due to technical limitations, this configuration does not contain preconfigured 
 
 ## Working with files
 
-Some Algorand commands require using a file for the input. For example working with TEAL programs.
+Some Algorand commands require using a file for the input. For example working with TEAL programs. In some other cases like working with Logical signatures or transactions offline you may need to get a file output from LogicSig or transaction.
 
-To stage a file use the `copy` command. The file will be placed in the algod data directory, which is where sandbox executes `goal`. This means the files can be used without specifying their full path.
+To stage a file use the `copyTo` command. The file will be placed in the algod data directory, which is where sandbox executes `goal`. This means the files can be used without specifying their full path.
+
+To copy a file from sandbox (algod instance) use the `copyFrom` command. The file will be copied to sandbox directory on host filesystem.
 
 For example, these commands will stage two TEAL programs then use them in a `goal` command:
 ```
-~$ ./sandbox copy approval.teal
-~$ ./sandbox copy clear.teal
+~$ ./sandbox copyTo approval.teal
+~$ ./sandbox copyTo clear.teal
 ~$ ./sandbox goal app create --approval-prog approval.teal --clear-prog clear.teal --creator KFATIARWZK66SD5RLSDNI4YRMQCJEMPFEMKZA7JMTQOU5K45Q3N5WHPAKA --approval-prog simple.teal --clear-prog simple.teal --global-byteslices 1 --global-ints 1 --local-byteslices 1 --local-ints 1
+```
+
+In other example, these commands will create and copy a signed logic transaction file, created by `goal`, to be sent or communicated off the chain (e.g. by email or as a QR Code) and submitted else where:
+```
+~$ ./sandbox goal clerk send -f <source-account> -t <destination-account> --fee 1000 -a 1000000 -o "unsigned.txn"
+~$ ./sandbox goal clerk sign --infile unsigned.txn --outfile signed.txn
+~$ ./sandbox copyFrom "signed.txn"
 ```
 
 ## Advanced configurations
