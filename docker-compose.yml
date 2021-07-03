@@ -17,9 +17,11 @@ services:
         TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         ALGOD_PORT: "4001"
         KMD_PORT: "4002"
+        CDT_PORT: "9392"
     ports:
       - 4001:4001
       - 4002:4002
+      - 9392:9392
 
   indexer:
     container_name: "algorand-sandbox-indexer"
