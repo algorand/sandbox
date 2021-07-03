@@ -140,3 +140,8 @@ export INDEXER_DISABLED=""
 ## Errors
 
 If something goes wrong, check the `sandbox.log` file for details.
+
+## Debugging
+
+The debug process including usage of tealdbg command line of algod instance automatically starts (CDT Debugger) on port 9392 on localhost of algod instance. That port (9392) is forwarded directly to the host machine and can be used directly by Chrome Dev Tools for debugging Algorand TEAL smart comtracts (Goto url chrome://inspect/ and configure port 9392 before using).
+
