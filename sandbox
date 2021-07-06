@@ -173,6 +173,10 @@ sandbox () {
     dc exec algod goal "$@"
   }
 
+  tealdbg_helper () {
+    dc exec algod tealdbg "$@"
+  }
+
   version_helper () {
     statusline "algod version"
     dc exec algod goal -v
@@ -553,6 +557,11 @@ EOF
     goal)
       shift
       goal_helper "$@"
+      ;;
+
+    tealdbg)
+      shift
+      tealdbg_helper "$@"
       ;;
 
     copyTo|cpt)
