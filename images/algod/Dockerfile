@@ -53,4 +53,4 @@ ENV PATH="$BIN_DIR:${PATH}"
 WORKDIR /opt/data
 
 # Start algod
-CMD ["/opt/start_algod.sh"]
+CMD ["/tmp/images/algod/launch.sh"]
