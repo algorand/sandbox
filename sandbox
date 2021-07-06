@@ -6,6 +6,7 @@ set -euo pipefail
 #####################
 DEFAULT_CONFIG='release'
 SANDBOX_DIR=$(dirname "$0")
+CLEAN_FILE="$SANDBOX_DIR/.clean"
 ACTIVE_CONFIG_FILE="$SANDBOX_DIR/.active_config"
 SANDBOX_LOG="$SANDBOX_DIR/sandbox.log"
 FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/CHANNEL/latest.catchpoint'
@@ -169,6 +170,17 @@ sandbox () {
     docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
+  rebuild_if_needed () {
+    if [ -f "$CLEAN_FILE" ]; then
+      rm "$CLEAN_FILE"
+      echo ".clean file found in sandbox directory. Rebuilding images..."
+      echo "* docker-compose build --no-cache"
+      dc build --no-cache
+    elif [ $FRESH_INSTALL -eq 0 ]; then
+      echo ".clean file NOT FOUND. Sandbox images will NOT be rebuilt."
+    fi
+  }
+
   goal_helper () {
     dc exec algod goal "$@"
   }
@@ -273,6 +285,7 @@ sandbox () {
     echo "* docker rmi $(docker images -f "dangling=true" -q)"
     docker rmi $(docker images -f "dangling=true" -q)          || true
     rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1                  || true
+    echo 'clean function executed' > "$CLEAN_FILE";
   }
 
   # Enter attaches users to a shell in the desired container
@@ -370,17 +383,19 @@ sandbox () {
       echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
       source "$CONFIG_FILE"
       if [ $INTERACTIVE_MODE == 1 ]; then
+        rebuild_if_needed
         dc up
       elif [ $VERBOSE_MODE == 0 ]; then
         echo "see sandbox.log for detailed progress, or use -v."
-        echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
         echo "" # The spinner will rewrite this line.
+        rebuild_if_needed >> "$SANDBOX_LOG" 2>&1               & spinner
+        echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
         dc up -d                        >> "$SANDBOX_LOG" 2>&1 & spinner
         sleep 1                                                & spinner
         overwrite "* started!"
       else
+        rebuild_if_needed
         echo "* docker-compose up -d"
-        echo "" # The spinner will rewrite this line.
         dc up -d
         sleep 1
       fi
