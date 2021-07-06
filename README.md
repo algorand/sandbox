@@ -143,5 +143,7 @@ If something goes wrong, check the `sandbox.log` file for details.
 
 ## Debugging
 
-The debug process including usage of tealdbg command line of algod instance automatically starts (CDT Debugger) on port 9392 on localhost of algod instance. That port (9392) is forwarded directly to the host machine and can be used directly by Chrome Dev Tools for debugging Algorand TEAL smart comtracts (Goto url chrome://inspect/ and configure port 9392 before using).
+The debug process including usage of `tealdbg` command line of algod container. tealdbg has to be used with `--listen 0.0.0.0` to get the docket container listen on docker network as well and not only container's internal localhost (127.0.0.1 is default configuration which suites local Algorand node environment for debugging). That port (default 9392) is forwarded directly to the host machine and can be used directly by Chrome Dev Tools for debugging Algorand TEAL smart comtracts (Goto url chrome://inspect/ and configure port 9392 before using).
+
+Note: If you change the port by running `tealdbg --port YOUR_PORT` then please modify the docker-compose.yml file and change all occurances of mapped 9392 port with your desired one.
 
