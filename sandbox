@@ -31,6 +31,20 @@ export INDEXER_BRANCH=""
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 
+######################################
+# Compatibility with Windows / MSYS2 #
+######################################
+
+# All commands that use a TTY/pseudo-TTY
+# need to be prefixed by "$WINDOWS_PTY_PREFIX"
+WINDOWS_PTY_PREFIX=
+if [ "$(uname)" == "Darwin" ]; then
+  true
+elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || \
+     [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
+  WINDOWS_PTY_PREFIX="winpty"
+fi
+
 #########################
 # Helpers and utilities #
 #########################
@@ -166,8 +180,19 @@ sandbox () {
     curl -s "localhost:8980/health?pretty"
   }
 
+  # dc is used when no pseudo-TTY is required
+  # see dc_pty
   dc () {
     docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+  }
+
+  # dc is used when a pseudo-TTY is required
+  # essentially for any interactive command
+  # like docker-compose exec algod //bin/bash
+  dc_pty () {
+    # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
+    #       because winpty requires an executable as argument
+    $WINDOWS_PTY_PREFIX docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
   rebuild_if_needed () {
@@ -182,7 +207,7 @@ sandbox () {
   }
 
   goal_helper () {
-    dc exec algod goal "$@"
+    dc_pty exec algod goal "$@"
   }
 
   version_helper () {
@@ -294,20 +319,24 @@ sandbox () {
     if [ -z "$CONTAINER" ]; then
         err "'enter' requires a container. Available containers: algod, indexer, indexer-db"
     fi
+    # Note: for Windows compatibility,
+    #    paths inside container must start with two slashes
+    #    Example: //bin/bash
+    #    See http://www.mingw.org/wiki/Posix_path_conversion 
     case $CONTAINER in
       algod)
         statusline "Entering /bin/bash session in the algod container..."
-        dc exec algod /bin/bash
+        dc_pty exec algod //bin/bash
         return
         ;;
       indexer)
         statusline "Entering /bin/bash session in the indexer container..."
-        dc exec indexer /bin/bash
+        dc_pty exec indexer //bin/bash
         return
         ;;
       indexer-db)
         statusline "Entering /bin/bash session in the indexer-db container..."
-        dc exec indexer-db /bin/bash
+        dc_pty exec indexer-db //bin/bash
         return
         ;;
     esac
