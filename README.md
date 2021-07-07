@@ -63,11 +63,41 @@ Run the test command for examples of how to interact with the environment:
 ./sandbox test
 ```
 
-### Windows
+### Windows 10
+
+Note: Be sure to use the latest version of Windows 10. Older versions may not work properly.
+
+#### Option 1: Using Git for Windows / MSYS 2
+
+This option is easier to set up but you may run into more issues.
 
 1. Install Git for Windows: https://gitforwindows.org/
 2. Install and launch Docker for Windows: https://docs.docker.com/get-docker
 3. Open "Git Bash" and follow the instruction for Ubuntu and macOS above, in the "Git Bash" terminal.
+
+#### Option 2: Using WSL 2
+
+1. Install WSL 2 and Ubuntu 20.04 on WSL 2: https://docs.microsoft.com/en-us/windows/wsl/install-win10
+2. Install and launch Docker for Windows: https://docs.docker.com/get-docker. Do not forget to enable the integration of Docker with WSL 2
+3. Open Ubuntu 20.04 and follow the instruction for Ubuntu and macOS above, in the WSL 2 terminal.
+
+Note: WSL will not work. WSL 2 is required. If you used WSL in the past, it is most likely not WSL 2 and you need to switch to WSL 2: https://docs.microsoft.com/en-us/windows/wsl/install-win10#step-5---set-wsl-2-as-your-default-version
+
+#### Troubleshooting
+
+* If you see 
+  ```plain
+  the input device is not a TTY. If you are using mintty, try prefixing the command with 'winpty'.
+  ```
+  check that you are using the latest versions of: Docker, Git for Windows, and Windows 10.
+
+  If this does not solve the issue, [open an issue](https://github.com/algorand/sandbox/issues) with all the versions with all the software used, as well as all the commands typed.
+
+* If you see
+  ```plain
+  Error response from daemon: open \\.\pipe\docker_engine_linux: The system cannot find the file specified.
+  ```
+  check that Docker is running.
 
 ## Private Network vs Real Network
 
