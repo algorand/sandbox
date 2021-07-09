@@ -6,6 +6,22 @@ You will need to install **Docker Compose**, [instructions are available here](h
 
 **Warning**: Algorand Sandbox is *not* meant for production environments and should *not* be used to store secure Algorand keys. Updates may reset all the data and keys that are stored.
 
+## Table of Contents
+
+[Usage](#usage)\
+[Getting Started](#getting-started)
+- [Ubuntu and MacOS](#ubuntu-and-macos)
+- [Windows](#windows)
+
+[Private Network vs Real Network](#private-network-vs-real-network)
+- [Private Network](#private-network)
+- [Real Network](#real-network)
+
+[Working with Files](#working-with-files)\
+[Advanced Configurations](#advanced-configurations)\
+[Updates](#updates)\
+[Errors](#errors)
+
 ## Usage
 
 Use the **sandbox** command to interact with the Algorand Sandbox.
