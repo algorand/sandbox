@@ -30,6 +30,9 @@ export INDEXER_URL=""
 export INDEXER_BRANCH=""
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
+export ALGOSEARCH_URL=""
+export ALGOSEARCH_BRANCH=""
+export ALGOSEARCH_SHA=""
 
 #########################
 # Helpers and utilities #
@@ -164,6 +167,9 @@ sandbox () {
     goal_helper node status
     statusline "indexer - health"
     curl -s "localhost:8980/health?pretty"
+    statusline "algosearch - health"
+    curl -o /dev/null -s -w "%{http_code}\n" "localhost:8000/health"
+    curl -s "localhost:8000/health"
   }
 
   dc () {
@@ -192,6 +198,8 @@ sandbox () {
     INDEXER_VERSION=$(dc exec indexer cmd/algorand-indexer/algorand-indexer -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
     statusline "Postgres version"
     dc exec indexer-db postgres --version
+    statusline "CouchDB version"
+    dc exec search-db curl http://localhost:5984
   }
 
   # Given a network name attempts to fetch a catchpoint and catchup.
@@ -308,6 +316,16 @@ sandbox () {
       indexer-db)
         statusline "Entering /bin/bash session in the indexer-db container..."
         dc exec indexer-db /bin/bash
+        return
+        ;;
+      algosearch)
+        statusline "Entering /bin/bash session in the algosearch container..."
+        dc exec algosearch /bin/bash
+        return
+        ;;
+      search-db)
+        statusline "Entering /bin/bash session in the search-db container..."
+        dc exec search-db /bin/bash
         return
         ;;
     esac
@@ -442,6 +460,20 @@ sandbox () {
           statusline "Skipping fast catchup"
         fi
       fi
+
+      status_code=$(curl --write-out %{http_code} --silent --output /dev/null localhost:8000/health)
+      if [[ "$status_code" -ne 200 ]] ; then
+        echo "AlgoSearch is disabled or not available."
+      else
+        echo "Opening AlgoSearch in browser"
+        if [ $(uname) == "Darwin" ]; then
+          open http://localhost:8000
+        elif [ $(uname) == "Linux" ]; then
+          xdg-open http://localhost:8000
+        else
+          echo "No browser detected..."
+        fi
+      fi
   }
 
   help () {
@@ -547,6 +579,12 @@ EOF
       statusline "\nTest Indexer REST API..."
       printc $default "~$ ${blue}curl ${teal}\"localhost:8980/health?pretty\""
       curl "localhost:8980/health?pretty"
+
+      statusline "\nTest AlgoSearch..."
+      printc $default "~$ ${blue}curl -o /dev/null -s -w \"%%{http_code}\\\n\" ${teal}\"localhost:8000/health\""
+      curl -o /dev/null -s -w "%{http_code}\n" "localhost:8000/health"
+      printc $default "~$ ${blue}curl -s ${teal}\"localhost:8000/health\""
+      curl -s "localhost:8000/health"
       ;;
 
     enter)
@@ -577,7 +615,7 @@ EOF
 
     copyFrom|cpf)
       shift
-      docker cp "$(dc ps -q algod):/opt/data/$(basename $1)" "$1" 
+      docker cp "$(dc ps -q algod):/opt/data/$(basename $1)" "$1"
       ;;
 
     *)
