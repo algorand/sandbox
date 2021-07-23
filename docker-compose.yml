@@ -49,7 +49,6 @@ services:
     container_name: "algorand-sandbox-postgres"
     ports:
       - 5433:5432
-    # https://stackoverflow.com/questions/28311825/root-execution-of-the-postgresql-server-is-not-permitted
     user: postgres
     environment:
       POSTGRES_USER: algorand
