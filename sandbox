@@ -186,7 +186,19 @@ sandbox () {
   }
 
   tealdbg_helper () {
-    dc exec algod tealdbg "$@"
+    if [[ "$*" == *--listen* ]]
+    then
+        dc exec algod tealdbg "$@"
+    else
+      if [[ "$*" == *debug* ]]
+      then
+          echo "tealdbg debug command called without --listen option therfore sandbox attached the option automatically!"
+          dc exec algod tealdbg  "$@" --listen 0.0.0.0
+          
+      else
+          dc exec algod tealdbg "$@"
+      fi        
+    fi    
   }
 
   version_helper () {
