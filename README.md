@@ -26,7 +26,7 @@ algorand commands:
   logs            -> stream algorand logs with the carpenter utility.
   status          -> get node status.
   goal (args)     -> run goal command like 'goal node status'.
-  tealdbg (args)  -> run tealdbg command like 'tealdbg help'. In sandbox, always use `tealdbg` with `--listen 0.0.0.0` option!
+  tealdbg (args)  -> run tealdbg command to debug program execution. Always use `tealdbg` with `--listen 0.0.0.0` or `--listen [IP ADDRESS]` falgs, if you need to acess tealdbg from outside of algod docker container.
 
 special flags for 'up' command:
   -v|--verbose           -> display verbose output when starting standbox.
