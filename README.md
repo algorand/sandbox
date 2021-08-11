@@ -26,7 +26,7 @@ algorand commands:
   logs            -> stream algorand logs with the carpenter utility.
   status          -> get node status.
   goal (args)     -> run goal command like 'goal node status'.
-  tealdbg (args)  -> run tealdbg command to debug program execution. Always use `tealdbg` with `--listen 0.0.0.0` or `--listen [IP ADDRESS]` falgs, if you need to acess tealdbg from outside of algod docker container.
+  tealdbg (args)  -> run tealdbg command to debug program execution.
 
 special flags for 'up' command:
   -v|--verbose           -> display verbose output when starting standbox.
@@ -147,6 +147,8 @@ export INDEXER_DISABLED=""
 For detailed information on how to debug smart contracts and use tealdbg CLI,please consult with [Algorand Development Portal :: Smart Contract Debugging](https://developer.algorand.org/docs/features/asc1/debugging/#setting-the-debugger-context).
 
 Algorand smart contract debugging process uses `tealdbg` command line of algod instance(algod container in sandbox).
+
+**Note**: Always use `tealdbg` with `--listen 0.0.0.0` or `--listen [IP ADDRESS]` falgs, if you need to access tealdbg from outside of algod docker container!
 
 #### tealdbg examples:
 
