@@ -482,7 +482,9 @@ sandbox () {
         echo "AlgoSearch is disabled or not available."
       else
         echo "Opening AlgoSearch in browser"
-        if [ $(uname) == "Darwin" ]; then
+        if [ ! -z $SKIP_BROWSER ]; then
+          echo "skipping browser open..."
+        elif [ $(uname) == "Darwin" ]; then
           open http://localhost:8000
         elif [ $(uname) == "Linux" ]; then
           xdg-open http://localhost:8000
