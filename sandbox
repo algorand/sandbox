@@ -593,11 +593,13 @@ EOF
 
     copyTo|cpt)
       shift
+      statusline "Now copying $1 to Algod container in /opt/data/$1"
       docker cp "$1" "$(dc ps -q algod):/opt/data/$(basename $1)"
       ;;
 
     copyFrom|cpf)
       shift
+      statusline "Now copying  /opt/data/$1 from Algod container to $SANDBOX_DIR/" 
       docker cp "$(dc ps -q algod):/opt/data/$(basename $1)" "$1"
       ;;
 
