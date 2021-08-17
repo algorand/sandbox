@@ -26,7 +26,7 @@ algorand commands:
   logs            -> stream algorand logs with the carpenter utility.
   status          -> get node status.
   goal (args)     -> run goal command like 'goal node status'.
-  tealdbg (args)  -> run tealdbg command like 'tealdbg help'. In sandbox, always use `tealdbg` with `--listen 0.0.0.0` option!
+  tealdbg (args)  -> run tealdbg command to debug program execution.
 
 special flags for 'up' command:
   -v|--verbose           -> display verbose output when starting standbox.
@@ -148,11 +148,15 @@ For detailed information on how to debug smart contracts and use tealdbg CLI,ple
 
 Algorand smart contract debugging process uses `tealdbg` command line of algod instance(algod container in sandbox).
 
-***Debug examples:
+**Note**: Always use `tealdbg` with `--listen 0.0.0.0` or `--listen [IP ADDRESS]` falgs, if you need to access tealdbg from outside of algod docker container!
 
-**** Debugging smart contract with Chrome Developer Tools (CDT):  `tealdbg debug ${TEAL_PROGRAM} -f cdt -d dryrun.json`.
+#### tealdbg examples:
 
-**** Debugging smart contract with Web Interface (primal web ui) `tealdbg debug ${TEAL_PROGRAM} -f web -d dryrun.json`.
+Debugging smart contract with Chrome Developer Tools (CDT):
+```~$ ./sandbox tealdbg debug ${TEAL_PROGRAM} -f cdt -d dryrun.json```
+
+Debugging smart contract with Web Interface (primal web UI)
+```~$ ./sandbox tealdbg debug ${TEAL_PROGRAM} -f web -d dryrun.json```
   
 The debugging endpoint port (default 9392) is forwarded directly to the host machine and can be used directly by Chrome Dev Tools for debugging Algorand TEAL smart comtracts (Goto url chrome://inspect/ and configure port 9392 before using please).
 
