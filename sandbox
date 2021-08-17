@@ -192,7 +192,7 @@ sandbox () {
     else
       if [[ "$*" == *debug* ]]
       then
-          echo "tealdbg debug command called without --listen option therfore sandbox attached the option automatically!"
+          echo "tealdbg debug command called without --listen option therefore sandbox attached the option automatically!"
           dc exec algod tealdbg  "$@" --listen 0.0.0.0
           
       else
