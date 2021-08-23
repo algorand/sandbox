@@ -9,7 +9,7 @@ ENV HOME /opt/indexer
 WORKDIR /opt/indexer
 
 ENV DEBIAN_FRONTEND noninteractive
-RUN apk add --no-cache git bzip2 make bash
+RUN apk add --no-cache git bzip2 make bash libtool
 
 # Copy files to container.
 COPY images/indexer/disabled.go /tmp/disabled.go
