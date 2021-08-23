@@ -197,7 +197,7 @@ sandbox () {
     statusline "Indexer version"
     INDEXER_VERSION=$(dc exec indexer cmd/algorand-indexer/algorand-indexer -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
     statusline "Postgres version"
-    dc exec indexer-db postgres --version
+    dc exec indexer-db postgres -V
     statusline "CouchDB version"
     dc exec search-db curl http://localhost:5984
   }
