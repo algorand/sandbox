@@ -23,9 +23,10 @@ sandbox commands:
   copyFrom <file> -> copy <file> from the algod container. Useful for offline transactions & LogicSigs plus TEAL work.
 
 algorand commands:
-  logs        -> stream algorand logs with the carpenter utility.
-  status      -> get node status.
-  goal (args) -> run goal command like 'goal node status'.
+  logs            -> stream algorand logs with the carpenter utility.
+  status          -> get node status.
+  goal (args)     -> run goal command like 'goal node status'.
+  tealdbg (args)  -> run tealdbg command to debug program execution.
 
 special flags for 'up' command:
   -v|--verbose           -> display verbose output when starting standbox.
@@ -91,14 +92,18 @@ To stage a file use the `copyTo` command. The file will be placed in the algod d
 
 To copy a file from sandbox (algod instance) use the `copyFrom` command. The file will be copied to sandbox directory on host filesystem.
 
-For example, these commands will stage two TEAL programs then use them in a `goal` command:
+#### copyTo example: 
+
+these commands will stage two TEAL programs then use them in a `goal` command:
 ```
 ~$ ./sandbox copyTo approval.teal
 ~$ ./sandbox copyTo clear.teal
-~$ ./sandbox goal app create --approval-prog approval.teal --clear-prog clear.teal --creator KFATIARWZK66SD5RLSDNI4YRMQCJEMPFEMKZA7JMTQOU5K45Q3N5WHPAKA --approval-prog simple.teal --clear-prog simple.teal --global-byteslices 1 --global-ints 1 --local-byteslices 1 --local-ints 1
+~$ ./sandbox goal app create --approval-prog approval.teal --clear-prog clear.teal --creator YOUR_ACCOUNT  --global-byteslices 1 --global-ints 1 --local-byteslices 1 --local-ints 1
 ```
 
-In other example, these commands will create and copy a signed logic transaction file, created by `goal`, to be sent or communicated off the chain (e.g. by email or as a QR Code) and submitted else where:
+#### copyFrom example: 
+
+these commands will create and copy a signed logic transaction file, created by `goal`, to be sent or communicated off the chain (e.g. by email or as a QR Code) and submitted else where:
 ```
 ~$ ./sandbox goal clerk send -f <source-account> -t <destination-account> --fee 1000 -a 1000000 -o "unsigned.txn"
 ~$ ./sandbox goal clerk sign --infile unsigned.txn --outfile signed.txn
@@ -136,6 +141,26 @@ export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 ```
+
+## Debugging for teal developers
+
+For detailed information on how to debug smart contracts and use tealdbg CLI,please consult with [Algorand Development Portal :: Smart Contract Debugging](https://developer.algorand.org/docs/features/asc1/debugging/#setting-the-debugger-context).
+
+Algorand smart contract debugging process uses `tealdbg` command line of algod instance(algod container in sandbox).
+
+**Note**: Always use `tealdbg` with `--listen 0.0.0.0` or `--listen [IP ADDRESS]` falgs, if you need to access tealdbg from outside of algod docker container!
+
+#### tealdbg examples:
+
+Debugging smart contract with Chrome Developer Tools (CDT):
+```~$ ./sandbox tealdbg debug ${TEAL_PROGRAM} -f cdt -d dryrun.json```
+
+Debugging smart contract with Web Interface (primal web UI)
+```~$ ./sandbox tealdbg debug ${TEAL_PROGRAM} -f web -d dryrun.json```
+  
+The debugging endpoint port (default 9392) is forwarded directly to the host machine and can be used directly by Chrome Dev Tools for debugging Algorand TEAL smart comtracts (Goto url chrome://inspect/ and configure port 9392 before using please).
+
+Note: If you change the port by running `tealdbg --port YOUR_PORT` then please modify the docker-compose.yml file and change all occurances of mapped 9392 port with your desired one.
 
 ## Errors
 

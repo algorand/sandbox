@@ -185,6 +185,22 @@ sandbox () {
     dc exec algod goal "$@"
   }
 
+  tealdbg_helper () {
+    if [[ "$*" == *--listen* ]]
+    then
+        dc exec algod tealdbg "$@"
+    else
+      if [[ "$*" == *debug* ]]
+      then
+          echo "tealdbg debug command called without --listen option therefore sandbox attached the option automatically!"
+          dc exec algod tealdbg  "$@" --listen 0.0.0.0
+          
+      else
+          dc exec algod tealdbg "$@"
+      fi        
+    fi    
+  }
+
   version_helper () {
     statusline "algod version"
     dc exec algod goal -v
@@ -570,13 +586,20 @@ EOF
       goal_helper "$@"
       ;;
 
+    tealdbg)
+      shift
+      tealdbg_helper "$@"
+      ;;
+
     copyTo|cpt)
       shift
+      statusline "Now copying $1 to Algod container in /opt/data/$1"
       docker cp "$1" "$(dc ps -q algod):/opt/data/$(basename $1)"
       ;;
 
     copyFrom|cpf)
       shift
+      statusline "Now copying  /opt/data/$1 from Algod container to $SANDBOX_DIR/" 
       docker cp "$(dc ps -q algod):/opt/data/$(basename $1)" "$1"
       ;;
 
