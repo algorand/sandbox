@@ -161,4 +161,4 @@ services:
   - docker
 
 script:
-  - ./sandbox up $CONFIG
+  - ./sandbox up $CONFIG -v
