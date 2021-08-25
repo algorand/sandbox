@@ -15,6 +15,7 @@ FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channe
 USE_FAST_CATCHUP=1
 INTERACTIVE_MODE=0
 VERBOSE_MODE=0
+SKIP_BROWSER="${SKIP_BROWSER:-}"
 
 #########################
 # Config file variables #
