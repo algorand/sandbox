@@ -1,161 +1,115 @@
 jobs:
   include:
-    # Bionic
-    - stage: "Linux, Bionic, AMD64"
+    # Focal
+    - stage: "Linux Sandbox Up"
       os: linux
+      dist: focal
+      arch: amd64
+      env : CONFIG=
+    - os: linux
+      dist: focal
+      arch: amd64
+      env : CONFIG=betanet
+    - os: linux
+      dist: focal
+      arch: amd64
+      env : CONFIG=testnet
+    - os: linux
+      dist: focal
+      arch: amd64
+      env : CONFIG=devnet
+    - os: linux
+      dist: focal
+      arch: amd64
+      env : CONFIG=dev
+    - os: linux
+      dist: focal
+      arch: amd64
+      env : CONFIG=beta
+    - os: linux
+      dist: focal
+      arch: amd64
+      env : CONFIG=release
+    - os: linux
+      dist: focal
+      arch: amd64
+      env : CONFIG=nightly
+
+    # Bionic
+    - os: linux
       dist: bionic
       arch: amd64
       env : CONFIG=
-      #    - stage: "Linux, Bionic, AMD64"
-      #      os: linux
+      #    - #      os: linux
       #      dist: bionic
       #      arch: amd64
       #      env : CONFIG=mainnet
-    - stage: "Linux, Bionic, AMD64"
-      os: linux
+    - os: linux
       dist: bionic
       arch: amd64
       env : CONFIG=betanet
-    - stage: "Linux, Bionic, AMD64"
-      os: linux
+    - os: linux
       dist: bionic
       arch: amd64
       env : CONFIG=testnet
-    - stage: "Linux, Bionic, AMD64"
-      os: linux
+    - os: linux
       dist: bionic
       arch: amd64
       env : CONFIG=devnet
-    - stage: "Linux, Bionic, AMD64"
-      os: linux
+    - os: linux
       dist: bionic
       arch: amd64
       env : CONFIG=dev
-    - stage: "Linux, Bionic, AMD64"
-      os: linux
+    - os: linux
       dist: bionic
       arch: amd64
       env : CONFIG=beta
-    - stage: "Linux, Bionic, AMD64"
-      os: linux
+    - os: linux
       dist: bionic
       arch: amd64
       env : CONFIG=release
-    - stage: "Linux, Bionic, AMD64"
-      os: linux
+    - os: linux
       dist: bionic
       arch: amd64
       env : CONFIG=nightly
 
     # Xenial
-    - stage: "Linux, Xenial, AMD64"
-      os: linux
+    - os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=
-      #    - stage: "Linux, Xenial, AMD64"
-      #      os: linux
+      #    - #      os: linux
       #      dist: xenial
       #      arch: amd64
       #      env : CONFIG=mainnet
-    - stage: "Linux, Xenial, AMD64"
-      os: linux
+    - os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=betanet
-    - stage: "Linux, Xenial, AMD64"
-      os: linux
+    - os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=testnet
-    - stage: "Linux, Xenial, AMD64"
-      os: linux
+    - os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=devnet
-    - stage: "Linux, Xenial, AMD64"
-      os: linux
+    - os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=dev
-    - stage: "Linux, Xenial, AMD64"
-      os: linux
+    - os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=beta
-    - stage: "Linux, Xenial, AMD64"
-      os: linux
+    - os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=release
-    - stage: "Linux, Xenial, AMD64"
-      os: linux
+    - os: linux
       dist: xenial
       arch: amd64
       env : CONFIG=nightly
-
-    # Trusty
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CONFIG=
-      #    - stage: "Linux, Trusty, AMD64"
-      #      os: linux
-      #      dist: trusty
-      #      arch: amd64
-      #      env : CONFIG=mainnet
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CONFIG=betanet
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CONFIG=testnet
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CONFIG=devnet
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CONFIG=dev
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CONFIG=beta
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CONFIG=release
-    - stage: "Linux, Trusty, AMD64"
-      os: linux
-      dist: trusty
-      arch: amd64
-      env : CONFIG=nightly
-
-    # Docker not supported on these...
-    #- name: "Linux, Precise, AMD64"
-    #  os: linux
-    #  dist: precise
-    #
-    # Docker container is hard coded to use the AMD64 installer.
-    # - name: "Linux, Bionic, ARM64"
-    #  os: linux
-    #  dist: bionic
-    #  arch: arm64
-    #
-    #- name: "Linux, Xenial, ARM64"
-    #  os: linux
-    #  dist: xenial
-    #  arch: arm64
 
 services:
   - docker
