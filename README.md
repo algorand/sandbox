@@ -148,7 +148,7 @@ For detailed information on how to debug smart contracts and use tealdbg CLI,ple
 
 Algorand smart contract debugging process uses `tealdbg` command line of algod instance(algod container in sandbox).
 
-**Note**: Always use `tealdbg` with `--listen 0.0.0.0` or `--listen [IP ADDRESS]` falgs, if you need to access tealdbg from outside of algod docker container!
+**Note**: Always use `tealdbg` with `--listen 0.0.0.0` or `--listen [IP ADDRESS]` flags, if you need to access tealdbg from outside of algod docker container!
 
 #### tealdbg examples:
 
