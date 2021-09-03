@@ -78,6 +78,8 @@ Sandbox supports two primary modes of operation. By default, a private network w
 
 By default you will be given access to a private network. This environment is preloaded with a number of accounts ready to use for testing transactions, and includes an `Indexer` service configured to synchronize against the private network. Because it doesn't require catching up to one of the long running networks it also starts very quickly.
 
+There is also a `dev` configuration that runs a private network with a dev mode network. In this configuration, every transaction being sent to the node automatically will generate a new block, rather than wait for a new round in real time. 
+
 ### Real Network
 
 The `mainnet`, `testnet`, `betanet`, and `devnet` configurations configure the sandbox to connect to one of those long running networks. Once started it will automatically attempt to catchup to the latest round. Catchup tends to take a while and a progress bar will be displayed to keep you informed of the progress.
