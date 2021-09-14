@@ -1,5 +1,6 @@
 {
     "Genesis": {
+        "ConsensusProtocol": "future",
         "NetworkName": "devmodenet",
         "Wallets": [
             {
