@@ -2,7 +2,9 @@
 
 This is a fast way to create and configure an Algorand development environment with [Algod](https://github.com/algorand/go-algorand) and [Indexer](https://github.com/algorand/indexer).
 
-You will need to install **Docker Compose**, [instructions are available here](https://docs.docker.com/compose/install/).
+You will need to have **Docker Compose** installed, [instructions are available here](https://docs.docker.com/compose/install/).
+
+If you are on a *Windows* machine **Docker Desktop** comes with the necessary tools. Please see the [Windows](#windows) section in getting started for more details.
 
 **Warning**: Algorand Sandbox is *not* meant for production environments and should *not* be used to store secure Algorand keys. Updates may reset all the data and keys that are stored.
 
@@ -66,9 +68,13 @@ Run the test command for examples of how to interact with the environment:
 
 ### Windows
 
-1. Install Git for Windows: https://gitforwindows.org/
-2. Install and launch Docker for Windows: https://docs.docker.com/get-docker
-3. Open "Git Bash" and follow the instruction for Ubuntu and macOS above, in the "Git Bash" terminal.
+Note: While installing the following programs, several restarts may be required for windows to recognize the new software correctly.
+
+1. In order to work with Docker Desktop on windows, a prerequisite is **WSL2** and [install instructions are available here](https://docs.microsoft.com/en-us/windows/wsl/install).
+2. Install **Docker Desktop** using the [instructions available here](https://docs.docker.com/desktop/windows/install/).
+3. We recommend using the official Windows Terminal, [available in the app store here](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701).
+4. Install whatever distribution of Linux you'd like. 
+5. Open the Windows Terminal with the distribution you installed in the previous step and follow the instruction for Ubuntu and macOS above.
 
 ## Private Network vs Real Network
 
