@@ -68,13 +68,41 @@ Run the test command for examples of how to interact with the environment:
 
 ### Windows
 
+
+Note: Be sure to use the latest version of Windows 10. Older versions may not work properly.
+
 Note: While installing the following programs, several restarts may be required for windows to recognize the new software correctly.
+
+#### Option 1: Using WSL 2
 
 1. In order to work with Docker Desktop on windows, a prerequisite is **WSL2** and [install instructions are available here](https://docs.microsoft.com/en-us/windows/wsl/install).
 2. Install **Docker Desktop** using the [instructions available here](https://docs.docker.com/desktop/windows/install/).
 3. We recommend using the official Windows Terminal, [available in the app store here](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701).
 4. Install whatever distribution of Linux you'd like. 
 5. Open the Windows Terminal with the distribution you installed in the previous step and follow the instruction for Ubuntu and macOS above.
+
+#### Option 2: Using Git for Windows/ MSYS 2
+
+1. Install Git for Windows: https://gitforwindows.org/
+2. Install and launch Docker for Windows: https://docs.docker.com/get-docker
+3. Open "Git Bash" and follow the instruction for Ubuntu and macOS above, in the "Git Bash" terminal.
+
+##### Troubleshooting
+
+* If you see 
+  ```plain
+  the input device is not a TTY. If you are using mintty, try prefixing the command with 'winpty'.
+  ```
+  check that you are using the latest versions of: Docker, Git for Windows, and Windows 10.
+
+  If this does not solve the issue, [open an issue](https://github.com/algorand/sandbox/issues) with all the versions with all the software used, as well as all the commands typed.
+
+* If you see
+  ```plain
+  Error response from daemon: open \\.\pipe\docker_engine_linux: The system cannot find the file specified.
+  ```
+  check that Docker is running.
+
 
 ## Private Network vs Real Network
 
