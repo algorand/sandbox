@@ -82,9 +82,13 @@ Sandbox supports two primary modes of operation. By default, a private network w
 
 ### Private Network
 
-By default you will be given access to a private network. This environment is preloaded with a number of accounts ready to use for testing transactions, and includes an `Indexer` service configured to synchronize against the private network. Because it doesn't require catching up to one of the long running networks it also starts very quickly.
+By default the sandbox will be started with the `release` configuration which is a private network.  The other private network configurations are those not suffixed with `net`. Namely these are `beta`, `dev` and `nightly. 
 
-There is also a `dev` configuration that runs a private network with a dev mode network. In this configuration, every transaction being sent to the node automatically will generate a new block, rather than wait for a new round in real time. 
+The private network environment creates and funds a number of accounts in the container local `kmd` ready to use for testing transactions. These accounts can be seen using `./sandbox goal account list`. 
+
+Private networks also include an `Indexer` service configured to synchronize against the private network. Because it doesn't require catching up to one of the long running networks it also starts very quickly.
+
+The `dev` configuration runs a private network in dev mode. In this mode, every transaction being sent to the node automatically generates a new block, rather than wait for a new round in real time.  This is extremely useful for fast e2e testing of your application. 
 
 ### Real Network
 
