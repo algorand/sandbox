@@ -76,13 +76,31 @@ Note: While installing the following programs, several restarts may be required 
 4. Install whatever distribution of Linux you'd like. 
 5. Open the Windows Terminal with the distribution you installed in the previous step and follow the instruction for Ubuntu and macOS above.
 
-## Private Network vs Real Network
+## Basic Configuration 
 
 Sandbox supports two primary modes of operation. By default, a private network will be created, which is only available from the local environment. There is also a real network mode which will connect you to one of the long running Algorand networks and allow you to interact with it.
 
+
+To choose which configuration you'd like to run, you may run:
+```sh
+./sandbox up $CONFIG
+```
+
+Where `$CONFIG` is specified as one of the configurations in the sandbox directory. For example to run a `dev` mode network, run:
+```sh
+./sandbox up dev
+```
+
+If you'd like to switch the configuration:
+```sh
+./sandbox down
+./sandbox clean
+./sandbox up $NEW_CONFIG
+```
+
 ### Private Network
 
-By default the sandbox will be started with the `release` configuration which is a private network.  The other private network configurations are those not suffixed with `net`. Namely these are `beta`, `dev` and `nightly. 
+If no configuration is specified the sandbox will be started with the `release` configuration which is a private network.  The other private network configurations are those not suffixed with `net`. Namely these are `beta`, `dev` and `nightly`. 
 
 The private network environment creates and funds a number of accounts in the container local `kmd` ready to use for testing transactions. These accounts can be seen using `./sandbox goal account list`. 
 
@@ -90,41 +108,19 @@ Private networks also include an `Indexer` service configured to synchronize aga
 
 The `dev` configuration runs a private network in dev mode. In this mode, every transaction being sent to the node automatically generates a new block, rather than wait for a new round in real time.  This is extremely useful for fast e2e testing of your application. 
 
-### Real Network
+### Public Network
 
 The `mainnet`, `testnet`, `betanet`, and `devnet` configurations configure the sandbox to connect to one of those long running networks. Once started it will automatically attempt to catchup to the latest round. Catchup tends to take a while and a progress bar will be displayed to keep you informed of the progress.
 
-Due to technical limitations, this configuration does not contain preconfigured accounts that you can immediately transact with, and Indexer is not available.
+Due to technical limitations, this configuration does not contain preconfigured accounts that you can immediately transact with, and Indexer is not available. You may create a new wallet and import accounts at will using the [goal wallet new](https://developer.algorand.org/docs/clis/goal/wallet/new/) command to create a wallet and the [goal account import](https://developer.algorand.org/docs/clis/goal/account/import/) or [goal account new](https://developer.algorand.org/docs/clis/goal/account/new/) commands. 
 
-## Working with files
+!!!note
+A newly created account will not be funded and wont be able to submit transactions until it is. If you're using a testnet configuration please visit the [TestNet Dispenser](https://bank.testnet.algorand.network/)
 
-Some Algorand commands require using a file for the input. For example working with TEAL programs. In some other cases like working with Logical signatures or transactions offline you may need to get a file output from LogicSig or transaction.
-
-To stage a file use the `copyTo` command. The file will be placed in the algod data directory, which is where sandbox executes `goal`. This means the files can be used without specifying their full path.
-
-To copy a file from sandbox (algod instance) use the `copyFrom` command. The file will be copied to sandbox directory on host filesystem.
-
-#### copyTo example: 
-
-these commands will stage two TEAL programs then use them in a `goal` command:
-```
-~$ ./sandbox copyTo approval.teal
-~$ ./sandbox copyTo clear.teal
-~$ ./sandbox goal app create --approval-prog approval.teal --clear-prog clear.teal --creator YOUR_ACCOUNT  --global-byteslices 1 --global-ints 1 --local-byteslices 1 --local-ints 1
-```
-
-#### copyFrom example: 
-
-these commands will create and copy a signed logic transaction file, created by `goal`, to be sent or communicated off the chain (e.g. by email or as a QR Code) and submitted else where:
-```
-~$ ./sandbox goal clerk send -f <source-account> -t <destination-account> --fee 1000 -a 1000000 -o "unsigned.txn"
-~$ ./sandbox goal clerk sign --infile unsigned.txn --outfile signed.txn
-~$ ./sandbox copyFrom "signed.txn"
-```
 
 ## Advanced configurations
 
-The sandbox environment is completely configured using the `config.*` files in the root of this repository. For example, the default configuration is **config.nightly**:
+The sandbox environment is completely configured using the `config.*` files in the root of this repository. For example, the default configuration for **config.nightly** is:
 ```
 export ALGOD_CHANNEL="nightly"
 export ALGOD_URL=""
@@ -153,6 +149,33 @@ export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 ```
+
+## Working with files
+
+Some Algorand commands require using a file for the input. For example working with TEAL programs. In some other cases like working with Logical signatures or transactions offline you may need to get a file output from LogicSig or transaction.
+
+To stage a file use the `copyTo` command. The file will be placed in the algod data directory, which is where sandbox executes `goal`. This means the files can be used without specifying their full path.
+
+To copy a file from sandbox (algod instance) use the `copyFrom` command. The file will be copied to sandbox directory on host filesystem.
+
+#### copyTo example: 
+
+these commands will stage two TEAL programs then use them in a `goal` command:
+```sh
+~$ ./sandbox copyTo approval.teal
+~$ ./sandbox copyTo clear.teal
+~$ ./sandbox goal app create --approval-prog approval.teal --clear-prog clear.teal --creator YOUR_ACCOUNT  --global-byteslices 1 --global-ints 1 --local-byteslices 1 --local-ints 1
+```
+
+#### copyFrom example: 
+
+these commands will create and copy a signed logic transaction file, created by `goal`, to be sent or communicated off the chain (e.g. by email or as a QR Code) and submitted else where:
+```
+~$ ./sandbox goal clerk send -f <source-account> -t <destination-account> --fee 1000 -a 1000000 -o "unsigned.txn"
+~$ ./sandbox goal clerk sign --infile unsigned.txn --outfile signed.txn
+~$ ./sandbox copyFrom "signed.txn"
+```
+
 
 ## Debugging for teal developers
 
