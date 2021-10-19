@@ -2,9 +2,9 @@
 
 This is a fast way to create and configure an Algorand development environment with [Algod](https://github.com/algorand/go-algorand) and [Indexer](https://github.com/algorand/indexer).
 
-You will need to have **Docker Compose** installed, [instructions are available here](https://docs.docker.com/compose/install/).
+**Docker Compose**  _MUST_ be installed, [instructions are available here](https://docs.docker.com/compose/install/).
 
-If you are on a *Windows* machine **Docker Desktop** comes with the necessary tools. Please see the [Windows](#windows) section in getting started for more details.
+If running on a *Windows* machine **Docker Desktop** comes with the necessary tools. Please see the [Windows](#windows) section in getting started for more details.
 
 **Warning**: Algorand Sandbox is *not* meant for production environments and should *not* be used to store secure Algorand keys. Updates may reset all the data and keys that are stored.
 
@@ -73,15 +73,15 @@ Note: While installing the following programs, several restarts may be required 
 1. In order to work with Docker Desktop on windows, a prerequisite is **WSL2** and [install instructions are available here](https://docs.microsoft.com/en-us/windows/wsl/install).
 2. Install **Docker Desktop** using the [instructions available here](https://docs.docker.com/desktop/windows/install/).
 3. We recommend using the official Windows Terminal, [available in the app store here](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701).
-4. Install whatever distribution of Linux you'd like. 
-5. Open the Windows Terminal with the distribution you installed in the previous step and follow the instruction for Ubuntu and macOS above.
+4. Install whatever distribution of Linux desired. 
+5. Open the Windows Terminal with the distribution installed in the previous step and follow the instruction for Ubuntu and macOS above.
 
 ## Basic Configuration 
 
-Sandbox supports two primary modes of operation. By default, a private network will be created, which is only available from the local environment. There is also a real network mode which will connect you to one of the long running Algorand networks and allow you to interact with it.
+Sandbox supports two primary modes of operation. By default, a [private network](#private-network) will be created, which is only available from the local environment. There are also configurations available for the [public networks](#public-network) which will attempt to connect to one of the long running Algorand networks and allow interaction with it.
 
 
-To choose which configuration you'd like to run, you may run:
+To specify which configuration to run, the following command may be run:
 ```sh
 ./sandbox up $CONFIG
 ```
@@ -91,7 +91,7 @@ Where `$CONFIG` is specified as one of the configurations in the sandbox directo
 ./sandbox up dev
 ```
 
-If you'd like to switch the configuration:
+To switch the configuration:
 ```sh
 ./sandbox down
 ./sandbox clean
@@ -106,16 +106,16 @@ The private network environment creates and funds a number of accounts in the co
 
 Private networks also include an `Indexer` service configured to synchronize against the private network. Because it doesn't require catching up to one of the long running networks it also starts very quickly.
 
-The `dev` configuration runs a private network in dev mode. In this mode, every transaction being sent to the node automatically generates a new block, rather than wait for a new round in real time.  This is extremely useful for fast e2e testing of your application. 
+The `dev` configuration runs a private network in dev mode. In this mode, every transaction being sent to the node automatically generates a new block, rather than wait for a new round in real time.  This is extremely useful for fast e2e testing of an application. 
 
 ### Public Network
 
-The `mainnet`, `testnet`, `betanet`, and `devnet` configurations configure the sandbox to connect to one of those long running networks. Once started it will automatically attempt to catchup to the latest round. Catchup tends to take a while and a progress bar will be displayed to keep you informed of the progress.
+The `mainnet`, `testnet`, `betanet`, and `devnet` configurations configure the sandbox to connect to one of those long running networks. Once started it will automatically attempt to catchup to the latest round. Catchup tends to take a while and a progress bar will be displayed to illustrate of the progress.
 
-Due to technical limitations, this configuration does not contain preconfigured accounts that you can immediately transact with, and Indexer is not available. You may create a new wallet and import accounts at will using the [goal wallet new](https://developer.algorand.org/docs/clis/goal/wallet/new/) command to create a wallet and the [goal account import](https://developer.algorand.org/docs/clis/goal/account/import/) or [goal account new](https://developer.algorand.org/docs/clis/goal/account/new/) commands. 
+Due to technical limitations, this configuration does not contain preconfigured accounts that may be immediately transact with, and Indexer is not available. A new wallet and accounts may be created or imported at will using the [goal wallet new](https://developer.algorand.org/docs/clis/goal/wallet/new/) command to create a wallet and the [goal account import](https://developer.algorand.org/docs/clis/goal/account/import/) or [goal account new](https://developer.algorand.org/docs/clis/goal/account/new/) commands. 
 
 !!!note
-A newly created account will not be funded and wont be able to submit transactions until it is. If you're using a testnet configuration please visit the [TestNet Dispenser](https://bank.testnet.algorand.network/)
+A newly created account will not be funded and wont be able to submit transactions until it is. If a `testnet` configuration is used, please visit the [TestNet Dispenser](https://bank.testnet.algorand.network/)
 
 
 ## Advanced configurations
@@ -136,7 +136,7 @@ export INDEXER_DISABLED=""
 
 Indexer is always built from source since it can be done quickly. For most configurations, algod will be installed using our standard release channels, but building from source is also available by setting the git URL, Branch and optionally a specific SHA commit hash.
 
-The **up** command looks for the config extension based on the argument provided. If you have a custom configuration pointed to a fork, you can start the sandbox with your code:
+The **up** command looks for the config extension based on the argument provided. With a custom configuration pointed to a fork, the sandbox will start using the fork:
 ```
 export ALGOD_CHANNEL=""
 export ALGOD_URL="https://github.com/<user>/go-algorand"
@@ -152,7 +152,7 @@ export INDEXER_DISABLED=""
 
 ## Working with files
 
-Some Algorand commands require using a file for the input. For example working with TEAL programs. In some other cases like working with Logical signatures or transactions offline you may need to get a file output from LogicSig or transaction.
+Some Algorand commands require using a file for the input. For example working with TEAL programs. In some other cases like working with Logical signatures or transactions offline the output from a LogicSig or transaction may be needed. 
 
 To stage a file use the `copyTo` command. The file will be placed in the algod data directory, which is where sandbox executes `goal`. This means the files can be used without specifying their full path.
 
@@ -183,7 +183,7 @@ For detailed information on how to debug smart contracts and use tealdbg CLI,ple
 
 Algorand smart contract debugging process uses `tealdbg` command line of algod instance(algod container in sandbox).
 
-**Note**: Always use `tealdbg` with `--listen 0.0.0.0` or `--listen [IP ADDRESS]` flags, if you need to access tealdbg from outside of algod docker container!
+**Note**: Always use `tealdbg` with `--listen 0.0.0.0` or `--listen [IP ADDRESS]` flags, if access is needed to tealdbg from outside of algod docker container!
 
 #### tealdbg examples:
 
@@ -195,7 +195,7 @@ Debugging smart contract with Web Interface (primal web UI)
   
 The debugging endpoint port (default 9392) is forwarded directly to the host machine and can be used directly by Chrome Dev Tools for debugging Algorand TEAL smart comtracts (Goto url chrome://inspect/ and configure port 9392 before using please).
 
-Note: If you change the port by running `tealdbg --port YOUR_PORT` then please modify the docker-compose.yml file and change all occurances of mapped 9392 port with your desired one.
+Note: If a different port is needed than the default, it may be changed by running `tealdbg --port YOUR_PORT` then modifying the docker-compose.yml file and change all occurances of mapped 9392 port with the desired one.
 
 ## Errors
 
