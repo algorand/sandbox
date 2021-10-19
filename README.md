@@ -4,7 +4,7 @@ This is a fast way to create and configure an Algorand development environment w
 
 **Docker Compose**  _MUST_ be installed, [instructions are available here](https://docs.docker.com/compose/install/).
 
-If running on a *Windows* machine **Docker Desktop** comes with the necessary tools. Please see the [Windows](#windows) section in getting started for more details.
+On a *Windows* machine, **Docker Desktop** comes with the necessary tools. Please see the [Windows](#windows) section in getting started for more details.
 
 **Warning**: Algorand Sandbox is *not* meant for production environments and should *not* be used to store secure Algorand keys. Updates may reset all the data and keys that are stored.
 
@@ -81,12 +81,14 @@ Note: While installing the following programs, several restarts may be required 
 Sandbox supports two primary modes of operation. By default, a [private network](#private-network) will be created, which is only available from the local environment. There are also configurations available for the [public networks](#public-network) which will attempt to connect to one of the long running Algorand networks and allow interaction with it.
 
 
-To specify which configuration to run, the following command may be run:
+To specify which configuration to run:
 ```sh
 ./sandbox up $CONFIG
 ```
 
-Where `$CONFIG` is specified as one of the configurations in the sandbox directory. For example to run a `dev` mode network, run:
+Where `$CONFIG` is specified as one of the configurations in the sandbox directory. 
+
+For example to run a `dev` mode network, run:
 ```sh
 ./sandbox up dev
 ```
@@ -102,7 +104,7 @@ To switch the configuration:
 
 If no configuration is specified the sandbox will be started with the `release` configuration which is a private network.  The other private network configurations are those not suffixed with `net`. Namely these are `beta`, `dev` and `nightly`. 
 
-The private network environment creates and funds a number of accounts in the container local `kmd` ready to use for testing transactions. These accounts can be seen using `./sandbox goal account list`. 
+The private network environment creates and funds a number of accounts in the algod containers local `kmd` ready to use for testing transactions. These accounts can be reviewed using `./sandbox goal account list`. 
 
 Private networks also include an `Indexer` service configured to synchronize against the private network. Because it doesn't require catching up to one of the long running networks it also starts very quickly.
 
@@ -114,8 +116,8 @@ The `mainnet`, `testnet`, `betanet`, and `devnet` configurations configure the s
 
 Due to technical limitations, this configuration does not contain preconfigured accounts that may be immediately transact with, and Indexer is not available. A new wallet and accounts may be created or imported at will using the [goal wallet new](https://developer.algorand.org/docs/clis/goal/wallet/new/) command to create a wallet and the [goal account import](https://developer.algorand.org/docs/clis/goal/account/import/) or [goal account new](https://developer.algorand.org/docs/clis/goal/account/new/) commands. 
 
-!!!note
-A newly created account will not be funded and wont be able to submit transactions until it is. If a `testnet` configuration is used, please visit the [TestNet Dispenser](https://bank.testnet.algorand.network/)
+_Note_
+A newly created account will not be funded and wont be able to submit transactions until it is. If a `testnet` configuration is used, please visit the [TestNet Dispenser](https://bank.testnet.algorand.network/) to fund the newly created account.
 
 
 ## Advanced configurations
