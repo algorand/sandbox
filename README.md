@@ -2,7 +2,7 @@
 
 This is a fast way to create and configure an Algorand development environment with [Algod](https://github.com/algorand/go-algorand) and [Indexer](https://github.com/algorand/indexer).
 
-**Docker Compose**  _MUST_ be installed, [instructions are available here](https://docs.docker.com/compose/install/).
+**Docker Compose**  _MUST_ be installed. [Instructions](https://docs.docker.com/compose/install/).
 
 On a *Windows* machine, **Docker Desktop** comes with the necessary tools. Please see the [Windows](#windows) section in getting started for more details.
 
@@ -55,9 +55,14 @@ Make sure the docker daemon is running and docker-compose is installed.
 Open a terminal and run:
 ```
 git clone https://github.com/algorand/sandbox.git
+```
+In whatever local directory the sandbox should reside. Then:
+```
 cd sandbox
 ./sandbox up
 ```
+This will run the `sandbox` shell script with the default configuration. See the [Basic Configuration](#basic-configuration) for other options.
+
 
 Note for Ubuntu: You may need to alias `docker` to `sudo docker` or follow the steps in https://docs.docker.com/install/linux/linux-postinstall so that a non-root user can user the command `docker`.
 
@@ -66,9 +71,12 @@ Run the test command for examples of how to interact with the environment:
 ./sandbox test
 ```
 
+
 ### Windows
 
 Note: While installing the following programs, several restarts may be required for windows to recognize the new software correctly.
+
+The [installation instructions](https://docs.docker.com/desktop/windows/install/) for Docker Desktop contain some of this but are repeated here.
 
 1. In order to work with Docker Desktop on windows, a prerequisite is **WSL2** and [install instructions are available here](https://docs.microsoft.com/en-us/windows/wsl/install).
 2. Install **Docker Desktop** using the [instructions available here](https://docs.docker.com/desktop/windows/install/).
