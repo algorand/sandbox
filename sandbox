@@ -181,7 +181,8 @@ sandbox () {
   }
 
   dc () {
-    docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    echo "$SANDBOX_DIR/docker-compose.yml"; echo "$@"
+    docker-compose -f "$SANDBOX_DIR/docker-compose.dev.yml" "$@"
   }
 
   # dc is used when a pseudo-TTY is required
@@ -190,7 +191,8 @@ sandbox () {
   dc_pty () {
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
-    $WINDOWS_PTY_PREFIX docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    echo "$SANDBOX_DIR/docker-compose.$@.yml"; echo "$@"
+    $WINDOWS_PTY_PREFIX docker-compose -f "$SANDBOX_DIR/docker-compose.dev.yml" "$@"
   }
 
   rebuild_if_needed () {
@@ -576,16 +578,16 @@ EOF
 
       TOKEN=$(cat "$SANDBOX_DIR/config/token")
       statusline "Test Algod REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:4001/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
-      curl "localhost:4001/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
+      printc $default "~$ ${blue}curl ${teal}localhost:4002/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
+      curl "localhost:4002/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
 
       statusline "Test KMD REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:4002/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
-      curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $TOKEN"
+      printc $default "~$ ${blue}curl ${teal}localhost:4003/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
+      curl localhost:4003/v1/wallets -H "X-KMD-API-Token: $TOKEN"
 
       statusline "\nTest Indexer REST API..."
-      printc $default "~$ ${blue}curl ${teal}\"localhost:8980/health?pretty\""
-      curl "localhost:8980/health?pretty"
+      printc $default "~$ ${blue}curl ${teal}\"localhost:8981/health?pretty\""
+      curl "localhost:8981/health?pretty"
       ;;
 
     enter)
@@ -624,6 +626,10 @@ EOF
       shift
       statusline "Now copying  /opt/data/$1 from Algod container to $SANDBOX_DIR/" 
       docker cp "$(dc ps -q algod):/opt/data/$(basename $1)" "$1"
+      ;;
+    exec)
+      shift
+      docker exec -it "$(dc ps -q algod)" sh -c "$@"
       ;;
 
     *)
