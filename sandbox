@@ -31,6 +31,14 @@ export INDEXER_BRANCH=""
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 
+
+export ALGOD_PORT="4001"
+export KMD_PORT="4002"
+export INDEXER_PORT="8980"
+export POSTGRES_PORT="5432"
+export TEALDBG_PORT="9839"
+
+
 ######################################
 # Compatibility with Windows / MSYS2 #
 ######################################
@@ -181,8 +189,7 @@ sandbox () {
   }
 
   dc () {
-    echo "$SANDBOX_DIR/docker-compose.yml"; echo "$@"
-    docker-compose -f "$SANDBOX_DIR/docker-compose.dev.yml" "$@"
+    docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
   # dc is used when a pseudo-TTY is required
@@ -191,8 +198,7 @@ sandbox () {
   dc_pty () {
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
-    echo "$SANDBOX_DIR/docker-compose.$@.yml"; echo "$@"
-    $WINDOWS_PTY_PREFIX docker-compose -f "$SANDBOX_DIR/docker-compose.dev.yml" "$@"
+    $WINDOWS_PTY_PREFIX docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
   rebuild_if_needed () {
@@ -374,6 +380,17 @@ sandbox () {
       CATCHPOINT=""
     fi
   }
+
+  source_config_file() {
+      # Grab active config if there is one
+      ACTIVE_CONFIG=""
+      if [ -f "$ACTIVE_CONFIG_FILE" ]; then
+        ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
+      fi
+      CONFIG_FILE="$SANDBOX_DIR/config.$ACTIVE_CONFIG"
+      source "$CONFIG_FILE"
+  }
+
 
   # Start the algorand node
   up () {
@@ -572,22 +589,23 @@ EOF
       ;;
 
     test)
+      source_config_file
       statusline "Test command forwarding..."
       printc $default "~$ ${blue}docker exec -it algod uname -a"
       dc exec algod uname -a
 
       TOKEN=$(cat "$SANDBOX_DIR/config/token")
       statusline "Test Algod REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:4002/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
-      curl "localhost:4002/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
+      printc $default "~$ ${blue}curl ${teal}localhost:$ALGOD_PORT/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
+      curl "localhost:$ALGOD_PORT/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
 
       statusline "Test KMD REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:4003/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
-      curl localhost:4003/v1/wallets -H "X-KMD-API-Token: $TOKEN"
+      printc $default "~$ ${blue}curl ${teal}localhost:$KMD_PORT/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
+      curl localhost:$KMD_PORT/v1/wallets -H "X-KMD-API-Token: $TOKEN"
 
       statusline "\nTest Indexer REST API..."
-      printc $default "~$ ${blue}curl ${teal}\"localhost:8981/health?pretty\""
-      curl "localhost:8981/health?pretty"
+      printc $default "~$ ${blue}curl ${teal}\"localhost:$INDEXER_PORT/health?pretty\""
+      curl "localhost:$INDEXER_PORT/health?pretty"
       ;;
 
     enter)

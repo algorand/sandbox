@@ -15,13 +15,13 @@ services:
         GENESIS_FILE: "${NETWORK_GENESIS_FILE}"
         TEMPLATE: "${NETWORK_TEMPLATE:-images/algod/template.json}"
         TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        ALGOD_PORT: "4001"
-        KMD_PORT: "4002"
-        CDT_PORT: "9392"
+        ALGOD_PORT: "${ALGOD_PORT}"
+        KMD_PORT: "${KMD_PORT}"
+        TEALDBG_PORT: "${TEALDBG_PORT}"
     ports:
-      - 4001:4001
-      - 4002:4002
-      - 9392:9392
+      - ${ALGOD_PORT}:${ALGOD_PORT}
+      - ${KMD_PORT}:${KMD_PORT}
+      - ${TEALDBG_PORT}:${TEALDBG_PORT}
 
   indexer:
     container_name: "algorand-sandbox-indexer"
@@ -33,14 +33,14 @@ services:
         BRANCH: "${INDEXER_BRANCH}"
         SHA: "${INDEXER_SHA}"
     ports:
-      - 8980:8980
+      - ${INDEXER_PORT}:${INDEXER_PORT}
     restart: unless-stopped
     environment:
       DISABLED: "${INDEXER_DISABLED}"
-      PORT: "8980"
+      PORT: "${INDEXER_PORT}"
       SNAPSHOT: ""
       CONNECTION_STRING: "host=indexer-db port=5432 user=algorand password=algorand dbname=indexer_db sslmode=disable"
-      ALGOD_ADDR: "algod:4001"
+      ALGOD_ADDR: "algod:${ALGOD_PORT}"
       ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     depends_on:
       - indexer-db
@@ -50,7 +50,7 @@ services:
     image: "postgres:13-alpine"
     container_name: "algorand-sandbox-postgres"
     ports:
-      - 5433:5432
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
     user: postgres
     environment:
       POSTGRES_USER: algorand
