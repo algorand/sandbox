@@ -388,6 +388,8 @@ sandbox () {
         ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
       fi
       CONFIG_FILE="$SANDBOX_DIR/config.$ACTIVE_CONFIG"
+
+      export CONFIG_NAME=$ACTIVE_CONFIG
       source "$CONFIG_FILE"
   }
 
@@ -417,6 +419,7 @@ sandbox () {
         NEW_CONFIG="$1"
       fi
       CONFIG_FILE="$SANDBOX_DIR/config.$NEW_CONFIG"
+      export CONFIG_NAME=$NEW_CONFIG
 
       # Verify config exists
       if [ ! -f "$CONFIG_FILE" ]; then

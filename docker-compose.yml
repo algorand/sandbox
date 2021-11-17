@@ -2,7 +2,7 @@ version: '3'
 
 services:
   algod:
-    container_name: "algorand-sandbox-algod"
+    container_name: "algorand-${CONFIG_NAME}-algod"
     build:
       context: .
       dockerfile: ./images/algod/Dockerfile
@@ -24,7 +24,7 @@ services:
       - ${TEALDBG_PORT}:${TEALDBG_PORT}
 
   indexer:
-    container_name: "algorand-sandbox-indexer"
+    container_name: "algorand-${CONFIG_NAME}-indexer"
     build:
       context: .
       dockerfile: ./images/indexer/Dockerfile
@@ -48,7 +48,7 @@ services:
 
   indexer-db:
     image: "postgres:13-alpine"
-    container_name: "algorand-sandbox-postgres"
+    container_name: "algorand-${CONFIG_NAME}-postgres"
     ports:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
     user: postgres
