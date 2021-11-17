@@ -189,6 +189,7 @@ sandbox () {
   }
 
   dc () {
+    source_config_file
     docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
@@ -196,6 +197,7 @@ sandbox () {
   # essentially for any interactive command
   # like docker-compose exec algod //bin/bash
   dc_pty () {
+    source_config_file
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
     $WINDOWS_PTY_PREFIX docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
@@ -323,10 +325,11 @@ sandbox () {
   }
 
   clean () {
+    source_config_file
     echo "* docker-compose down"
     dc down -t 0                                   || true
-    echo "* docker rmi sandbox_algod sandbox_indexer"
-    docker rmi sandbox_algod sandbox_indexer                   || true
+    echo "* docker rmi sandbox_${CONFIG}_algod sandbox_${CONFIG}_indexer"
+    docker rmi  "sandbox_${CONFIG}_algod" "sandbox_${CONFIG}_indexer" || true
     echo "* docker-compose rm -f"
     dc rm -f                                       || true
     echo "* docker rmi $(docker images -f "dangling=true" -q)"

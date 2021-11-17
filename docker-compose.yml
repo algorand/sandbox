@@ -3,6 +3,7 @@ version: '3'
 services:
   algod:
     container_name: "algorand-${CONFIG_NAME}-algod"
+    image: "sandbox_${CONFIG_NAME}_algod"
     build:
       context: .
       dockerfile: ./images/algod/Dockerfile
@@ -25,6 +26,7 @@ services:
 
   indexer:
     container_name: "algorand-${CONFIG_NAME}-indexer"
+    image: "sandbox_${CONFIG_NAME}_indexer"
     build:
       context: .
       dockerfile: ./images/indexer/Dockerfile
