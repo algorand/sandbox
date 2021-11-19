@@ -656,10 +656,6 @@ EOF
       statusline "Now copying  /opt/data/$1 from Algod container to $SANDBOX_DIR/" 
       docker cp "$(dc ps -q algod):/opt/data/$(basename $1)" "$1"
       ;;
-    exec)
-      shift
-      docker exec -it "$(dc ps -q algod)" sh -c "$@"
-      ;;
 
     *)
 
