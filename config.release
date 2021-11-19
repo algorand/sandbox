@@ -9,3 +9,5 @@ export INDEXER_URL="https://github.com/algorand/indexer"
 export INDEXER_BRANCH="2.6.4"
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
+
+export KMD_PORT="4005"

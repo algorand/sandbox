@@ -190,7 +190,8 @@ sandbox () {
 
   dc () {
     source_config_file
-    docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    docker-compose -p "$CONFIG_NAME-sandbox" -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    #docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
   # dc is used when a pseudo-TTY is required
@@ -200,7 +201,8 @@ sandbox () {
     source_config_file
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
-    $WINDOWS_PTY_PREFIX docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    $WINDOWS_PTY_PREFIX docker-compose -p "$CONFIG_NAME-sandbox" -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    #$WINDOWS_PTY_PREFIX docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
   rebuild_if_needed () {
@@ -328,8 +330,8 @@ sandbox () {
     source_config_file
     echo "* docker-compose down"
     dc down -t 0                                   || true
-    echo "* docker rmi sandbox_${CONFIG}_algod sandbox_${CONFIG}_indexer"
-    docker rmi  "sandbox_${CONFIG}_algod" "sandbox_${CONFIG}_indexer" || true
+    echo "* docker rmi sandbox_${CONFIG_NAME}_algod sandbox_${CONFIG_NAME}_indexer"
+    docker rmi  "sandbox_${CONFIG_NAME}_algod" "sandbox_${CONFIG_NAME}_indexer" || true
     echo "* docker-compose rm -f"
     dc rm -f                                       || true
     echo "* docker rmi $(docker images -f "dangling=true" -q)"
@@ -439,6 +441,7 @@ sandbox () {
         return
       fi
 
+
       #################
       # START NETWORK #
       #################
@@ -446,6 +449,7 @@ sandbox () {
       # network configured with the environment exported by $CONFIG_FILE
       echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
       source "$CONFIG_FILE"
+
       if [ $INTERACTIVE_MODE == 1 ]; then
         rebuild_if_needed
         dc up
@@ -596,6 +600,7 @@ EOF
 
     test)
       source_config_file
+
       statusline "Test command forwarding..."
       printc $default "~$ ${blue}docker exec -it algod uname -a"
       dc exec algod uname -a
