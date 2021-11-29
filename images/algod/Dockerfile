@@ -1,4 +1,4 @@
-FROM golang:1.14.7
+FROM golang:1.14.15
 
 ARG CHANNEL=nightly
 ARG URL=
@@ -23,7 +23,7 @@ ENV ALGORAND_DATA="/opt/data"
 # Basic dependencies.
 ENV HOME /opt
 ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get install -y apt-utils curl git git-core bsdmainutils python3
+RUN apt-get update && apt-get install -y apt-utils curl git git-core bsdmainutils python3 libtool
 
 # Copy lots of things into the container. The gitignore indicates which directories.
 COPY . /tmp

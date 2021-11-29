@@ -1,4 +1,4 @@
-FROM golang:1.13.12-alpine
+FROM golang:1.14.15
 
 # Environment variables used by install.sh
 ARG URL=https://github.com/algorand/indexer
@@ -8,8 +8,9 @@ ARG SHA=""
 ENV HOME /opt/indexer
 WORKDIR /opt/indexer
 
+# Basic dependencies.
 ENV DEBIAN_FRONTEND noninteractive
-RUN apk add --no-cache git bzip2 make bash
+RUN apt-get update && apt-get install -y apt-utils curl git git-core bsdmainutils python3 libtool libboost-math-dev
 
 # Copy files to container.
 COPY images/indexer/disabled.go /tmp/disabled.go
