@@ -1,4 +1,5 @@
-FROM golang:1.14.7
+ARG GO_VERSION=1.17.5
+FROM golang:$GO_VERSION
 
 ARG CHANNEL=nightly
 ARG URL=
