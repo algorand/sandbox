@@ -15,6 +15,7 @@ FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channe
 USE_FAST_CATCHUP=1
 INTERACTIVE_MODE=0
 VERBOSE_MODE=0
+SKIP_BROWSER="${SKIP_BROWSER:-}"
 
 #########################
 # Config file variables #
@@ -30,6 +31,9 @@ export INDEXER_URL=""
 export INDEXER_BRANCH=""
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
+export ALGOSEARCH_URL=""
+export ALGOSEARCH_BRANCH=""
+export ALGOSEARCH_SHA=""
 
 ######################################
 # Compatibility with Windows / MSYS2 #
@@ -178,6 +182,9 @@ sandbox () {
     goal_helper node status
     statusline "indexer - health"
     curl -s "localhost:8980/health?pretty"
+    statusline "algosearch - health"
+    curl -o /dev/null -s -w "%{http_code}\n" "localhost:8000/health"
+    curl -s "localhost:8000/health"
   }
 
   dc () {
@@ -231,6 +238,8 @@ sandbox () {
     INDEXER_VERSION=$(dc exec indexer cmd/algorand-indexer/algorand-indexer -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
     statusline "Postgres version"
     dc exec indexer-db postgres -V
+    statusline "CouchDB version"
+    dc exec search-db curl http://localhost:5984
   }
 
   # Given a network name attempts to fetch a catchpoint and catchup.
@@ -347,6 +356,16 @@ sandbox () {
       indexer-db)
         statusline "Entering /bin/bash session in the indexer-db container..."
         dc_pty exec indexer-db //bin/bash
+        return
+        ;;
+      algosearch)
+        statusline "Entering /bin/bash session in the algosearch container..."
+        dc exec algosearch /bin/bash
+        return
+        ;;
+      search-db)
+        statusline "Entering /bin/bash session in the search-db container..."
+        dc exec search-db /bin/bash
         return
         ;;
     esac
@@ -481,6 +500,22 @@ sandbox () {
           statusline "Skipping fast catchup"
         fi
       fi
+
+      status_code=$(curl --write-out %{http_code} --silent --output /dev/null localhost:8000/health)
+      if [[ "$status_code" -ne 200 ]] ; then
+        echo "AlgoSearch is disabled or not available."
+      else
+        echo "Opening AlgoSearch in browser"
+        if [ ! -z $SKIP_BROWSER ]; then
+          echo "skipping browser open..."
+        elif [ $(uname) == "Darwin" ]; then
+          open http://localhost:8000
+        elif [ $(uname) == "Linux" ]; then
+          xdg-open http://localhost:8000
+        else
+          echo "No browser detected..."
+        fi
+      fi
   }
 
   help () {
@@ -586,6 +621,12 @@ EOF
       statusline "\nTest Indexer REST API..."
       printc $default "~$ ${blue}curl ${teal}\"localhost:8980/health?pretty\""
       curl "localhost:8980/health?pretty"
+
+      statusline "\nTest AlgoSearch..."
+      printc $default "~$ ${blue}curl -o /dev/null -s -w \"%%{http_code}\\\n\" ${teal}\"localhost:8000/health\""
+      curl -o /dev/null -s -w "%{http_code}\n" "localhost:8000/health"
+      printc $default "~$ ${blue}curl -s ${teal}\"localhost:8000/health\""
+      curl -s "localhost:8000/health"
       ;;
 
     enter)

@@ -115,4 +115,4 @@ services:
   - docker
 
 script:
-  - ./sandbox up -v $CONFIG
+  - SKIP_BROWSER=true ./sandbox up -v $CONFIG
