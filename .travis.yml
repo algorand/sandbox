@@ -1,7 +1,3 @@
-script:
-  - set -e
-  - if [ -n "$DOCKER_PASSWORD" ]; then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ; fi
-
 jobs:
   include:
     # Focal
@@ -119,4 +115,6 @@ services:
   - docker
 
 script:
+  - set -e
+  - if [ -n "$DOCKER_PASSWORD" ]; then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ; fi
   - ./sandbox up -v $CONFIG
