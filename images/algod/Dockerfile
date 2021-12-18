@@ -1,4 +1,5 @@
-FROM golang:1.14.7
+ARG GO_VERSION=1.17.5
+FROM golang:$GO_VERSION
 
 ARG CHANNEL=nightly
 ARG URL=
@@ -42,7 +43,7 @@ RUN /tmp/images/algod/setup.py \
  --data-dir "/opt/data" \
  --start-script "/opt/start_algod.sh" \
  --network-dir "/opt/testnetwork" \
- --network-template "${TEMPLATE}" \
+ --network-template "//tmp/${TEMPLATE}" \
  --network-token "${TOKEN}" \
  --algod-port "${ALGOD_PORT}" \
  --kmd-port "${KMD_PORT}" \
