@@ -182,8 +182,10 @@ sandbox () {
     statusline "indexer - health"
     curl -s "localhost:8980/health?pretty"
     statusline "algosearch - health"
-    curl -o /dev/null -s -w "%{http_code}\n" "localhost:8000/health"
-    curl -s "localhost:8000/health"
+    # https://unix.stackexchange.com/questions/82598/how-do-i-write-a-retry-logic-in-script-to-keep-retrying-to-run-it-upto-5-times
+    for i in $(seq 1 5); do [ $i -gt 1 ] && sleep 5; curl -o /dev/null -s -w "%{http_code}\n" "localhost:4000/debug/readiness" && s=0 && break || s=$?; done; (exit $s)
+#    curl -o /dev/null -s -w "%{http_code}\n" "localhost:4000/debug/readiness"
+    curl -s "localhost:4000/debug/readiness"
   }
 
   dc () {
@@ -238,7 +240,7 @@ sandbox () {
     statusline "Postgres version"
     dc exec indexer-db postgres -V
     statusline "CouchDB version"
-    dc exec search-db curl http://localhost:5984
+    dc exec algosearch-db curl http://localhost:5984
   }
 
   # Given a network name attempts to fetch a catchpoint and catchup.
@@ -358,18 +360,18 @@ sandbox () {
         return
         ;;
       algosearch)
-        statusline "Entering /bin/bash session in the algosearch container..."
-        dc exec algosearch /bin/bash
+        statusline "Entering /bin/sh session in the algosearch-search container..."
+        dc_pty exec algosearch //bin/sh
         return
         ;;
-      search-db)
-        statusline "Entering /bin/bash session in the search-db container..."
-        dc exec search-db /bin/bash
+      algosearch-db)
+        statusline "Entering /bin/bash session in the algosearch-db container..."
+        dc_pty exec algosearch-db //bin/bash
         return
         ;;
     esac
 
-    err "Cannot enter '$CONTAINER'. Available containers: algod, indexer, indexer-db"
+    err "Cannot enter '$CONTAINER'. Available containers: algod, indexer, indexer-db, algosearch, algosearch-db"
   }
 
 
@@ -500,15 +502,15 @@ sandbox () {
         fi
       fi
 
-      status_code=$(curl --write-out %{http_code} --silent --output /dev/null localhost:8000/health)
+      status_code=$(curl --write-out %{http_code} --silent --output /dev/null localhost:4000/debug/readiness)
       if [[ "$status_code" -ne 200 ]] ; then
         echo "AlgoSearch is disabled or not available."
       else
         echo "Opening AlgoSearch in browser"
         if [ $(uname) == "Darwin" ]; then
-          open http://localhost:8000
+          open http://localhost:3000
         elif [ $(uname) == "Linux" ]; then
-          xdg-open http://localhost:8000
+          xdg-open http://localhost:3000
         else
           echo "No browser detected..."
         fi
@@ -523,7 +525,7 @@ sandbox commands:
   reset           -> reset the containers to their initial state.
   clean           -> stops and deletes containers and data directory.
   test            -> runs some tests to demonstrate usage.
-  enter [algod||indexer||indexer-db]
+  enter [algod||indexer||indexer-db||algosearch||algosearch-db]
                   -> enter the sandbox container.
   version         -> print binary versions.
   copyTo <file>   -> copy <file> into the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
@@ -620,10 +622,10 @@ EOF
       curl "localhost:8980/health?pretty"
 
       statusline "\nTest AlgoSearch..."
-      printc $default "~$ ${blue}curl -o /dev/null -s -w \"%%{http_code}\\\n\" ${teal}\"localhost:8000/health\""
-      curl -o /dev/null -s -w "%{http_code}\n" "localhost:8000/health"
-      printc $default "~$ ${blue}curl -s ${teal}\"localhost:8000/health\""
-      curl -s "localhost:8000/health"
+      printc $default "~$ ${blue}curl -o /dev/null -s -w \"%%{http_code}\\\n\" ${teal}\"localhost:4000/debug/readiness\""
+      curl -o /dev/null -s -w "%{http_code}\n" "localhost:4000/debug/readiness"
+      printc $default "~$ ${blue}curl -s ${teal}\"localhost:4000/debug/readiness\""
+      curl -s "localhost:4000/debug/readiness"
       ;;
 
     enter)

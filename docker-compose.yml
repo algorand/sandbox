@@ -1,10 +1,15 @@
 version: '3'
 
-services:
+networks:
+  shared-network:
+    driver: bridge
 
+services:
   algod:
     container_name: "algorand-sandbox-algod"
     hostname: algod.server
+    networks:
+      - shared-network
     build:
       context: .
       dockerfile: ./images/algod/Dockerfile
@@ -28,6 +33,8 @@ services:
   indexer:
     container_name: "algorand-sandbox-indexer"
     hostname: indexer.server
+    networks:
+      - shared-network
     build:
       context: .
       dockerfile: ./images/indexer/Dockerfile
@@ -52,6 +59,8 @@ services:
   indexer-db:
     image: "postgres:13-alpine"
     container_name: "algorand-sandbox-postgres"
+    networks:
+      - shared-network
     ports:
       - 5433:5432
     user: postgres
@@ -60,37 +69,80 @@ services:
       POSTGRES_PASSWORD: algorand
       POSTGRES_DB: indexer_db
 
+  zipkin:
+    container_name: zipkin
+    networks:
+      - shared-network
+    #    image: openzipkin/zipkin:2.21
+    image: openzipkin/zipkin
+    ports:
+      - 9411:9411
+
   algosearch:
     container_name: "algorand-sandbox-algosearch"
-    build:
-      context: .
-      dockerfile: ./images/search/Dockerfile
-      args:
-        URL: "${ALGOSEARCH_URL}"
-        BRANCH: "${ALGOSEARCH_BRANCH}"
-        SHA: "${ALGOSEARCH_SHA}"
+    hostname: algosearch
+    networks:
+      - shared-network
+    image: algosearch-amd64:1.1
     ports:
-      - 8000:8000
+      - 5000:5000 # CRUD API
+      - 4000:4000 # DEBUG API
+      - 3000:3000 # Frontend
+      - 3001:3001 # EXPVAR API
+      - 3002:3002 # Metric DEBUG API
     environment:
-      DISABLED: "${ALGOSEARCH_DISABLED}"
+      ALGOSEARCH_WEB_ENABLE_SYNC: "true"
+      ALGOSEARCH_COUCH_DB_HOST: "algosearch-db:5984"
+      ALGOSEARCH_COUCH_DB_USER: "algorand"
+      ALGOSEARCH_COUCH_DB_PASSWORD: "algorand"
+      ALGOSEARCH_ALGOD_PROTOCOL: "http"
+      ALGOSEARCH_ALGOD_ADDR: "algod:4001"
+      ALGOSEARCH_ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+#      ALGOSEARCH_INDEXER_ADDR: "http://indexer:8980"
+#      ALGOSEARCH_INDEXER_TOKEN: ""
+#      ALGOSEARCH_INDEXER_ADDR: "algod:4001"
+#      ALGOSEARCH_INDEXER_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ALGOSEARCH_ZIPKIN_REPORTER_URI: "http://zipkin:9411/api/v2/spans"
+      NEXT_PUBLIC_API_URL: "http://0.0.0.0:5000"
+      METRICS_COLLECT_FROM: "http://0.0.0.0:4000/debug/vars"
     depends_on:
-      - search-db
-      - algod
+      - zipkin
+      - dbinit
       - indexer
+      - algod
 
-  search-db:
-    image: couchdb:2.3.1
+  algosearch-db:
+    image: couchdb:3.2.0
     container_name: "algorand-sandbox-couchdb"
     hostname: couchdb.server
+    networks:
+      - shared-network
     ports:
-      - "5984:5984"
+      - 5984:5984
     # Optional
     # volumes:
     #   - ./db-data:/opt/couchdb/data
     # extra_hosts:
     #   - "dockerhost:$DOCKERHOST"
-    # https://github.com/apache/couchdb-docker/issues/54
-    # command: curl -u admin:password -X PUT 127.0.0.1:5984/_users && curl -u admin:password -X PUT 127.0.0.1:5984/test
+    # https://github.com/apache/couchdb-docker/issues/55
+#    command: curl -u admin:password -X PUT 128.0.0.1:5984/_users && curl -u admin:password -X PUT 127.0.0.1:5984/test
+    # command: curl -u algorand:algorand -X PUT http://128.0.0.1:5984/_users && curl -u algorand:algorand -X PUT http://127.0.0.1:5984/algo_global
     environment:
       - COUCHDB_USER=algorand
       - COUCHDB_PASSWORD=algorand
+
+  dbinit:
+    image: curlimages/curl
+    container_name: hr_couchdb_init
+    networks:
+      - shared-network
+    depends_on:
+      - algosearch-db
+    command: >
+      sh -c
+      "sleep 5s &&
+      curl -X PUT http://algorand:algorand@algosearch-db:5984/_users &&
+      curl -X PUT http://algorand:algorand@algosearch-db:5984/_users/_security -d '{}' &&
+      curl -X PUT http://algorand:algorand@algosearch-db:5984/algo_global?partitioned=false"
+#      curl -X PUT http://algorand:algorand@algosearch-db:5984/algo_global?partitioned=false &&
+#      curl -X PUT http://algorand:algorand@algosearch-db:5984/algo_global/_security -d '{\"members\": {}, \"admins\": {\"roles\": [\"_admin\"] }}'"

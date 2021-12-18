@@ -2,4 +2,8 @@
 .clean
 sandbox.log
 data
-db-data
+
+# Editor files
+.idea/
+*.iml
+*.swp
