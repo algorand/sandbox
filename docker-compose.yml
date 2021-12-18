@@ -15,13 +15,15 @@ services:
         SHA: "${ALGOD_SHA}"
         BOOTSTRAP_URL: "${NETWORK_BOOTSTRAP_URL}"
         GENESIS_FILE: "${NETWORK_GENESIS_FILE}"
-        TEMPLATE: "${NETWORK_TEMPLATE:-/tmp/images/algod/template.json}"
+        TEMPLATE: "${NETWORK_TEMPLATE:-images/algod/template.json}"
         TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         ALGOD_PORT: "4001"
         KMD_PORT: "4002"
+        CDT_PORT: "9392"
     ports:
       - 4001:4001
       - 4002:4002
+      - 9392:9392
 
   indexer:
     container_name: "algorand-sandbox-indexer"
@@ -52,6 +54,7 @@ services:
     container_name: "algorand-sandbox-postgres"
     ports:
       - 5433:5432
+    user: postgres
     environment:
       POSTGRES_USER: algorand
       POSTGRES_PASSWORD: algorand
