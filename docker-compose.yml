@@ -1,56 +1,59 @@
 version: '3'
 
 services:
-  algod:
-    container_name: "algorand-sandbox-algod"
+  algod-pyteal:
     build:
       context: .
       dockerfile: ./images/algod/Dockerfile
       args:
-        CHANNEL: "${ALGOD_CHANNEL}"
+        CHANNEL: "${CHANNEL:-stable}"
         URL: "${ALGOD_URL}"
-        BRANCH: "${ALGOD_BRANCH}"
-        SHA: "${ALGOD_SHA}"
-        BOOTSTRAP_URL: "${NETWORK_BOOTSTRAP_URL}"
-        GENESIS_FILE: "${NETWORK_GENESIS_FILE}"
-        TEMPLATE: "${NETWORK_TEMPLATE:-images/algod/template.json}"
-        TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        ALGOD_PORT: "4001"
-        KMD_PORT: "4002"
-        CDT_PORT: "9392"
+        BRANCH: "${BRANCH}"
+        SHA: "${SHA}"
+        BOOTSTRAP_URL: "${BOOTSTRAP_URL}"
+        GENESIS_FILE: "${GENESIS_FILE}"
+        TEMPLATE: "${TEMPLATE}"
+        TOKEN: "${TOKEN:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
+        ALGOD_PORT: ${ALGOD_PORT:-4001}
+        KMD_PORT: ${KMD_PORT}
+        CDT_PORT: ${CDT_PORT}
+        ALGO_UID: ${ALGO_UID}
+        ALGO_GID: ${ALGO_GID}
     ports:
-      - 4001:4001
-      - 4002:4002
-      - 9392:9392
+      - ${ALGOD_PORT:-4001}:${ALGOD_PORT:-4001}
+      - ${KMD_PORT:-4002}:${KMD_PORT:-4002}
+      - ${CDT_PORT:-9392}:${CDT_PORT:-9392}
+    user: ${ALGO_UID}:${ALGO_GID}
+    volumes:
+      - ${WORKSPACE_MOUNT}:/home/algo/workspace
+    working_dir: /home/algo/workspace
 
   indexer:
-    container_name: "algorand-sandbox-indexer"
     build:
       context: .
       dockerfile: ./images/indexer/Dockerfile
       args:
-        URL: "${INDEXER_URL}"
-        BRANCH: "${INDEXER_BRANCH}"
+        URL: "${INDEXER_URL:-https://github.com/algorand/indexer}"
+        BRANCH: "${INDEXER_BRANCH:-master}"
         SHA: "${INDEXER_SHA}"
     ports:
-      - 8980:8980
+      - ${INDEXER_PORT:-8980}:${INDEXER_PORT:-8980}
     restart: unless-stopped
     environment:
       DISABLED: "${INDEXER_DISABLED}"
-      PORT: "8980"
+      PORT: "${INDEXER_PORT:-8980}"
       SNAPSHOT: ""
       CONNECTION_STRING: "host=indexer-db port=5432 user=algorand password=algorand dbname=indexer_db sslmode=disable"
-      ALGOD_ADDR: "algod:4001"
-      ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ALGOD_ADDR: "algod-pyteal:${ALGOD_PORT:-4001}"
+      ALGOD_TOKEN: ${TOKEN:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
     depends_on:
       - indexer-db
-      - algod
+      - algod-pyteal
 
   indexer-db:
-    image: "postgres:13-alpine"
-    container_name: "algorand-sandbox-postgres"
-    ports:
-      - 5433:5432
+    image: "postgres:13-bullseye"
+    expose:
+      - 5432
     user: postgres
     environment:
       POSTGRES_USER: algorand
