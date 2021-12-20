@@ -1,11 +1,14 @@
-export ALGOD_CHANNEL="beta"
-export ALGOD_URL=""
-export ALGOD_BRANCH=""
-export ALGOD_SHA=""
-export NETWORK="betanet"
-export NETWORK_BOOTSTRAP_URL="<network>.algodev.network"
-export NETWORK_GENESIS_FILE="genesis/betanet/genesis.json"
-export INDEXER_URL=""
-export INDEXER_BRANCH=""
-export INDEXER_SHA=""
-export INDEXER_DISABLED="true"
+# The folder to mount in the container containing PyTeal/TEAL source code
+WORKSPACE_MOUNT=./
+
+# Reaplce with you user id shown by id -u
+ALGO_UID=1000
+
+# Reaplce with your group id shown by id -g
+ALGO_GID=1000
+
+CHANNEL=beta
+NETWORK=betanet
+NETWORK_BOOTSTRAP_URL=<network>.algodev.network
+NETWORK_GENESIS_FILE=genesis/betanet/genesis.json
+INDEXER_DISABLED=true
