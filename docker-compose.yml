@@ -16,13 +16,12 @@ services:
         TOKEN: "${TOKEN:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
         ALGOD_PORT: ${ALGOD_PORT:-4001}
         KMD_PORT: ${KMD_PORT}
-        CDT_PORT: ${CDT_PORT}
         ALGO_UID: ${ALGO_UID}
         ALGO_GID: ${ALGO_GID}
     ports:
       - ${ALGOD_PORT:-4001}:${ALGOD_PORT:-4001}
       - ${KMD_PORT:-4002}:${KMD_PORT:-4002}
-      - ${CDT_PORT:-9392}:${CDT_PORT:-9392}
+      - ${CDT_PORT:-9392}:9392
     user: ${ALGO_UID}:${ALGO_GID}
     volumes:
       - ${WORKSPACE_MOUNT}:/home/algo/workspace
