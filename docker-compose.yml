@@ -15,7 +15,7 @@ services:
         TEMPLATE: "${TEMPLATE}"
         TOKEN: "${TOKEN:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
         ALGOD_PORT: ${ALGOD_PORT:-4001}
-        KMD_PORT: ${KMD_PORT}
+        KMD_PORT: ${KMD_PORT:-4002}
         ALGO_UID: ${ALGO_UID}
         ALGO_GID: ${ALGO_GID}
     ports:
