@@ -7,7 +7,7 @@ This is a fork and complete refactor of algorand/sandbox. The goal of this fork 
 * You must be able to use VSCode on the system running the docker daemon (either locally or via SSH)
 
 ## Adding .devcontainer Directory
-It's recommended that you do your work in a git repository. It can be a new, empty, repository or one that already exists. Once in the directory, add this repo as a submodule in a directory name `.devcontainer`: `git submodule add https://github.com/joe-p/sandbox.git .devcontainer`
+It's recommended that you do your work in a git repository. It can be a new, empty, repository or one that already exists. Once in the directory, add this repo as a submodule in a directory name `.devcontainer`: `git submodule add https://github.com/joe-p/algo-dev-docker-compose.git .devcontainer`
 
 ## Configuration
 All configuration is done in the `.devcontainer/.env` file. It's recommended you start with `.devcontainer/example_envs/devcontainer.env`, which you can copy to `.devcontainer`: `cp .devcontainer/example_envs/devcontainer.env .devcontainer/.env`. 
