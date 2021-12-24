@@ -54,7 +54,7 @@ ENV PATH="$BIN_DIR:${PATH}"
 
 RUN chown -R ${ALGO_UID}:${ALGO_GID} /opt/
 RUN groupadd -g ${ALGO_GID} algo
-RUN useradd -u ${ALGO_UID} -g ${ALGO_GID} -m algo
+RUN useradd -u ${ALGO_UID} -g ${ALGO_GID} -m -s /bin/bash algo
 
 # Start algod
 CMD ["/opt/start_algod.sh"]
