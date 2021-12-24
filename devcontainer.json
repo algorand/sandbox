@@ -1,0 +1,8 @@
+{
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "algod-pyteal",
+    "extensions": ["ms-python.python"],
+    "workspaceFolder": "/home/algo/workspace",
+    "initializeCommand": "${localWorkspaceFolder}/.devcontainer/.scripts/initialize_command.sh",
+    "postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/.scripts/post_create_command.sh"
+}
