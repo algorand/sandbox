@@ -33,6 +33,7 @@ export INDEXER_DISABLED=""
 export ALGOSEARCH_URL=""
 export ALGOSEARCH_BRANCH=""
 export ALGOSEARCH_SHA=""
+export ALGOSEARCH_DISABLED=""
 
 ######################################
 # Compatibility with Windows / MSYS2 #
@@ -329,6 +330,8 @@ sandbox () {
     dc down -t 0                                   || true
     echo "* docker rmi sandbox_algod sandbox_indexer"
     docker rmi sandbox_algod sandbox_indexer                   || true
+    echo "* docker rmi kevguy/algosearch:1.1"
+    docker rmi kevguy/algosearch:1.1                   || true
     echo "* docker-compose rm -f"
     dc rm -f                                       || true
     echo "* docker rmi $(docker images -f "dangling=true" -q)"

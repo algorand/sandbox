@@ -83,7 +83,7 @@ services:
     hostname: algosearch
     networks:
       - shared-network
-    image: algosearch-amd64:1.1
+    image: kevguy/algosearch:1.1
     ports:
       - 5000:5000 # CRUD API
       - 4000:4000 # DEBUG API
@@ -91,10 +91,18 @@ services:
       - 3001:3001 # EXPVAR API
       - 3002:3002 # Metric DEBUG API
     environment:
+      ALGOSEARCH_BACKEBD_DISABLED: "${ALGOSEARCH_DISABLED}"
+      ALGOSEARCH_METRICS_DISABLED: "${ALGOSEARCH_DISABLED}"
+      ALGOSEARCH_FRONTEND_DISABLED: "${ALGOSEARCH_DISABLED}"
       ALGOSEARCH_WEB_ENABLE_SYNC: "true"
+      ALGOSEARCH_WEB_SYNC_INTERNAL: "5s"
+      ALGOSEARCH_COUCH_DB_INIT: "true"
+      ALGOSEARCH_COUCH_DB_MIGRATE: "true"
+      ALGOSEARCH_COUCH_DB_PROTOCOL: "http"
       ALGOSEARCH_COUCH_DB_HOST: "algosearch-db:5984"
       ALGOSEARCH_COUCH_DB_USER: "algorand"
       ALGOSEARCH_COUCH_DB_PASSWORD: "algorand"
+      ALGOSEARCH_COUCH_DB_NAME: "sandbox"
       ALGOSEARCH_ALGOD_PROTOCOL: "http"
       ALGOSEARCH_ALGOD_ADDR: "algod:4001"
       ALGOSEARCH_ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -103,11 +111,11 @@ services:
 #      ALGOSEARCH_INDEXER_ADDR: "algod:4001"
 #      ALGOSEARCH_INDEXER_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       ALGOSEARCH_ZIPKIN_REPORTER_URI: "http://zipkin:9411/api/v2/spans"
-      NEXT_PUBLIC_API_URL: "http://0.0.0.0:5000"
-      METRICS_COLLECT_FROM: "http://0.0.0.0:4000/debug/vars"
+      NEXT_PUBLIC_API_URL: "http://localhost:5000"
+      METRICS_COLLECT_FROM: "http://algosearch:4000/debug/vars"
     depends_on:
       - zipkin
-      - dbinit
+      - algosearch-db
       - indexer
       - algod
 
@@ -130,19 +138,3 @@ services:
     environment:
       - COUCHDB_USER=algorand
       - COUCHDB_PASSWORD=algorand
-
-  dbinit:
-    image: curlimages/curl
-    container_name: hr_couchdb_init
-    networks:
-      - shared-network
-    depends_on:
-      - algosearch-db
-    command: >
-      sh -c
-      "sleep 5s &&
-      curl -X PUT http://algorand:algorand@algosearch-db:5984/_users &&
-      curl -X PUT http://algorand:algorand@algosearch-db:5984/_users/_security -d '{}' &&
-      curl -X PUT http://algorand:algorand@algosearch-db:5984/algo_global?partitioned=false"
-#      curl -X PUT http://algorand:algorand@algosearch-db:5984/algo_global?partitioned=false &&
-#      curl -X PUT http://algorand:algorand@algosearch-db:5984/algo_global/_security -d '{\"members\": {}, \"admins\": {\"roles\": [\"_admin\"] }}'"
