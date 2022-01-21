@@ -254,7 +254,7 @@ Note: If a different port is needed than the default, it may be changed by runni
 
 ## Sandbox Interactive Debugging with VSCode's `Remote - Container` Extension
 
-Here are steps you can take if you want to run an interactive debugger with an `indexer` running on the sandbox.
+Here are steps you can take if you want to run an interactive debugger with an `indexer` running on the sandbox. Analogous instructions work for `algod` as well.
 
 Before starting, make sure you have VS-Code and have installed the [Remote - Containers Extension](https://code.visualstudio.com/docs/remote/containers-tutorial).
 
@@ -267,14 +267,14 @@ Before starting, make sure you have VS-Code and have installed the [Remote - Con
 
 3. Open a new VS Code window
 4. Go to the [Command Palette](https://code.visualstudio.com/docs/getstarted/tips-and-tricks#_command-palette) (on a Mac it's **SHIFT-COMMAND-P**) and enter `Remote - Containers: Attach to Running Container`
-5. The container of interest, e.g. `/algorand-sandbox-indexer`, should pop up and you should choose it.
-6. The first time you attach to a container, you'll get the option of choosing which top-level directory _inside the container_ to attach the file browser to. The default HOME (`/opt/indexer` in the case of indexer) is usually your best choice.
-7. Next, VS Code should auto-detect that you're running a `go` based project and suggest various extensions to add into the container enviroment. You should do this.
-8. Now navigate to the file you'd like to debug (e.g. `api/handlers.go`) and add a breakpoint as you usually would.
-9. You'll need to identify the PID of the indexer process so you can attach to it. Choose **Terminal** &rarr; **New Terminal** from the menu and run `ps | egrep "daemon|PID"`. Note the resulting PID.
-10. Now start the debugger with `F5`. It should give you the option to `attach to a process` and generate a `launch.json` with PID=0 for you.
-11. Modify the `launch.json` with the correct `processId`. Below I provide an example of a `launch.json`.
-12. Now you're ready to rumble! If you hit your sandbox endpoint with a well formatted request, you should end up reaching and pausing at your break point. For **indexer**, you would request against port 8980. See the curl example below.
+5. The container of interest, e.g. `/algorand-sandbox-indexer`, should pop up and you should choose it
+6. The first time you attach to a container, you'll get the option of choosing which top-level directory _inside the container_ to attach the file browser to. The default HOME (`/opt/indexer` in the case of indexer) is usually your best choice
+7. Next, VS Code should auto-detect that you're running a `go` based project and suggest various extensions to add into the container enviroment. You should do this
+8. Now navigate to the file you'd like to debug (e.g. `api/handlers.go`) and add a breakpoint as you usually would
+9. You'll need to identify the PID of the indexer process so you can attach to it. Choose **Terminal** &rarr; **New Terminal** from the menu and run `ps | egrep "daemon|PID"`. Note the resulting PID
+10. Now start the debugger with `F5`. It should give you the option to `attach to a process` and generate a `launch.json` with PID=0 for you
+11. Modify the `launch.json` with the correct `processId`. Below I provide an example of a `launch.json`
+12. Now you're ready to rumble! If you hit your sandbox endpoint with a well formatted request, you should end up reaching and pausing at your break point. For **indexer**, you would request against port 8980. See the curl example below
 
 ### Example `launch.json`
 
