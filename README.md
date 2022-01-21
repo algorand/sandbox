@@ -265,7 +265,7 @@ Before starting, make sure you have VS-Code and have installed the [Remote - Con
 - you can verify by seeing healthy output from `./sandbox test`
 <!-- markdownlint-disable-file MD029 -->
 
-3. Open a new VS Code window
+3. In VS Code...
 4. Go to the [Command Palette](https://code.visualstudio.com/docs/getstarted/tips-and-tricks#_command-palette) (on a Mac it's **SHIFT-COMMAND-P**) and enter `Remote - Containers: Attach to Running Container`
 5. The container of interest, e.g. `/algorand-sandbox-indexer`, should pop up and you should choose it
 6. The first time you attach to a container, you'll get the option of choosing which top-level directory _inside the container_ to attach the file browser to. The default HOME (`/opt/indexer` in the case of indexer) is usually your best choice
