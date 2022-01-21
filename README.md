@@ -252,9 +252,9 @@ The debugging endpoint port (default 9392) is forwarded directly to the host mac
 
 Note: If a different port is needed than the default, it may be changed by running `tealdbg --port YOUR_PORT` then modifying the docker-compose.yml file and change all occurances of mapped 9392 port with the desired one.
 
-## Sandbox Interactive Debugging with VSCode's `Remote - Container` Extension
+## ADVANCED: Sandbox Interactive Debugging with VSCode's `Remote - Container` Extension
 
-Here are steps you can take if you want to run an interactive debugger with an `indexer` running on the sandbox. Analogous instructions work for `algod` as well.
+For those looking to develop or extend **algod** or **indexer** it's highly recommended to test and debug using a realistic environment. Being able to interactively debug code with breakpoints and introspect the stack as the Algorand daemon communicates with a live network is quite useful. Here are steps that you can take if you want to run an interactive debugger with an `indexer` running on the sandbox. Analogous instructions work for `algod` as well.
 
 Before starting, make sure you have VS-Code and have installed the [Remote - Containers Extension](https://code.visualstudio.com/docs/remote/containers-tutorial).
 
