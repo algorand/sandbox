@@ -274,7 +274,7 @@ Before starting, make sure you have VS-Code and have installed the [Remote - Con
 9. You'll need to identify the PID of the indexer process so you can attach to it. Choose **Terminal** &rarr; **New Terminal** from the menu and run `ps | egrep "daemon|PID"`. Note the resulting PID
 10. Now start the debugger with `F5`. It should give you the option to `attach to a process` and generate a `launch.json` with PID=0 for you
 11. Modify the `launch.json` with the correct `processId`. Below I provide an example of a `launch.json`
-12. Now you're ready to rumble! If you hit your sandbox endpoint with a well formatted request, you should end up reaching and pausing at your break point. For **indexer**, you would request against port 8980. See the curl example below
+12. Now you're ready to rumble! If you hit your sandbox endpoint with a well formatted request, you should end up reaching and pausing at your break point. For **indexer**, you would request against port 8980. See the `curl` example below
 
 ### Example `launch.json`
 
@@ -296,8 +296,8 @@ Before starting, make sure you have VS-Code and have installed the [Remote - Con
 }
 ```
 
-### Example curl command
+### Example `curl` command
 
 ```bash
-❯ curl "localhost:8980/v2/accounts"
+~$ curl "localhost:8980/v2/accounts"
 ```
