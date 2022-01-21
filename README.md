@@ -12,7 +12,7 @@ On a _Windows_ machine, **Docker Desktop** comes with the necessary tools. Pleas
 
 Use the **sandbox** command to interact with the Algorand Sandbox.
 
-```bash
+```plain
 sandbox commands:
   up    [config]  -> start the sandbox environment.
   down            -> tear down the sandbox environment.
