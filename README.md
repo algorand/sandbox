@@ -272,7 +272,7 @@ Before starting, make sure you have VS-Code and have installed the [Remote - Con
 7. Next, VS Code should auto-detect that you're running a `go` based project and suggest various extensions to add into the container enviroment. You should do this
 8. Now navigate to the file you'd like to debug (e.g. `api/handlers.go`) and add a breakpoint as you usually would
 9. You'll need to identify the PID of the indexer process so you can attach to it. Choose **Terminal** &rarr; **New Terminal** from the menu and run `ps | egrep "daemon|PID"`. Note the resulting PID
-10. Now start the debugger with `F5`. It should give you the option to `attach to a process` and generate a `launch.json` with PID=0 for you
+10. Now start the debugger with `F5`. It should give you the option to `attach to a process` and generate a `launch.json` with `processId: 0` for you
 11. Modify the `launch.json` with the correct `processId`. Below I provide an example of a `launch.json`
 12. Now you're ready to rumble! If you hit your sandbox endpoint with a well formatted request, you should end up reaching and pausing at your break point. For **indexer**, you would request against port 8980. See the `curl` example below
 
