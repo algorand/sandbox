@@ -218,7 +218,7 @@ these commands will stage two TEAL programs then use them in a `goal` command:
 ~$ ./sandbox goal app create --approval-prog approval.teal --clear-prog clear.teal --creator YOUR_ACCOUNT  --global-byteslices 1 --global-ints 1 --local-byteslices 1 --local-ints 1
 ```
 
-#### copyFrom example
+### copyFrom example
 
 these commands will create and copy a signed logic transaction file, created by `goal`, to be sent or communicated off the chain (e.g. by email or as a QR Code) and submitted else where:
 
