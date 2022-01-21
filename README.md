@@ -228,6 +228,10 @@ these commands will create and copy a signed logic transaction file, created by 
 ~$ ./sandbox copyFrom "signed.txn"
 ```
 
+## Errors
+
+If something goes wrong, check the `sandbox.log` file for details.
+
 ## Debugging for teal developers
 
 For detailed information on how to debug smart contracts and use tealdbg CLI,please consult with [Algorand Development Portal :: Smart Contract Debugging](https://developer.algorand.org/docs/features/asc1/debugging/#setting-the-debugger-context).
@@ -297,7 +301,3 @@ Before starting, make sure you have VS-Code and have installed the [Remote - Con
 ```bash
 ❯ curl "localhost:8980/v2/accounts"
 ```
-
-## Errors
-
-If something goes wrong, check the `sandbox.log` file for details.
