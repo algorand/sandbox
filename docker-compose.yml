@@ -83,7 +83,7 @@ services:
     hostname: algosearch
     networks:
       - shared-network
-    image: kevguy/algosearch:1.1
+    image: algosearch:1.1
     ports:
       - 5000:5000 # CRUD API
       - 4000:4000 # DEBUG API
