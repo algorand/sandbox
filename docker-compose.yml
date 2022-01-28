@@ -73,7 +73,6 @@ services:
     container_name: zipkin
     networks:
       - shared-network
-    #    image: openzipkin/zipkin:2.21
     image: openzipkin/zipkin
     ports:
       - 9411:9411
@@ -83,7 +82,7 @@ services:
     hostname: algosearch
     networks:
       - shared-network
-    image: algosearch:1.1
+    image: kevguy/algosearch:1.1
     ports:
       - 5000:5000 # CRUD API
       - 4000:4000 # DEBUG API
@@ -112,6 +111,9 @@ services:
 #      ALGOSEARCH_INDEXER_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       ALGOSEARCH_ZIPKIN_REPORTER_URI: "http://zipkin:9411/api/v2/spans"
       NEXT_PUBLIC_API_URL: "http://localhost:5000"
+      NEXT_PUBLIC_ALGOD_PROTOCOL: "http"
+      NEXT_PUBLIC_ALGOD_ADDR: "algod:4001"
+      NEXT_PUBLIC_ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       METRICS_COLLECT_FROM: "http://algosearch:4000/debug/vars"
     depends_on:
       - zipkin
@@ -130,11 +132,6 @@ services:
     # Optional
     # volumes:
     #   - ./db-data:/opt/couchdb/data
-    # extra_hosts:
-    #   - "dockerhost:$DOCKERHOST"
-    # https://github.com/apache/couchdb-docker/issues/55
-#    command: curl -u admin:password -X PUT 128.0.0.1:5984/_users && curl -u admin:password -X PUT 127.0.0.1:5984/test
-    # command: curl -u algorand:algorand -X PUT http://128.0.0.1:5984/_users && curl -u algorand:algorand -X PUT http://127.0.0.1:5984/algo_global
     environment:
       - COUCHDB_USER=algorand
       - COUCHDB_PASSWORD=algorand

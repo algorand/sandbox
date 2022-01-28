@@ -506,11 +506,6 @@ sandbox () {
         fi
       fi
 
-#      if [ $ALGOD_ARCHIVAL == "true" ]; then
-#        statusline "Restarting node since node is now archival"
-#        goal_helper node restart
-#      fi
-
       status_code=$(curl --write-out %{http_code} --silent --output /dev/null localhost:4000/debug/readiness)
       if [[ "$status_code" -ne 200 ]] ; then
         echo "AlgoSearch is disabled or not available."
