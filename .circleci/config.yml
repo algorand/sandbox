@@ -15,8 +15,8 @@ workflows:
           name: spin_up_<< matrix.config >>
           matrix:
             parameters:
-              config: ['', 'betanet'] #, 'testnet', 'devnet', 'dev', 'beta', 'release', 'nightly']
-              machine: [<< pipeline.parameters.ubuntu_focal_machine >>] #, << pipeline.parameters.ubuntu_xenial_machine >>]
+              config: ['', 'betanet', 'testnet', 'devnet', 'dev', 'beta', 'release', 'nightly']
+              machine: [<< pipeline.parameters.ubuntu_focal_machine >>, << pipeline.parameters.ubuntu_xenial_machine >>]
 
 jobs:
   spin_up:
