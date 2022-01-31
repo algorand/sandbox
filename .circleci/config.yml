@@ -1,0 +1,50 @@
+version: 2.1
+
+parameters:
+  ubuntu_focal_machine:
+    type: string
+    default: 'ubuntu-2004:202111-02'
+  ubuntu_xenial_machine:
+    type: string
+    default: 'ubuntu-1604:202104-01'
+
+workflows:
+  circleci_build_and_test:
+    jobs:
+      - build_and_test:
+          name: build_and_test_<< matrix.config >>
+          matrix:
+            parameters:
+              config: ['', 'betanet'] #, 'testnet', 'devnet', 'dev', 'beta', 'release', 'nightly']
+              machine: [<< pipeline.parameters.ubuntu_focal_machine >>] #, << pipeline.parameters.ubuntu_xenial_machine >>]
+
+jobs:
+  circleci_build_and_test:
+    parameters:
+      config:
+        type: string
+      machine:
+        type: string
+    machine:
+      image: << parameters.machine >>
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Install docker
+          command: |
+            export SUDO=sudo
+            $SUDO apt update
+            $SUDO apt -y install ca-certificates curl gnupg lsb-release
+            $SUDO curl -fsSL https://download.docker.com/linux/ubuntu/gpg | $SUDO gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+            $SUDO echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+              $(lsb_release -cs) stable" | $SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null
+            $SUDO apt update
+            $SUDO apt -y install docker-ce docker-ce-cli containerd.io
+      - run:
+          name: Stand up sandbox
+          command: |
+            export CONFIG=<< parameters.config >>
+            set -e
+            if [ -n "$DOCKER_PASSWORD" ]; then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ; fi
+            ./sandbox up -v $CONFIG
