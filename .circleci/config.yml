@@ -25,8 +25,8 @@ jobs:
         type: string
       machine:
         type: string
-    machine:
-      image: ubuntu:<< parameters.machine >>
+    docker:
+      - image: ubuntu:<< parameters.machine >>
     # resource_class: medium
     steps:
       - checkout
