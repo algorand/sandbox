@@ -15,8 +15,8 @@ workflows:
           name: 'spin_up_<< matrix.config >>_<< matrix.machine >>'
           matrix:
             parameters:
-              config: ['devnet'] #['', 'betanet', 'testnet', 'devnet', 'dev', 'beta', 'release', 'nightly']
-              machine: ['xenial'] #['focal', 'bionic', 'xenial']
+              config: ['', 'betanet', 'testnet', 'devnet', 'dev', 'beta', 'release', 'nightly']
+              machine: [<< pipeline.parameters.ubuntu_focal_machine >>, << pipeline.parameters.ubuntu_xenial_machine >>]
 
 jobs:
   spin_up:
@@ -25,38 +25,25 @@ jobs:
         type: string
       machine:
         type: string
-    docker:
-      - image: ubuntu:<< parameters.machine >>
-    # resource_class: medium
+    machine:
+      image: << parameters.machine >>
+    resource_class: medium
     steps:
       - checkout
-      # - run:
-      #     name: Install docker
-      #     command: |
-      #       export SUDO=sudo
-      #       $SUDO apt update
-      #       $SUDO apt -y install ca-certificates curl gnupg lsb-release
-      #       $SUDO curl -fsSL https://download.docker.com/linux/ubuntu/gpg | $SUDO gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-      #       $SUDO echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-      #         $(lsb_release -cs) stable" | $SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null
-      #       $SUDO apt update
-      #       $SUDO apt -y install docker-ce docker-ce-cli containerd.io
-      # - run:
-      #     name: CircleCI docker download fix
-      #     # https://support.circleci.com/hc/en-us/articles/360050319431-Docker-build-fails-with-Exited-with-code-exit-status-56-when-downloading-assets
-      #     command: sudo iptables -I INPUT -m conntrack --ctstate INVALID -j DROP
       - run:
-          name: Install Docker Compose
-          environment:
-            COMPOSE_VERSION: '1.29.2'
+          name: Install docker
           command: |
-            apt update
-            apt -y install curl
-            curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o ~/docker-compose
-            chmod +x ~/docker-compose
-            mv ~/docker-compose /usr/local/bin/docker-compose
-      - setup_remote_docker:
-          version: 20.10.11
+            export SUDO=sudo
+            $SUDO apt update
+            $SUDO apt -y install ca-certificates curl gnupg lsb-release
+            $SUDO curl -fsSL https://download.docker.com/linux/ubuntu/gpg | $SUDO gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+            $SUDO echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+              $(lsb_release -cs) stable" | $SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null
+            $SUDO apt update
+            $SUDO apt -y install docker-ce docker-ce-cli containerd.io
+      - run:
+          name: CircleCI docker download fix
+          command: sudo iptables -I INPUT -m conntrack --ctstate INVALID -j DROP
       - run:
           name: Stand up sandbox
           command: |
