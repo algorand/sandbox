@@ -174,8 +174,10 @@ function progress_bar {
 
 sandbox () {
   status_helper () {
+    sleep 10
     statusline "algod - goal node status"
     goal_helper node status
+    sleep 10
     statusline "indexer - health"
     curl -s "localhost:8980/health?pretty"
   }
