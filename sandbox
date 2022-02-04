@@ -174,10 +174,8 @@ function progress_bar {
 
 sandbox () {
   status_helper () {
-    sleep 10
     statusline "algod - goal node status"
     goal_helper node status
-    sleep 10
     statusline "indexer - health"
     curl -s "localhost:8980/health?pretty"
   }
@@ -432,13 +430,13 @@ sandbox () {
         rebuild_if_needed >> "$SANDBOX_LOG" 2>&1               & spinner
         echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
         dc up -d                        >> "$SANDBOX_LOG" 2>&1 & spinner
-        sleep 10                                               & spinner
+        sleep 1                                                & spinner
         overwrite "* started!"
       else
         rebuild_if_needed
         echo "* docker-compose up -d"
         dc up -d
-        sleep 10
+        sleep 1
       fi
 
       version_helper
