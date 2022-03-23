@@ -231,7 +231,7 @@ sandbox () {
     local ALGOD_STATUS
 
     # wait for startup
-    ATTEMPTS_REMAINING=20
+    ATTEMPTS_REMAINING=60
     while [[ $ATTEMPTS_REMAINING -gt 0 ]]; do
       INDEXER_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:8980/health" -o /dev/null || true)
       ALGOD_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:4001/health" -o /dev/null || true)
