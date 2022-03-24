@@ -45,6 +45,8 @@ jobs:
           command: sudo iptables -I INPUT -m conntrack --ctstate INVALID -j DROP
       - run:
           name: Stand up sandbox
+          # We should remove the no_output_timeout rule once we find a way to
+          # stop generating 3 million keys for the private network.
           no_output_timeout: 30m
           environment:
             CONFIG: << parameters.config >>

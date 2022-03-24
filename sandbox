@@ -226,32 +226,31 @@ sandbox () {
 
   # wait until indexer/algod health endpoints report 200
   wait_for_services() {
-    local ATTEMPTS_REMAINING
-    local INDEXER_STATUS
-    local ALGOD_STATUS
+    local ATTEMPTS_REMAINING=60
+    local INDEXER_STATUS="000"
+    local ALGOD_STATUS="000"
 
     # wait for startup
-    ATTEMPTS_REMAINING=60
     while [[ $ATTEMPTS_REMAINING -gt 0 ]]; do
       INDEXER_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:8980/health" -o /dev/null || true)
       ALGOD_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:4001/health" -o /dev/null || true)
-      if [ $ALGOD_STATUS == "200" ] && [ $INDEXER_STATUS == "200" ]; then
+      if [ "$ALGOD_STATUS" == "200" ] && [ "$INDEXER_STATUS" == "200" ]; then
         ATTEMPTS_REMAINING=0
+      else
+        ((ATTEMPTS_REMAINING--))
+        sleep 1
       fi
-
-      ((ATTEMPTS_REMAINING=ATTEMPTS_REMAINING-1))
-      sleep 1
     done
 
-    if [ $ALGOD_STATUS != "200" ] || [ $INDEXER_STATUS != "200" ]; then
+    if [ "$ALGOD_STATUS" != "200" ] || [ "$INDEXER_STATUS" != "200" ]; then
       echo "the following did not start:"
-      if [ $ALGOD_STATUS != "200" ]; then
+      if [ "$ALGOD_STATUS" != "200" ]; then
         echo "* algorand node"
       fi
-      if [ $INDEXER_STATUS != "200" ]; then
+      if [ "$INDEXER_STATUS" != "200" ]; then
         echo "* indexer node"
       fi
-      err "\none or more services failed to start."
+      err "One or more services failed to start."
     fi
   }
 
@@ -468,9 +467,9 @@ sandbox () {
         dc up -d
       fi
 
-      echo -e "* waiting for services to initialize.\n"
-      wait_for_services & spinner
-      overwrite "* services ready!"
+      echo -e "* waiting for services to initialize."
+      wait_for_services
+      echo "* services ready!"
 
       version_helper
       status_helper
