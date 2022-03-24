@@ -45,6 +45,7 @@ jobs:
           command: sudo iptables -I INPUT -m conntrack --ctstate INVALID -j DROP
       - run:
           name: Stand up sandbox
+          no_output_timeout: 30m
           environment:
             CONFIG: << parameters.config >>
           command: |
