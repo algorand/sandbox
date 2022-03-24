@@ -59,7 +59,7 @@ import_and_start_readonly() {
 }
 
 disabled() {
-  go run /tmp/disabled.go -port "$PORT" -code 400 -message "Indexer disabled for this configuration."
+  go run /tmp/disabled.go -port "$PORT" -code 200 -message "Indexer disabled for this configuration."
 }
 
 if [ ! -z "$DISABLED" ]; then
