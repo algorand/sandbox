@@ -224,6 +224,36 @@ sandbox () {
     fi    
   }
 
+  # wait until indexer/algod health endpoints report 200
+  wait_for_services() {
+    local ATTEMPTS_REMAINING=60
+    local INDEXER_STATUS="000"
+    local ALGOD_STATUS="000"
+
+    # wait for startup
+    while [[ $ATTEMPTS_REMAINING -gt 0 ]]; do
+      INDEXER_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:8980/health" -o /dev/null || true)
+      ALGOD_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:4001/health" -o /dev/null || true)
+      if [ "$ALGOD_STATUS" == "200" ] && [ "$INDEXER_STATUS" == "200" ]; then
+        ATTEMPTS_REMAINING=0
+      else
+        ((ATTEMPTS_REMAINING--))
+        sleep 1
+      fi
+    done
+
+    if [ "$ALGOD_STATUS" != "200" ] || [ "$INDEXER_STATUS" != "200" ]; then
+      echo "the following did not start:"
+      if [ "$ALGOD_STATUS" != "200" ]; then
+        echo "* algorand node"
+      fi
+      if [ "$INDEXER_STATUS" != "200" ]; then
+        echo "* indexer node"
+      fi
+      err "One or more services failed to start."
+    fi
+  }
+
   version_helper () {
     statusline "algod version"
     dc exec algod goal -v
@@ -430,14 +460,16 @@ sandbox () {
         rebuild_if_needed >> "$SANDBOX_LOG" 2>&1               & spinner
         echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
         dc up -d                        >> "$SANDBOX_LOG" 2>&1 & spinner
-        sleep 1                                                & spinner
-        overwrite "* started!"
+        overwrite "* docker containers started!"
       else
         rebuild_if_needed
         echo "* docker-compose up -d"
         dc up -d
-        sleep 1
       fi
+
+      echo -e "* waiting for services to initialize."
+      wait_for_services
+      echo "* services ready!"
 
       version_helper
       status_helper
