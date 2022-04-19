@@ -258,8 +258,7 @@ sandbox () {
     statusline "algod version"
     dc exec algod goal -v
     statusline "Indexer version"
-    # the algorand-indexer command doesn't have a version command without either import or daemon arguments
-    INDEXER_VERSION=$(dc exec indexer cmd/algorand-indexer/algorand-indexer import -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
+    INDEXER_VERSION=$(dc exec indexer cmd/algorand-indexer/algorand-indexer daemon -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
     statusline "Postgres version"
     dc exec indexer-db postgres -V
   }
