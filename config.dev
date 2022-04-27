@@ -4,6 +4,7 @@ export ALGOD_BRANCH="master"
 export ALGOD_SHA=""
 export NETWORK=""
 export NETWORK_TEMPLATE="images/algod/DevModeNetwork.json"
+export NETWORK_NUM_ROUNDS=30000
 export NETWORK_BOOTSTRAP_URL=""
 export NETWORK_GENESIS_FILE=""
 export INDEXER_URL="https://github.com/algorand/indexer"

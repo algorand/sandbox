@@ -3,7 +3,7 @@
         "ConsensusProtocol": "future",
         "NetworkName": "devmodenet",
         "FirstPartKeyRound": 0,
-        "LastPartKeyRound":  30000,
+        "LastPartKeyRound":  NETWORK_NUM_ROUNDS,
         "Wallets": [
             {
                 "Name": "Wallet1",
