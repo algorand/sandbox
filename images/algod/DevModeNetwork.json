@@ -2,6 +2,8 @@
     "Genesis": {
         "ConsensusProtocol": "future",
         "NetworkName": "devmodenet",
+        "FirstPartKeyRound": 0,
+        "LastPartKeyRound":  30000,
         "Wallets": [
             {
                 "Name": "Wallet1",
