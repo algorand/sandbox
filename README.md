@@ -157,6 +157,8 @@ Private networks also include an `Indexer` service configured to synchronize aga
 
 The `dev` configuration runs a private network in dev mode. In this mode, every transaction being sent to the node automatically generates a new block, rather than wait for a new round in real time. This is extremely useful for fast e2e testing of an application.
 
+It takes a long time to generate participation keys, so the default configurations use the `NETWORK_NUM_ROUNDS` parameter to limit how many are created. Unless the default value is changed, the network will stall after 24 hours. Some configurations have been changed so that they can be run for over a week. Review the setting to make sure it is suitable for how you would like to use the sandbox.
+
 ### Public Network
 
 The `mainnet`, `testnet`, `betanet`, and `devnet` configurations configure the sandbox to connect to one of those long running networks. Once started it will automatically attempt to catchup to the latest round. Catchup tends to take a while and a progress bar will be displayed to illustrate of the progress.
@@ -175,8 +177,11 @@ export ALGOD_CHANNEL="nightly"
 export ALGOD_URL=""
 export ALGOD_BRANCH=""
 export ALGOD_SHA=""
-export ALGOD_BOOTSTRAP_URL=""
-export ALGOD_GENESIS_FILE=""
+export NETWORK=""
+export NETWORK_TEMPLATE="images/algod/future_template.json"
+export NETWORK_NUM_ROUNDS=300000
+export NETWORK_BOOTSTRAP_URL=""
+export NETWORK_GENESIS_FILE=""
 export INDEXER_URL="https://github.com/algorand/indexer"
 export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""

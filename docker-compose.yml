@@ -14,6 +14,7 @@ services:
         BOOTSTRAP_URL: "${NETWORK_BOOTSTRAP_URL}"
         GENESIS_FILE: "${NETWORK_GENESIS_FILE}"
         TEMPLATE: "${NETWORK_TEMPLATE:-images/algod/template.json}"
+        NETWORK_NUM_ROUNDS: "${NETWORK_NUM_ROUNDS:-30000}"
         TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         ALGOD_PORT: "4001"
         KMD_PORT: "4002"

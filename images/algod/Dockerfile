@@ -15,6 +15,7 @@ ARG ALGOD_PORT=""
 ARG KMD_PORT=""
 ARG TOKEN=""
 ARG TEMPLATE=""
+ARG NETWORK_NUM_ROUNDS="30000"
 
 RUN echo "Installing from source. ${URL} -- ${BRANCH}"
 ENV BIN_DIR="$HOME/node"
@@ -38,7 +39,8 @@ RUN /tmp/images/algod/install.sh \
     -s "${SHA}"
 
 # Configure network
-RUN /tmp/images/algod/setup.py \
+RUN sed -i "s/NETWORK_NUM_ROUNDS/$NETWORK_NUM_ROUNDS/" "//tmp/${TEMPLATE}" && \
+ /tmp/images/algod/setup.py \
  --bin-dir "$BIN_DIR" \
  --data-dir "/opt/data" \
  --start-script "/opt/start_algod.sh" \
