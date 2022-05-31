@@ -530,9 +530,10 @@ sandbox commands:
   copyFrom <file> -> copy <file> from the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
 
 algorand commands:
-  logs        -> stream algorand logs with the carpenter utility.
-  status      -> get node status.
-  goal (args) -> run goal command like 'goal node status'.
+  logs           -> stream algorand logs with the carpenter utility.
+  status         -> get node status.
+  goal (args)    -> run goal command like 'goal node status'.
+  tealdbg (args) -> run tealdbg command.
 
 special flags for 'up' command:
   -v|--verbose           -> display verbose output when starting standbox.
