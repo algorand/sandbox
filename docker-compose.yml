@@ -43,10 +43,10 @@ services:
       CONNECTION_STRING: "host=indexer-db port=5432 user=algorand password=algorand dbname=indexer_db sslmode=disable"
       ALGOD_ADDR: "algod:4001"
       ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      INDEXER_ENABLE_ALL_PARAMETERS: "${INDEXER_ENABLE_ALL_PARAMETERS}"
     depends_on:
       - indexer-db
       - algod
-
   indexer-db:
     image: "postgres:13-alpine"
     container_name: "algorand-sandbox-postgres"
