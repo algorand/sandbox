@@ -62,6 +62,10 @@ disabled() {
   go run /tmp/disabled.go -port "$PORT" -code 200 -message "Indexer disabled for this configuration."
 }
 
+# Make sure data directory is available in case we're using a version that requires it.
+export INDEXER_DATA=/tmp/indexer-data
+mkdir -p ${INDEXER_DATA}
+
 if [ ! -z "$DISABLED" ]; then
   disabled
 elif [ -z "${SNAPSHOT}" ]; then
