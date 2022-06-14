@@ -186,6 +186,7 @@ export INDEXER_URL="https://github.com/algorand/indexer"
 export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
+export INDEXER_ENABLE_ALL_PARAMETERS="false"
 ```
 
 Indexer is always built from source since it can be done quickly. For most configurations, algod will be installed using our standard release channels, but building from source is also available by setting the git URL, Branch and optionally a specific SHA commit hash.
@@ -203,6 +204,19 @@ export INDEXER_URL="https://github.com/<user>/go-algorand"
 export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
+export INDEXER_ENABLE_ALL_PARAMETERS="false"
+```
+
+### Indexer Query Parameters
+
+By default Indexer disables many query parameters which are known to have performance problems without specially configured databases. You can identify these parameters if your Indexer calls return a response like the following:
+```
+{"message":"provided disabled parameter: tx-type"}
+```
+
+To override the disabled parameters and enable everything, add the following to your `config.<name>` file:
+```
+export INDEXER_ENABLE_ALL_PARAMETERS="true"
 ```
 
 ## Working with files
