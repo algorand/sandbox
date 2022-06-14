@@ -1,12 +1,12 @@
 version: 2.1
 
 parameters:
+  ubuntu_jammy_machine:
+    type: string
+    default: 'ubuntu-2204'
   ubuntu_focal_machine:
     type: string
-    default: 'ubuntu-2004:202111-02'
-  ubuntu_xenial_machine:
-    type: string
-    default: 'ubuntu-1604:202104-01'
+    default: 'ubuntu-2004'
 
 workflows:
   circleci_build_and_test:
@@ -16,7 +16,7 @@ workflows:
           matrix:
             parameters:
               config: ['', 'betanet', 'testnet', 'devnet', 'dev', 'beta', 'release', 'nightly']
-              machine: [<< pipeline.parameters.ubuntu_focal_machine >>, << pipeline.parameters.ubuntu_xenial_machine >>]
+              machine: [<< pipeline.parameters.ubuntu_focal_machine >>, << pipeline.parameters.ubuntu_jammy_machine >>]
 
 jobs:
   spin_up:
