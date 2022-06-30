@@ -71,7 +71,7 @@ This will run the `sandbox` shell script with the default configuration. See the
 
 <!-- markdownlint-disable-file MD034 -->
 
-Note for Ubuntu: You may need to alias `docker` to `sudo docker` or follow the steps in https://docs.docker.com/install/linux/linux-postinstall so that a non-root user can user the command `docker`.
+Note for Ubuntu: You may need to alias `docker` to `sudo docker` or follow the steps in https://docs.docker.com/install/linux/linux-postinstall so that a non-root user can use the command `docker`.
 
 Run the test command for examples of how to interact with the environment:
 
