@@ -95,7 +95,10 @@ The [installation instructions](https://docs.docker.com/desktop/windows/install/
 4. Install whatever distribution of Linux desired.
 5. Open the Windows Terminal with the distribution installed in the previous step and follow the instruction for Ubuntu and macOS above.
 
-#### Option 2: Using Git for Windows/ MSYS 2
+#### Option 2: Using Git for Windows/ MSYS 2 (not recommended)
+
+This option is not fully tested and may cause issues.
+It is recommended to use WSL 2.
 
 1. Install Git for Windows: https://gitforwindows.org/
 2. Install and launch Docker for Windows: https://docs.docker.com/get-docker
@@ -320,3 +323,19 @@ Before starting, make sure you have VS-Code and have installed the [Remote - Con
 ```bash
 ~$ curl "localhost:8980/v2/accounts"
 ```
+
+## Deep technical details
+
+### About pseudo-TTY issues or why do we use the `-T` flag in `dc exec -T` everywhere?
+
+Windows Msys / Git Bash does not have a pseudo-TTY.
+Because of that, any time a command requires a pseudo-TTY, it fails with error:
+
+  ```plain
+  the input device is not a TTY. If you are using mintty, try prefixing the command with 'winpty'.
+  ```
+
+Unfortunately prefixing all commands with `winpty` is not an option because `winpty` will break when piping or using command substitution (\`...\` and `$()`).
+The adopted solution is to use a pseudo-TTY only when absolutely required, that is when executing an interactive command such as `bash` inside `docker`.
+
+See comments around the commands `dc` and `dc_pty` in the file `sandbox`.

@@ -180,13 +180,25 @@ sandbox () {
     curl -s "localhost:8980/health?pretty"
   }
 
+  # docker-compose alias
+  # must only be used when no pseudo-TTY is required
+  # in particular, when using 
+  #   dc ... exec ...
+  # the flag -T needs to be passed
+  # Concretely, to execute non-interactive commands:
+  #   dc exec -T algod goal node status
+  # and if the command is interactive, dc_pty needs to be used:
+  #   dc_pty algod exec //bin/bash
+  # This is to ensure compatibility with Windows Msys
   dc () {
     docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
-  # dc is used when a pseudo-TTY is required
-  # essentially for any interactive command
-  # like docker-compose exec algod //bin/bash
+  # dc_pty needs to be used instead of dc any time
+  # a pseudo-TTY is required.
+  # See comment of dc ()
+  # Do NOT used when the command input/output needs to be piped
+  # or inside command substituions as this will fail on Windows Msys
   dc_pty () {
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
@@ -204,22 +216,28 @@ sandbox () {
     fi
   }
 
+  # A shortcut for goal commands on docker-compose
+  # It assumes the command is non-interactive and does not use a pseudo-TTY
+  # (option -T)
   goal_helper () {
-    dc exec algod goal "$@"
+    dc exec -T algod goal "$@"
   }
 
+  # A shortcut for tealdbg commands on docker-compose
+  # It assumes the command is non-interactive and does not use a pseudo-TTY
+  # (option -T)
   tealdbg_helper () {
     if [[ "$*" == *--listen* ]]
     then
-        dc exec algod tealdbg "$@"
+        dc exec -T algod tealdbg "$@"
     else
       if [[ "$*" == *debug* ]]
       then
           echo "tealdbg debug command called without --listen option therefore sandbox attached the option automatically!"
-          dc exec algod tealdbg  "$@" --listen 0.0.0.0
+          dc exec -T algod tealdbg  "$@" --listen 0.0.0.0
           
       else
-          dc exec algod tealdbg "$@"
+          dc exec -T algod tealdbg "$@"
       fi        
     fi    
   }
@@ -256,11 +274,11 @@ sandbox () {
 
   version_helper () {
     statusline "algod version"
-    dc exec algod goal -v
+    dc exec -T algod goal -v
     statusline "Indexer version"
-    INDEXER_VERSION=$(dc exec indexer cmd/algorand-indexer/algorand-indexer daemon -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
+    INDEXER_VERSION=$(dc exec -T indexer cmd/algorand-indexer/algorand-indexer daemon -v) && echo ${INDEXER_VERSION} || curl -s "localhost:8980/health?pretty"
     statusline "Postgres version"
-    dc exec indexer-db postgres -V
+    dc exec -T indexer-db postgres -V
   }
 
   # Given a network name attempts to fetch a catchpoint and catchup.
@@ -388,9 +406,10 @@ sandbox () {
   # Logs streams the logs from the container to the shell
   logs () {
     if [[ $# -gt 1 && $2 == "raw" ]]; then
-      dc exec algod tail -f node.log
+      dc exec -T algod tail -f node.log
     else
-      dc exec algod carpenter -D
+      # We need a PTY with carpenter to have colors
+      dc_pty exec algod carpenter -D
     fi
   }
 
@@ -605,7 +624,7 @@ EOF
     test)
       statusline "Test command forwarding..."
       printc $default "~$ ${blue}docker exec -it algod uname -a"
-      dc exec algod uname -a
+      dc exec -T algod uname -a
 
       TOKEN=$(cat "$SANDBOX_DIR/config/token")
       statusline "Test Algod REST API..."
