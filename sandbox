@@ -31,6 +31,18 @@ export INDEXER_BRANCH=""
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 
+##################################################
+# Determine the correct docker command (or fail) #
+##################################################
+if [ -x "$(command -v docker-compose)" ]; then
+  DOCKER_COMPOSE="docker-compose"
+elif [ "$(docker compose help &>/dev/null; echo "$?")" -eq 16 ]; then
+  DOCKER_COMPOSE="docker compose"
+else
+  echo 'Error: docker compose is not installed.' >&2
+  exit 1
+fi
+
 ######################################
 # Compatibility with Windows / MSYS2 #
 ######################################
@@ -191,7 +203,7 @@ sandbox () {
   #   dc_pty algod exec //bin/bash
   # This is to ensure compatibility with Windows Msys
   dc () {
-    docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    $DOCKER_COMPOSE -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
   # dc_pty needs to be used instead of dc any time
@@ -202,14 +214,14 @@ sandbox () {
   dc_pty () {
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
-    $WINDOWS_PTY_PREFIX docker-compose -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    $WINDOWS_PTY_PREFIX $DOCKER_COMPOSE -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
   rebuild_if_needed () {
     if [ -f "$CLEAN_FILE" ]; then
       rm "$CLEAN_FILE"
       echo ".clean file found in sandbox directory. Rebuilding images..."
-      echo "* docker-compose build --no-cache"
+      echo "* docker compose build --no-cache"
       dc build --no-cache
     elif [ $FRESH_INSTALL -eq 0 ]; then
       echo ".clean file NOT FOUND. Sandbox images will NOT be rebuilt."
@@ -363,11 +375,11 @@ sandbox () {
   }
 
   clean () {
-    echo "* docker-compose down"
+    echo "* docker compose down"
     dc down -t 0                                   || true
     echo "* docker rmi sandbox_algod sandbox_indexer"
     docker rmi sandbox_algod sandbox_indexer                   || true
-    echo "* docker-compose rm -f"
+    echo "* docker compose rm -f"
     dc rm -f                                       || true
     echo "* docker rmi $(docker images -f "dangling=true" -q)"
     docker rmi $(docker images -f "dangling=true" -q)          || true
@@ -477,12 +489,12 @@ sandbox () {
         echo "see sandbox.log for detailed progress, or use -v."
         echo "" # The spinner will rewrite this line.
         rebuild_if_needed >> "$SANDBOX_LOG" 2>&1               & spinner
-        echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
+        echo "* docker compose up -d"   >> "$SANDBOX_LOG"
         dc up -d                        >> "$SANDBOX_LOG" 2>&1 & spinner
         overwrite "* docker containers started!"
       else
         rebuild_if_needed
-        echo "* docker-compose up -d"
+        echo "* docker compose up -d"
         dc up -d
       fi
 
@@ -557,7 +569,7 @@ algorand commands:
 special flags for 'up' command:
   -v|--verbose           -> display verbose output when starting standbox.
   -s|--skip-fast-catchup -> skip catchup when connecting to real network.
-  -i|--interactive       -> start docker-compose in interactive mode.
+  -i|--interactive       -> start docker compose in interactive mode.
 EOF
   }
 
@@ -688,10 +700,5 @@ EOF
 ##############
 # Entrypoint #
 ##############
-
-if ! [ -x "$(command -v docker-compose)" ]; then
-  echo 'Error: docker-compose is not installed.' >&2
-  exit 1
-fi
 
 sandbox "$@"
