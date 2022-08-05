@@ -12,6 +12,7 @@ SANDBOX_LOG="$SANDBOX_DIR/sandbox.log"
 FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/CHANNEL/latest.catchpoint'
 
 APORT="${ALGOD_PORT:-4001}"
+KPORT="${KMD_PORT:-4002}"
 IPORT="${INDEXER_PORT:-8980}"
 
 # Global flags
@@ -647,8 +648,8 @@ EOF
       curl "localhost:$APORT/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
 
       statusline "Test KMD REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:4002/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
-      curl localhost:4002/v1/wallets -H "X-KMD-API-Token: $TOKEN"
+      printc $default "~$ ${blue}curl ${teal}localhost:$KPORT/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
+      curl "localhost:$KPORT/v1/wallets" -H "X-KMD-API-Token: $TOKEN"
 
       statusline "\nTest Indexer REST API..."
       printc $default "~$ ${blue}curl ${teal}\"localhost:$IPORT/health?pretty\""
