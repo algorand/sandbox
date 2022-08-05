@@ -24,8 +24,6 @@ services:
       - ${KMD_PORT:-4002}:4002
       - ${CDT_PORT:-9392}:9392
     privileged: true
-    volumes:
-      - ./volumes/algod:/opt/mnt
 
   indexer:
     container_name: "${INDEXER_CONTAINER:-algorand-sandbox-indexer}"
