@@ -102,11 +102,21 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url):
         f.write(token)
 
     # Setup config, inject port
-    with open(join(node_dir, 'config.json'), 'w') as f:
+    node_config = join(node_dir, "config.json")
+    print(f"ZZZZ: writing to node_config={node_config}")
+    with open(node_config, "w") as f:
+    # with open(join(node_dir, 'config.json'), 'w') as f:
         # f.write('{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:%s", "DNSBootstrapID": "%s", "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}' % (algod_port, bootstrap_url))
-        f.write('{ "GossipFanout": 1, "EndpointAddress": "0.0.0.0:%s", "DNSBootstrapID": "", "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}' % algod_port)
+        f.write('{   "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:%s", "DNSBootstrapID": "",   "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}' % algod_port)
     with open(join(kmd_dir, 'kmd_config.json'), 'w') as f:
         f.write('{  "address":"0.0.0.0:%s",  "allowed_origins":["*"]}' % kmd_port)
+    with open(node_config) as f:
+        print(f"ZZZZ: this is what I just wrote: {f.read()}")
+
+    # SOME PREVIOUS LOGS FOR THE ABOVE:
+    #14 101.4 Creating symlink /opt/data -> /opt/testnetwork/Node
+    #14 101.4 ZZZZ: writing to node_config=/opt/testnetwork/Node/config.json
+    #14 101.4 ZZZZ: this is what I just wrote: { "GossipFanout": 1, "EndpointAddress": "0.0.0.0:4001", "DNSBootstrapID": "", "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}
 
 
 if __name__ == '__main__':
@@ -126,14 +136,21 @@ if __name__ == '__main__':
         startCommands = create_real_network(args.bin_dir, args.network_dir, args.network_template, args.genesis_file)
 
     # Write start script
-    print(f'Start commands for {args.start_script}:')
-    pp.pprint(startCommands)
+    print(f'ZZZZ: Start commands for {args.start_script}:')
+    pp.pprint(f'ZZZZ: startCommands={startCommands}')
     with open(args.start_script, 'w') as f:
         f.write('#!/usr/bin/env bash\n')
         for line in startCommands:
             f.write(f'{line}\n')
         f.write('sleep infinity\n')
     os.chmod(args.start_script, 0o755)
+    print(f'ZZZZ: wrote to ??/opt/start_algod.sh??? --> {args.start_script}')
+    with open(args.start_script) as f:
+        what_was_written = f.read()
+    print(f'''ZZZZ: THIS is what we actually wrote:--------
+{what_was_written}
+--------''')
+    
 
     # Create symlink
     data_dir, _ = algod_directories(args.network_dir)

@@ -41,9 +41,9 @@ export INDEXER_DISABLED=""
 # Determine the correct docker command (or fail) #
 ##################################################
 if [ -x "$(command -v docker-compose)" ]; then
-  DOCKER_COMPOSE="docker-compose"
+  DOCKER_COMPOSE="docker compose --verbose"
 elif [ "$(docker compose help &>/dev/null; echo "$?")" -eq 16 ]; then
-  DOCKER_COMPOSE="docker compose"
+  DOCKER_COMPOSE="docker compose --verbose"
 else
   echo 'Error: docker compose is not installed.' >&2
   exit 1
