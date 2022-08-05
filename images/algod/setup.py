@@ -103,7 +103,8 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url):
 
     # Setup config, inject port
     with open(join(node_dir, 'config.json'), 'w') as f:
-        f.write('{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:%s", "DNSBootstrapID": "%s", "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}' % (algod_port, bootstrap_url))
+        # f.write('{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:%s", "DNSBootstrapID": "%s", "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}' % (algod_port, bootstrap_url))
+        f.write('{ "GossipFanout": 1, "EndpointAddress": "0.0.0.0:%s", "DNSBootstrapID": "", "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}' % algod_port)
     with open(join(kmd_dir, 'kmd_config.json'), 'w') as f:
         f.write('{  "address":"0.0.0.0:%s",  "allowed_origins":["*"]}' % kmd_port)
 
