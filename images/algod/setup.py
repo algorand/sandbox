@@ -35,6 +35,8 @@ parser.add_argument('--kmd-port', required=True, help='Port to use for kmd.')
 parser.add_argument('--network-dir', required=True, help='Path to create network.')
 parser.add_argument('--bootstrap-url', required=True, help='DNS Bootstrap URL, empty for private networks.')
 parser.add_argument('--genesis-file', required=True, help='Genesis file used by the network.')
+parser.add_argument('--archival', type=bool, default=False, help='When True, bootstrap an archival node.')
+parser.add_argument('--is-indexer-active', type=bool, default=False, help='When True, builtin v1 indexer is added to node (archival should be set True as well).')
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -92,7 +94,7 @@ def create_private_network(bin_dir, network_dir, template) -> List[str]:
             '%s/kmd start -t 0 -d %s' % (bin_dir, kmd_dir)]
 
 
-def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url):
+def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, archival, is_indexer_active):
     node_dir, kmd_dir = algod_directories(network_dir)
 
     # Set tokens
@@ -102,22 +104,19 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url):
         f.write(token)
 
     # Setup config, inject port
-    node_config = join(node_dir, "config.json")
-    print(f"ZZZZ: writing to node_config={node_config}")
-    with open(node_config, "w") as f:
-    # with open(join(node_dir, 'config.json'), 'w') as f:
-        # f.write('{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:%s", "DNSBootstrapID": "%s", "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}' % (algod_port, bootstrap_url))
-        f.write('{   "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:%s", "DNSBootstrapID": "",   "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}' % algod_port)
-    with open(join(kmd_dir, 'kmd_config.json'), 'w') as f:
-        f.write('{  "address":"0.0.0.0:%s",  "allowed_origins":["*"]}' % kmd_port)
-    with open(node_config) as f:
-        print(f"ZZZZ: this is what I just wrote: {f.read()}")
+    node_config_path = join(node_dir, "config.json")
+    archival = 'true' if archival else 'false'
+    is_indexer_active = 'true' if is_indexer_active else 'false'
+    node_config = f'{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "isIndexerActive":{is_indexer_active}, "EnableDeveloperAPI":true}'
+    print(f"writing to node_config_path=[{node_config_path}] config json: {node_config}")
+    with open(node_config_path, "w") as f:
+        f.write('{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:%s", "DNSBootstrapID": "%s", "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}' % (algod_port, bootstrap_url))
 
-    # SOME PREVIOUS LOGS FOR THE ABOVE:
-    #14 101.4 Creating symlink /opt/data -> /opt/testnetwork/Node
-    #14 101.4 ZZZZ: writing to node_config=/opt/testnetwork/Node/config.json
-    #14 101.4 ZZZZ: this is what I just wrote: { "GossipFanout": 1, "EndpointAddress": "0.0.0.0:4001", "DNSBootstrapID": "", "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}
-
+    kmd_config_path = join(kmd_dir, 'kmd_config.json')
+    kmd_config = f'{ "address":"0.0.0.0:{kmd_port}",  "allowed_origins":["*"]}'
+    print(f"writing to kmd_config_path=[{kmd_config_path}] config json: {kmd_config}")
+    with open(kmd_config_path, 'w') as f:
+        f.write(kmd_config)
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -158,5 +157,13 @@ if __name__ == '__main__':
     os.symlink(data_dir, args.data_dir)
 
     # Configure network
-    configure_data_dir(args.network_dir, args.network_token, args.algod_port, args.kmd_port, args.bootstrap_url)
+    configure_data_dir(
+        args.network_dir, 
+        args.network_token, 
+        args.algod_port, 
+        args.kmd_port, 
+        args.bootstrap_url,
+        args.archival,
+        args.is_indexer_active,
+    )
 
