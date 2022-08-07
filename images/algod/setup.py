@@ -107,13 +107,13 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, 
     node_config_path = join(node_dir, "config.json")
     archival = 'true' if archival else 'false'
     is_indexer_active = 'true' if is_indexer_active else 'false'
-    node_config = f'{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "isIndexerActive":{is_indexer_active}, "EnableDeveloperAPI":true}'
+    node_config = f'{{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "isIndexerActive":{is_indexer_active}, "EnableDeveloperAPI":true }}'    
     print(f"writing to node_config_path=[{node_config_path}] config json: {node_config}")
     with open(node_config_path, "w") as f:
-        f.write('{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:%s", "DNSBootstrapID": "%s", "IncomingConnectionsLimit": 0, "Archival":true, "isIndexerActive":true, "EnableDeveloperAPI":true}' % (algod_port, bootstrap_url))
+        f.write(node_config)
 
     kmd_config_path = join(kmd_dir, 'kmd_config.json')
-    kmd_config = f'{ "address":"0.0.0.0:{kmd_port}",  "allowed_origins":["*"]}'
+    kmd_config = f'{{ "address":"0.0.0.0:{kmd_port}",  "allowed_origins":["*"] }}'
     print(f"writing to kmd_config_path=[{kmd_config_path}] config json: {kmd_config}")
     with open(kmd_config_path, 'w') as f:
         f.write(kmd_config)
