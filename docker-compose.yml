@@ -25,7 +25,6 @@ services:
       - ${ALGOD_PORT:-4001}:4001
       - ${KMD_PORT:-4002}:4002
       - ${CDT_PORT:-9392}:9392
-    privileged: true
 
   indexer:
     container_name: "${INDEXER_CONTAINER:-algorand-sandbox-indexer}"
@@ -47,7 +46,6 @@ services:
       ALGOD_ADDR: "algod:4001"
       ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       INDEXER_ENABLE_ALL_PARAMETERS: "${INDEXER_ENABLE_ALL_PARAMETERS:-false}"
-    privileged: true
     depends_on:
       - indexer-db
       - algod
