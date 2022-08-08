@@ -135,8 +135,8 @@ if __name__ == '__main__':
         startCommands = create_real_network(args.bin_dir, args.network_dir, args.network_template, args.genesis_file)
 
     # Write start script
-    print(f'ZZZZ: Start commands for {args.start_script}:')
-    pp.pprint(f'ZZZZ: startCommands={startCommands}')
+    print(f'Start commands for {args.start_script}:')
+    pp.pprint(f'startCommands={startCommands}')
     with open(args.start_script, 'w') as f:
         f.write('#!/usr/bin/env bash\n')
         for line in startCommands:
