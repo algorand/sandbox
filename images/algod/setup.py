@@ -143,13 +143,7 @@ if __name__ == '__main__':
             f.write(f'{line}\n')
         f.write('sleep infinity\n')
     os.chmod(args.start_script, 0o755)
-    print(f'ZZZZ: wrote to ??/opt/start_algod.sh??? --> {args.start_script}')
-    with open(args.start_script) as f:
-        what_was_written = f.read()
-    print(f'''ZZZZ: THIS is what we actually wrote:--------
-{what_was_written}
---------''')
-    
+    print(f"Finished preparing start script '{args.start_script}' under /opt/")    
 
     # Create symlink
     data_dir, _ = algod_directories(args.network_dir)
