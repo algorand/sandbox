@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+source .env
+
 #####################
 # Script constants. #
 #####################
@@ -42,10 +44,8 @@ export INDEXER_DISABLED=""
 ##################################################
 if [ -x "$(command -v docker-compose)" ]; then
   DOCKER_COMPOSE="docker-compose"
-  # DOCKER_COMPOSE="docker compose --verbose"
 elif [ "$(docker compose help &>/dev/null; echo "$?")" -eq 16 ]; then
   DOCKER_COMPOSE="docker compose"
-  # DOCKER_COMPOSE="docker compose --verbose"
 else
   echo 'Error: docker compose is not installed.' >&2
   exit 1
