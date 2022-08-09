@@ -211,13 +211,13 @@ sandbox () {
   #   dc_pty algod exec //bin/bash
   # This is to ensure compatibility with Windows Msys
   dc () {
+    VERBOSE_FLAG=""
     if [ $VERBOSE_MODE == 1 ]; then
       # --verbose is universally available since tag https://github.com/docker/compose-cli/releases/tag/v1.0.18 pr https://github.com/docker/compose-cli/pull/1830
-      DOCKER_COMPOSE="$DOCKER_COMPOSE --verbose"
-      echo "ZZZZ: VERBOSE_MODE=$VERBOSE_MODE, DOCKER_COMPOSE=$DOCKER_COMPOSE"
+      VERBOSE_FLAG=" --verbose"
     fi
 
-    $DOCKER_COMPOSE -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    $DOCKER_COMPOSE$VERBOSE_FLAG -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
   # dc_pty needs to be used instead of dc any time
@@ -604,7 +604,6 @@ EOF
         case "$1" in
           -v|--verbose)
             VERBOSE_MODE=1
-            echo "ZZZZ: VERBOSE_MODE=$VERBOSE_MODE"
             ;;
           -s|--skip-fast-catchup)
             USE_FAST_CATCHUP=0
