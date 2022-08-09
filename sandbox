@@ -503,7 +503,7 @@ sandbox () {
       else
         rebuild_if_needed
         echo "* docker compose up -d"
-        dc up -d
+        dc -l debug up -d # "-l debug" seems to be the best verbosity flag going forward: https://github.com/docker/compose-cli/issues/1253
       fi
 
       echo -e "* waiting for services to initialize."
