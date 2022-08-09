@@ -51,6 +51,11 @@ else
   exit 1
 fi
 
+if [ $VERBOSE_MODE == 1 ]; then
+  # --verbose is universally available since tag https://github.com/docker/compose-cli/releases/tag/v1.0.18 pr https://github.com/docker/compose-cli/pull/1830
+  DOCKER_COMPOSE="$DOCKER_COMPOSE --verbose"
+fi
+
 ######################################
 # Compatibility with Windows / MSYS2 #
 ######################################
@@ -502,8 +507,8 @@ sandbox () {
         overwrite "* docker containers started!"
       else
         rebuild_if_needed
-        echo "* docker compose --log-level debug up -d"
-        dc --log-level debug up -d # "--log-level debug" seems to be the best verbosity flag going forward: https://github.com/docker/compose-cli/issues/1253
+        echo "* $DOCKER_COMPOSE up -d"
+        dc up -d
       fi
 
       echo -e "* waiting for services to initialize."
