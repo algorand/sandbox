@@ -54,6 +54,8 @@ fi
 if [ $VERBOSE_MODE == 1 ]; then
   # --verbose is universally available since tag https://github.com/docker/compose-cli/releases/tag/v1.0.18 pr https://github.com/docker/compose-cli/pull/1830
   DOCKER_COMPOSE="$DOCKER_COMPOSE --verbose"
+
+  echo "ZZZZ: VERBOSE_MODE=$VERBOSE_MODE, DOCKER_COMPOSE=$DOCKER_COMPOSE"
 fi
 
 ######################################
@@ -602,6 +604,7 @@ EOF
         case "$1" in
           -v|--verbose)
             VERBOSE_MODE=1
+            echo "ZZZZ: VERBOSE_MODE=$VERBOSE_MODE"
             ;;
           -s|--skip-fast-catchup)
             USE_FAST_CATCHUP=0
