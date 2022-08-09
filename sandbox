@@ -502,7 +502,7 @@ sandbox () {
         overwrite "* docker containers started!"
       else
         rebuild_if_needed
-        echo "* docker compose up -d"
+        echo "* docker compose --log-level=debug up -d"
         dc --log-level=debug up -d # "--log-level=debug" seems to be the best verbosity flag going forward: https://github.com/docker/compose-cli/issues/1253
       fi
 
