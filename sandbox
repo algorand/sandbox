@@ -51,13 +51,6 @@ else
   exit 1
 fi
 
-if [ $VERBOSE_MODE == 1 ]; then
-  # --verbose is universally available since tag https://github.com/docker/compose-cli/releases/tag/v1.0.18 pr https://github.com/docker/compose-cli/pull/1830
-  DOCKER_COMPOSE="$DOCKER_COMPOSE --verbose"
-
-  echo "ZZZZ: VERBOSE_MODE=$VERBOSE_MODE, DOCKER_COMPOSE=$DOCKER_COMPOSE"
-fi
-
 ######################################
 # Compatibility with Windows / MSYS2 #
 ######################################
@@ -218,6 +211,12 @@ sandbox () {
   #   dc_pty algod exec //bin/bash
   # This is to ensure compatibility with Windows Msys
   dc () {
+    if [ $VERBOSE_MODE == 1 ]; then
+      # --verbose is universally available since tag https://github.com/docker/compose-cli/releases/tag/v1.0.18 pr https://github.com/docker/compose-cli/pull/1830
+      DOCKER_COMPOSE="$DOCKER_COMPOSE --verbose"
+      echo "ZZZZ: VERBOSE_MODE=$VERBOSE_MODE, DOCKER_COMPOSE=$DOCKER_COMPOSE"
+    fi
+
     $DOCKER_COMPOSE -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
@@ -229,6 +228,7 @@ sandbox () {
   dc_pty () {
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
+    # TODO: can windows docker handle --verbose?
     $WINDOWS_PTY_PREFIX $DOCKER_COMPOSE -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
@@ -509,7 +509,7 @@ sandbox () {
         overwrite "* docker containers started!"
       else
         rebuild_if_needed
-        echo "* $DOCKER_COMPOSE up -d"
+        echo "* running: docker compose up [--verbose] -d"
         dc up -d
       fi
 
