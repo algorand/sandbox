@@ -35,6 +35,7 @@ parser.add_argument('--kmd-port', required=True, help='Port to use for kmd.')
 parser.add_argument('--network-dir', required=True, help='Path to create network.')
 parser.add_argument('--bootstrap-url', required=True, help='DNS Bootstrap URL, empty for private networks.')
 parser.add_argument('--genesis-file', required=True, help='Genesis file used by the network.')
+parser.add_argument('--archival', type=bool, default=False, help='When True, bootstrap an archival node.')
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -92,7 +93,7 @@ def create_private_network(bin_dir, network_dir, template) -> List[str]:
             '%s/kmd start -t 0 -d %s' % (bin_dir, kmd_dir)]
 
 
-def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url):
+def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, archival):
     node_dir, kmd_dir = algod_directories(network_dir)
 
     # Set tokens
@@ -102,11 +103,18 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url):
         f.write(token)
 
     # Setup config, inject port
-    with open(join(node_dir, 'config.json'), 'w') as f:
-        f.write('{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:%s", "DNSBootstrapID": "%s", "IncomingConnectionsLimit": 0, "Archival":false, "isIndexerActive":false, "EnableDeveloperAPI":true}' % (algod_port, bootstrap_url))
-    with open(join(kmd_dir, 'kmd_config.json'), 'w') as f:
-        f.write('{  "address":"0.0.0.0:%s",  "allowed_origins":["*"]}' % kmd_port)
+    node_config_path = join(node_dir, "config.json")
+    archival = 'true' if archival else 'false'
+    node_config = f'{{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "isIndexerActive":false, "EnableDeveloperAPI":true }}'    
+    print(f"writing to node_config_path=[{node_config_path}] config json: {node_config}")
+    with open(node_config_path, "w") as f:
+        f.write(node_config)
 
+    kmd_config_path = join(kmd_dir, 'kmd_config.json')
+    kmd_config = f'{{ "address":"0.0.0.0:{kmd_port}",  "allowed_origins":["*"] }}'
+    print(f"writing to kmd_config_path=[{kmd_config_path}] config json: {kmd_config}")
+    with open(kmd_config_path, 'w') as f:
+        f.write(kmd_config)
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -126,13 +134,14 @@ if __name__ == '__main__':
 
     # Write start script
     print(f'Start commands for {args.start_script}:')
-    pp.pprint(startCommands)
+    pp.pprint(f'startCommands={startCommands}')
     with open(args.start_script, 'w') as f:
         f.write('#!/usr/bin/env bash\n')
         for line in startCommands:
             f.write(f'{line}\n')
         f.write('sleep infinity\n')
     os.chmod(args.start_script, 0o755)
+    print(f"Finished preparing start script '{args.start_script}' under /opt/")    
 
     # Create symlink
     data_dir, _ = algod_directories(args.network_dir)
@@ -140,5 +149,12 @@ if __name__ == '__main__':
     os.symlink(data_dir, args.data_dir)
 
     # Configure network
-    configure_data_dir(args.network_dir, args.network_token, args.algod_port, args.kmd_port, args.bootstrap_url)
+    configure_data_dir(
+        args.network_dir, 
+        args.network_token, 
+        args.algod_port, 
+        args.kmd_port, 
+        args.bootstrap_url,
+        args.archival,
+    )
 

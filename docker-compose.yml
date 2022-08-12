@@ -2,7 +2,7 @@ version: '3'
 
 services:
   algod:
-    container_name: "algorand-sandbox-algod"
+    container_name: "${ALGOD_CONTAINER:-algorand-sandbox-algod}"
     build:
       context: .
       dockerfile: ./images/algod/Dockerfile
@@ -15,17 +15,18 @@ services:
         GENESIS_FILE: "${NETWORK_GENESIS_FILE}"
         TEMPLATE: "${NETWORK_TEMPLATE:-images/algod/template.json}"
         NETWORK_NUM_ROUNDS: "${NETWORK_NUM_ROUNDS:-30000}"
+        NODE_ARCHIVAL: "${NODE_ARCHIVAL}"
         TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         ALGOD_PORT: "4001"
         KMD_PORT: "4002"
         CDT_PORT: "9392"
     ports:
-      - 4001:4001
-      - 4002:4002
-      - 9392:9392
+      - ${ALGOD_PORT:-4001}:4001
+      - ${KMD_PORT:-4002}:4002
+      - ${CDT_PORT:-9392}:9392
 
   indexer:
-    container_name: "algorand-sandbox-indexer"
+    container_name: "${INDEXER_CONTAINER:-algorand-sandbox-indexer}"
     build:
       context: .
       dockerfile: ./images/indexer/Dockerfile
@@ -34,7 +35,7 @@ services:
         BRANCH: "${INDEXER_BRANCH}"
         SHA: "${INDEXER_SHA}"
     ports:
-      - 8980:8980
+      - ${INDEXER_PORT:-8980}:8980
     restart: unless-stopped
     environment:
       DISABLED: "${INDEXER_DISABLED}"
@@ -47,11 +48,12 @@ services:
     depends_on:
       - indexer-db
       - algod
+      
   indexer-db:
     image: "postgres:13-alpine"
-    container_name: "algorand-sandbox-postgres"
+    container_name: "${POSTGRES_CONTAINER:-algorand-sandbox-postgres}"
     ports:
-      - 5433:5432
+      - ${POSTGRES_PORT:-5433}:5432
     user: postgres
     environment:
       POSTGRES_USER: algorand

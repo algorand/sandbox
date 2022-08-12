@@ -16,11 +16,11 @@ ARG KMD_PORT=""
 ARG TOKEN=""
 ARG TEMPLATE=""
 ARG NETWORK_NUM_ROUNDS="30000"
+ARG NODE_ARCHIVAL=""
 
 RUN echo "Installing from source. ${URL} -- ${BRANCH}"
 ENV BIN_DIR="$HOME/node"
 ENV ALGORAND_DATA="/opt/data"
-
 
 # Basic dependencies.
 ENV HOME /opt
@@ -50,7 +50,8 @@ RUN sed -i "s/NETWORK_NUM_ROUNDS/$NETWORK_NUM_ROUNDS/" "//tmp/${TEMPLATE}" && \
  --algod-port "${ALGOD_PORT}" \
  --kmd-port "${KMD_PORT}" \
  --bootstrap-url "${BOOTSTRAP_URL}" \
- --genesis-file "/tmp/${GENESIS_FILE}"
+ --genesis-file "/tmp/${GENESIS_FILE}" \
+ --archival "${NODE_ARCHIVAL}"
 
 ENV PATH="$BIN_DIR:${PATH}"
 WORKDIR /opt/data

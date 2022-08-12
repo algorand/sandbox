@@ -2,3 +2,6 @@
 .clean
 sandbox.log
 data
+
+# emacs backup
+*~
