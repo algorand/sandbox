@@ -8,6 +8,7 @@ source .env
 #####################
 DEFAULT_CONFIG='release'
 SANDBOX_DIR=$(dirname "$0")
+source "$SANDBOX_DIR/.env"
 CLEAN_FILE="$SANDBOX_DIR/.clean"
 ACTIVE_CONFIG_FILE="$SANDBOX_DIR/.active_config"
 SANDBOX_LOG="$SANDBOX_DIR/sandbox.log"
