@@ -186,7 +186,6 @@ export NETWORK_NUM_ROUNDS=300000
 export NETWORK_BOOTSTRAP_URL=""
 export NETWORK_GENESIS_FILE=""
 export NODE_ARCHIVAL=""
-export NODE_V1_INDEXER=""
 export INDEXER_URL="https://github.com/algorand/indexer"
 export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""

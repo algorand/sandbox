@@ -36,7 +36,6 @@ parser.add_argument('--network-dir', required=True, help='Path to create network
 parser.add_argument('--bootstrap-url', required=True, help='DNS Bootstrap URL, empty for private networks.')
 parser.add_argument('--genesis-file', required=True, help='Genesis file used by the network.')
 parser.add_argument('--archival', type=bool, default=False, help='When True, bootstrap an archival node.')
-parser.add_argument('--is-indexer-active', type=bool, default=False, help='When True, builtin v1 indexer is added to node (archival should be set True as well).')
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -94,7 +93,7 @@ def create_private_network(bin_dir, network_dir, template) -> List[str]:
             '%s/kmd start -t 0 -d %s' % (bin_dir, kmd_dir)]
 
 
-def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, archival, is_indexer_active):
+def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, archival):
     node_dir, kmd_dir = algod_directories(network_dir)
 
     # Set tokens
@@ -106,8 +105,7 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, 
     # Setup config, inject port
     node_config_path = join(node_dir, "config.json")
     archival = 'true' if archival else 'false'
-    is_indexer_active = 'true' if is_indexer_active else 'false'
-    node_config = f'{{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "isIndexerActive":{is_indexer_active}, "EnableDeveloperAPI":true }}'    
+    node_config = f'{{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "isIndexerActive":false, "EnableDeveloperAPI":true }}'    
     print(f"writing to node_config_path=[{node_config_path}] config json: {node_config}")
     with open(node_config_path, "w") as f:
         f.write(node_config)
@@ -158,6 +156,5 @@ if __name__ == '__main__':
         args.kmd_port, 
         args.bootstrap_url,
         args.archival,
-        args.is_indexer_active,
     )
 
