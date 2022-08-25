@@ -215,7 +215,13 @@ sandbox () {
       VERBOSE_FLAG=" --verbose"
     fi
 
-    $DOCKER_COMPOSE$VERBOSE_FLAG -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    $DOCKER_COMPOSE$VERBOSE_FLAG -f "$SANDBOX_DIR/docker-compose.yml" "$@" algod
+
+    if [[ $INDEXER_DISABLED != "true" ]]; then
+        $DOCKER_COMPOSE$VERBOSE_FLAG -f "$SANDBOX_DIR/docker-compose.yml" "$@" indexer_db
+        $DOCKER_COMPOSE$VERBOSE_FLAG -f "$SANDBOX_DIR/docker-compose.yml" "$@" indexer
+    fi
+
   }
 
   # dc_pty needs to be used instead of dc any time
@@ -227,7 +233,12 @@ sandbox () {
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
     # TODO: can windows docker handle --verbose?
-    $WINDOWS_PTY_PREFIX $DOCKER_COMPOSE -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    $WINDOWS_PTY_PREFIX $DOCKER_COMPOSE -f "$SANDBOX_DIR/docker-compose.yml" "$@" algod
+
+    if [[ $INDEXER_DISABLED != "true" ]]; then
+        $DOCKER_COMPOSE$VERBOSE_FLAG -f "$SANDBOX_DIR/docker-compose.yml" "$@" indexer_db
+        $DOCKER_COMPOSE$VERBOSE_FLAG -f "$SANDBOX_DIR/docker-compose.yml" "$@" indexer
+    fi
   }
 
   rebuild_if_needed () {
