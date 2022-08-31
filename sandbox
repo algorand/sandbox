@@ -245,7 +245,7 @@ sandbox () {
   # It assumes the command is non-interactive and does not use a pseudo-TTY
   # (option -T)
   goal_helper () {
-    dc exec -T algod goal "$@"
+    dc exec -t algod goal "$@"
   }
 
   # A shortcut for tealdbg commands on docker-compose
