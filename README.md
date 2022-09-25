@@ -257,7 +257,7 @@ If something goes wrong, check the `sandbox.log` file for details.
 
 ## Debugging for teal developers
 
-For detailed information on how to debug smart contracts and use tealdbg CLI,please consult with [Algorand Development Portal :: Smart Contract Debugging](https://developer.algorand.org/docs/features/asc1/debugging/#setting-the-debugger-context).
+For detailed information on how to debug smart contracts and use tealdbg CLI,please consult with [Algorand Development Portal :: Debugging smart contracts](https://developer.algorand.org/docs/get-details/dapps/smart-contracts/debugging/).
 
 Algorand smart contract debugging process uses `tealdbg` command line of algod instance(algod container in sandbox).
 
