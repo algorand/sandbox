@@ -50,7 +50,7 @@ services:
       - algod
       
   indexer-db:
-    image: "postgres:13-alpine"
+    image: "postgres:14-alpine"
     container_name: "${POSTGRES_CONTAINER:-algorand-sandbox-postgres}"
     ports:
       - ${POSTGRES_PORT:-5433}:5432
