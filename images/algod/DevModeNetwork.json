@@ -22,7 +22,7 @@
             }
         ],
         "DevMode": true,
-        "NoRewards": true
+        "RewardsPoolBalance": 0
     },
     "Nodes": [
         {
