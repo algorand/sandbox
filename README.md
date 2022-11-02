@@ -158,7 +158,9 @@ The private network environment creates and funds a number of accounts in the al
 
 Private networks also include an `Indexer` service configured to synchronize against the private network. Because it doesn't require catching up to one of the long running networks it also starts very quickly.
 
-The `dev` configuration starts a private network in dev mode with the latest release. In this mode, every transaction being sent to the node automatically generates a new block, rather than wait for a new round in real time. This is extremely useful for fast e2e testing of an application.
+The `dev` configuration starts a private network using the latest release with these algod configuration customizations:
+* `"DevMode": true` - In dev mode, every transaction being sent to the node automatically generates a new block, rather than wait for a new round in real time. This is extremely useful for fast e2e testing of an application.
+* `"RewardsPoolBalance": 0` - Prevents participation rewards by overriding the initial rewards pool balance.  In a variety of test scenarios, participation rewards obscure testing Algo balances.
 
 It takes a long time to generate participation keys, so the default configurations use the `NETWORK_NUM_ROUNDS` parameter to limit how many are created. Unless the default value is changed, the network will stall after 24 hours. Some configurations have been changed so that they can be run for over a week. Review the setting to make sure it is suitable for how you would like to use the sandbox.
 
