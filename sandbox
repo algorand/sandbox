@@ -103,7 +103,7 @@ function overwrite() {
 
 # Yes/no prompt around the clean command
 function ask_clean () {
-  if ask "$1"; then
+  if ask "$1" "Y"; then
     sandbox clean
   else
     exit 1
