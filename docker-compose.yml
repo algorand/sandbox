@@ -48,7 +48,7 @@ services:
     depends_on:
       - indexer-db
       - algod
-      
+
   indexer-db:
     image: "postgres:13-alpine"
     container_name: "${POSTGRES_CONTAINER:-algorand-sandbox-postgres}"
