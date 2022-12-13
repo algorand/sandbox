@@ -2,7 +2,7 @@ version: '3'
 
 services:
   algod:
-    container_name: "${ALGOD_CONTAINER:-algorand-sandbox-algod}"
+    container_name: "${COMPOSE_PROJECT_NAME:-algorand-sandbox}-algod"
     build:
       context: .
       dockerfile: ./images/algod/Dockerfile
@@ -26,7 +26,7 @@ services:
       - ${CDT_PORT:-9392}:9392
 
   indexer:
-    container_name: "${INDEXER_CONTAINER:-algorand-sandbox-indexer}"
+    container_name: "${COMPOSE_PROJECT_NAME:-algorand-sandbox}-indexer"
     build:
       context: .
       dockerfile: ./images/indexer/Dockerfile
@@ -51,7 +51,7 @@ services:
       
   indexer-db:
     image: "postgres:13-alpine"
-    container_name: "${POSTGRES_CONTAINER:-algorand-sandbox-postgres}"
+    container_name: "${COMPOSE_PROJECT_NAME:-algorand-sandbox}-indexerdb"
     ports:
       - ${POSTGRES_PORT:-5433}:5432
     user: postgres

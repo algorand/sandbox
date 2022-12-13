@@ -5,6 +5,7 @@ set -euo pipefail
 # Script constants. #
 #####################
 DEFAULT_CONFIG='release'
+export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-algorand-sandbox}"
 SANDBOX_DIR=$(dirname "$0")
 source "$SANDBOX_DIR/.env"
 CLEAN_FILE="$SANDBOX_DIR/.clean"
