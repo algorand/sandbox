@@ -16,7 +16,7 @@ start_with_algod() {
   echo "Starting indexer against algod."
 
   # wait for algod to start
-  for i in 1 2 3 4 5; do
+  for i in 1 2 3 4 5 6 7 8 9 10; do
     wget "${ALGOD_ADDR}"/genesis && break
     echo "Algod not responding... waiting."
     sleep 15
