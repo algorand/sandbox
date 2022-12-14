@@ -4,20 +4,14 @@ set -euo pipefail
 #####################
 # Script constants. #
 #####################
-DEFAULT_CONFIG='release'
 export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-algorand-sandbox}"
+DEFAULT_CONFIG='release'
 SANDBOX_DIR=$(dirname "$0")
 source "$SANDBOX_DIR/.env"
 CLEAN_FILE="$SANDBOX_DIR/.clean"
 ACTIVE_CONFIG_FILE="$SANDBOX_DIR/.active_config"
 SANDBOX_LOG="$SANDBOX_DIR/sandbox.log"
 FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/CHANNEL/latest.catchpoint'
-
-APORT="${ALGOD_PORT:-4001}"
-KPORT="${KMD_PORT:-4002}"
-IPORT="${INDEXER_PORT:-8980}"
-
-# Global flags
 USE_FAST_CATCHUP=1
 INTERACTIVE_MODE=0
 VERBOSE_MODE=0
@@ -102,15 +96,6 @@ function overwrite() {
   echo -e "\r\033[1A\033[0K$@";
 }
 
-# Yes/no prompt around the clean command
-function ask_clean () {
-  if ask "$1" "Y"; then
-    sandbox clean
-  else
-    exit 1
-  fi
-}
-
 # Interactive yes/no prompt
 function ask () {
     # https://djm.me/ask
@@ -191,10 +176,22 @@ function progress_bar {
   overwrite "$1 : [${fill// /▇}${empty// / }] [$2/$3] ${progress}%"
 }
 
+###################################################################
+# Sandbox function containing worker functions to execute commands.
+###################################################################
+
 sandbox () {
   status_helper () {
+    source_chosen_config_file "${@-}"
+    status_helper_core
+  }
+  status_helper_core () {
+    APORT="${ALGOD_PORT:-4001}"
+    KPORT="${KMD_PORT:-4002}"
+    IPORT="${INDEXER_PORT:-8980}"
+
     statusline "algod - goal node status"
-    goal_helper node status
+    goal_helper_config $CHOSEN_CONFIG node status
     statusline "indexer - health"
     curl -s "localhost:$IPORT/health?pretty"
   }
@@ -231,28 +228,43 @@ sandbox () {
     $WINDOWS_PTY_PREFIX $DOCKER_COMPOSE -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
-  rebuild_if_needed () {
-    if [ -f "$CLEAN_FILE" ]; then
-      rm "$CLEAN_FILE"
-      echo ".clean file found in sandbox directory. Rebuilding images..."
-      echo "* docker compose build --no-cache"
-      dc build --no-cache
-    elif [ $FRESH_INSTALL -eq 0 ]; then
-      echo ".clean file NOT FOUND. Sandbox images will NOT be rebuilt."
-    fi
-  }
-
-  # A shortcut for goal commands on docker-compose
+  # Submit a goal command into the chosen configurations.
   # It assumes the command is non-interactive and does not use a pseudo-TTY
   # (option -T)
   goal_helper () {
+    source_active_config_file_or_err
+    if [ ! -f "$CONFIG_FILE" ]; then
+      err "Could not find config file for '$CHOSEN_CONFIG' ($CONFIG_FILE)."
+    fi
+    statusline "Issuing goal command $@ using $CHOSEN_CONFIG ($CONFIG_FILE) configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
     dc exec -T algod goal "$@"
   }
+  goal_helper_config () {
+    source_chosen_config_file "${@-}"
+    shift 
+    # Require the active or default configuration be present to send commands to goal.
+    if [ ! -f "$CONFIG_FILE" ]; then
+      err "Could not find config file for '$CHOSEN_CONFIG' ($CONFIG_FILE)."
+    fi
+    statusline "Issuing goal command ${@-} using $CHOSEN_CONFIG ($CONFIG_FILE) configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+    dc exec -T algod goal "${@:-}"
+  }
 
-  # A shortcut for tealdbg commands on docker-compose
+  # A shortcut for isssuing tealdbg commands to the chosen configuration
   # It assumes the command is non-interactive and does not use a pseudo-TTY
   # (option -T)
+  tealdbg_helper_blank () {
+    source_active_config_file_or_err
+    tealdbg_helper $@
+  }
+  tealdbg_helper_config () {
+    source_chosen_config_file "${@-}"
+    shift
+    tealdbg_helper $@
+  }
   tealdbg_helper () {
+    statusline "Issuing tealdbg command $@ using $CHOSEN_CONFIG configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+
     if [[ "$*" == *--listen* ]]
     then
         dc exec -T algod tealdbg "$@"
@@ -268,11 +280,15 @@ sandbox () {
     fi    
   }
 
-  # wait until indexer/algod health endpoints report 200
+  # Wait until indexer/algod health endpoints report 200.  Assumes CHOSEN_CONFIG has been set and sourced prior to calling.
   wait_for_services() {
     local ATTEMPTS_REMAINING=60
     local INDEXER_STATUS="000"
     local ALGOD_STATUS="000"
+
+    APORT="${ALGOD_PORT:-4001}"
+    KPORT="${KMD_PORT:-4002}"
+    IPORT="${INDEXER_PORT:-8980}"
 
     # wait for startup
     while [[ $ATTEMPTS_REMAINING -gt 0 ]]; do
@@ -287,29 +303,40 @@ sandbox () {
     done
 
     if [ "$ALGOD_STATUS" != "200" ] || [ "$INDEXER_STATUS" != "200" ]; then
-      echo "the following did not start:"
+      echo "The following service container did not start:"
       if [ "$ALGOD_STATUS" != "200" ]; then
-        echo "* algorand node"
+        echo "- algod (the algorand node)"
       fi
       if [ "$INDEXER_STATUS" != "200" ]; then
-        echo "* indexer node"
+        echo "- indexer"
       fi
       err "One or more services failed to start."
     fi
   }
 
+  # Print out the versions of the services running in the chosen configuration.
   version_helper () {
-    statusline "algod version"
+    source_chosen_config_file "${@-}"
+    version_helper_core
+  }
+  version_helper_core () {
+    APORT="${ALGOD_PORT:-4001}"
+    KPORT="${KMD_PORT:-4002}"
+    IPORT="${INDEXER_PORT:-8980}"
+
+    statusline "Now checking the versions of the containers for $CHOSEN_CONFIG configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+
+    echo "algod version"
     dc exec -T algod goal -v
-    statusline "Indexer version"
+    echo "Indexer version"
     INDEXER_VERSION=$(dc exec -T indexer cmd/algorand-indexer/algorand-indexer daemon -v) && echo ${INDEXER_VERSION} || curl -s "localhost:$IPORT/health?pretty"
-    statusline "Postgres version"
+    echo "Postgres version"
     dc exec -T indexer-db postgres -V
   }
 
-  # Given a network name attempts to fetch a catchpoint and catchup.
+  # Given a network name attempts to fetch a catchpoint and catchup for the chosen configuration.
   perform_fast_catchup () {
-    goal_helper node catchup "$1"
+    goal_helper_config $CHOSEN_CONFIG node catchup "$1"
 
     if [ $? -ne 0 ]; then
       err "There was a problem starting fast catchup."
@@ -326,7 +353,7 @@ sandbox () {
       local TOTAL
       local PROGRESS
 
-      RES="$(status_helper)"
+      RES="$(status_helper_core)"
       TOTAL=1000
       PROGRESS=0
 
@@ -347,7 +374,7 @@ sandbox () {
       fi
     done
 
-    overwrite "* Account processing complete."
+    overwrite "Account processing complete."
 
     # Newline for the progress bar to use.
     echo ""
@@ -361,7 +388,7 @@ sandbox () {
       local TOTAL
       local PROGRESS
 
-      RES="$(status_helper)"
+      RES="$(status_helper_core)"
       TOTAL=1000
       PROGRESS=0
 
@@ -383,27 +410,65 @@ sandbox () {
     done
 
     # Clear progress bar line and print success text.
-    overwrite "* Blocks downloaded."
+    overwrite "Blocks downloaded."
 
     sleep 1
   }
 
-  clean () {
-    echo "* docker compose down"
-    dc down -t 0                                   || true
-    echo "* docker rmi ${COMPOSE_PROJECT_NAME}-algod ${COMPOSE_PROJECT_NAME}-indexer"
-    docker rmi ${COMPOSE_PROJECT_NAME}-algod ${COMPOSE_PROJECT_NAME}-indexer                   || true
-    echo "* docker compose rm -f"
-    dc rm -f                                       || true
-    echo "* docker rmi $(docker images -f "dangling=true" -q)"
-    docker rmi $(docker images -f "dangling=true" -q)          || true
-    rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1                  || true
-    echo 'clean function executed' > "$CLEAN_FILE";
+  # Copy files into and out of the chosen configuration.
+  copyTo () {
+    source_active_config_file_or_err
+    statusline "Now copying $1 to Algod container in /opt/data/$1 using $CHOSEN_CONFIG configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+    docker cp "$1" "$(dc ps -q algod):/opt/data/$(basename $1)"
+  }
+  copyTo_config () {
+    source_chosen_config_file "${@-}"
+    shift
+    statusline "Now copying $1 to Algod container in /opt/data/$1 using $CHOSEN_CONFIG configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+    docker cp "$1" "$(dc ps -q algod):/opt/data/$(basename $1)"
+  }
+  copyFrom () {
+    source_active_config_file_or_err
+    statusline "Now copying  /opt/data/$1 from Algod container to $SANDBOX_DIR/ using $CHOSEN_CONFIG with composed services project name ${COMPOSE_PROJECT_NAME}"  
+    docker cp "$(dc ps -q algod):/opt/data/$(basename $1)" "$1"
+  }
+  copyFrom_config () {
+    source_chosen_config_file "${@-}"
+    shift
+    statusline "Now copying  /opt/data/$1 from Algod container to $SANDBOX_DIR/ using $CHOSEN_CONFIG with composed services project name ${COMPOSE_PROJECT_NAME}"  
+    docker cp "$(dc ps -q algod):/opt/data/$(basename $1)" "$1"
   }
 
-  # Enter attaches users to a shell in the desired container
+  # Clean a given configuration.
+  clean () {
+    source_chosen_config_file "${@-}"
+    if [ ! -f "$CONFIG_FILE" ]; then
+      err "Could not find config file for '$CHOSEN_CONFIG' ($CONFIG_FILE)."
+    fi
+    statusline "Cleaning $CHOSEN_CONFIG configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+
+    echo "Running docker-compose down -t 0"
+    dc down -t 0                                   || true
+    echo "Running docker-compose rmi ${COMPOSE_PROJECT_NAME}-algod ${COMPOSE_PROJECT_NAME}-indexer"
+    docker rmi ${COMPOSE_PROJECT_NAME}-algod ${COMPOSE_PROJECT_NAME}-indexer                   || true
+    rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1                  || true
+    echo 'clean function executed' > "$CLEAN_FILE.$CHOSEN_CONFIG";
+  }
+
+  # The enter command attaches users to a shell in the desired configuration's service.
+  enter_config () {
+    source_chosen_config_file "${@-}"
+    shift
+    enter "${@-}" 
+  }
+  enter_blank () {
+    source_active_config_file_or_err
+    enter "${@-}"
+  }
   enter () {
-    CONTAINER=${2:-}
+    statusline "Entering $CHOSEN_CONFIG configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+
+    CONTAINER=${1:-}
     if [ -z "$CONTAINER" ]; then
         err "'enter' requires a container. Available containers: algod, indexer, indexer-db"
     fi
@@ -429,8 +494,11 @@ sandbox () {
   }
 
 
-  # Logs streams the logs from the container to the shell
+  # Stream the logs from the algod container in the specified configuration to the shell.
   logs () {
+    source_chosen_config_file "${@-}"
+    statusline "Streaming logs from $CHOSEN_CONFIG configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+    
     if [[ $# -gt 1 && $2 == "raw" ]]; then
       dc exec -T algod tail -f node.log
     else
@@ -439,6 +507,110 @@ sandbox () {
     fi
   }
 
+  # Restart the configuration specified by marking it down, removing all the containers, and bringing it back up with fast-catchup (if not disabled).
+  restart () {
+    source_chosen_config_file "${@-}"
+    statusline "Restarting $CHOSEN_CONFIG configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+
+    down "$CHOSEN_CONFIG"
+    dc rm -f
+
+    # up only runs fast-catchup for fresh installs.
+    # removing the active config file will trick it.
+    rm -f "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1 || true
+
+    sandbox up "$CHOSEN_CONFIG" "$@"
+  }
+
+  # Figure out what the chosen configuration should be by looking at the active configuration or choosing the default configuration.  
+  # Sets CHOSEN_CONFIG, ACTIVE_CONFIG and CONFIG_FILE.
+  # Errors if the chosen configuration file is not on the filesystem.
+  source_active_config_file_or_err () {
+    # Grab active config if there is one
+    ACTIVE_CONFIG="" 
+    CHOSEN_CONFIG=""
+    if [ -f "$ACTIVE_CONFIG_FILE" ]; then
+      CHOSEN_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
+      ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
+    fi
+    if [ -z $CHOSEN_CONFIG ]; then
+      err "No active configuration file."
+    fi
+    
+    CONFIG_FILE="$SANDBOX_DIR/config.$CHOSEN_CONFIG"
+
+    # Error if config does not exist.
+    if [ ! -f "$CONFIG_FILE" ]; then
+      err "Could not find active configuration file for config $CHOSEN_CONFIG $CONFIG_FILE "
+    else
+      source "$CONFIG_FILE"
+    fi
+  }
+
+  # Figure out what the chosen configuration should be by looking at the first argument to the function, 
+  # then to the active configuration if blank, and then to the default configuration if nothing is active.
+  # Sets CHOSEN_CONFIG, CONFIG_FILE, and ACTIVE_CONFIG.
+  source_chosen_config_file () {
+    # Grab active config if there is one
+    ACTIVE_CONFIG=""
+    if [ -f "$ACTIVE_CONFIG_FILE" ]; then
+      ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
+    fi
+
+    # Initialize new config, accounting for no-argument down command.
+    if [ "$1" = "" ]; then
+      if [ ! -z $ACTIVE_CONFIG ]; then
+        CHOSEN_CONFIG="$ACTIVE_CONFIG"
+      else
+        CHOSEN_CONFIG="$DEFAULT_CONFIG"
+      fi
+    else
+      CHOSEN_CONFIG="$1"
+    fi
+    CONFIG_FILE="$SANDBOX_DIR/config.$CHOSEN_CONFIG"
+
+    # Warn if config does not exist, then use default project name
+    if [ ! -f "$CONFIG_FILE" ]; then
+      echo "Warning:  Could not find config file for '$CHOSEN_CONFIG'."
+    else
+      source "$CONFIG_FILE"
+    fi
+    
+  }
+
+  # Stop the configuration specified.
+  down () {
+      source_chosen_config_file "${@-}"
+      dc stop -t 0
+
+  }
+
+  # Run some tests on the configuration specified.
+  test () {
+      source_chosen_config_file "${@-}"
+      statusline "Test command for project ${COMPOSE_PROJECT_NAME} forwarding..."
+      APORT="${ALGOD_PORT:-4001}"
+      KPORT="${KMD_PORT:-4002}"
+      IPORT="${INDEXER_PORT:-8980}"
+
+      printc $default "~$ ${blue}docker exec -it algod uname -a"
+      dc exec -T algod uname -a
+
+      TOKEN=$(cat "$SANDBOX_DIR/config/token")
+      statusline "Test Algod REST API..."
+      printc $default "~$ ${blue}curl ${teal}localhost:$APORT/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
+      curl "localhost:$APORT/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
+
+      statusline "Test KMD REST API..."
+      printc $default "~$ ${blue}curl ${teal}localhost:$KPORT/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
+      curl "localhost:$KPORT/v1/wallets" -H "X-KMD-API-Token: $TOKEN"
+
+      statusline "\nTest Indexer REST API..."
+      printc $default "~$ ${blue}curl ${teal}\"localhost:$IPORT/health?pretty\""
+      curl "localhost:$IPORT/health?pretty"
+  }
+
+  # Helper utility to get the latest catchpoint for fast-catchup ( used in up() )
   set_catchpoint () {
     # TODO: Might be useful to allow providing the catchpoint with '-c'
     CATCHPOINT=$(curl -s ${FAST_CATCHUP_URL/CHANNEL/$1})
@@ -448,54 +620,57 @@ sandbox () {
     fi
   }
 
-  # Start the algorand node
+  # Helper utility to build the chosen configuration if the clean file is present ( used in up() ).
+  rebuild_if_needed () {
+    if [ -f "$CLEAN_FILE.$CHOSEN_CONFIG" ]; then
+      rm "$CLEAN_FILE.$CHOSEN_CONFIG"
+      statusline ".clean file for $CHOSEN_CONFIG found in sandbox directory. Rebuilding images for configuration $CHOSEN_CONFIG in ${COMPOSE_PROJECT_NAME}..."
+      echo "Running docker-compose build --no-cache"
+      dc build --no-cache
+    elif [ $FRESH_INSTALL -eq 0 ]; then
+      echo ".clean file NOT FOUND. Sandbox images for $CHOSEN_CONFIG will NOT be rebuilt."
+    fi
+  }
+
+  # Bring the configuration up.
   up () {
       FRESH_INSTALL=1
+      source_chosen_config_file "${@-}"
 
-      # Grab active config if there is one
-      ACTIVE_CONFIG=""
-      if [ -f "$ACTIVE_CONFIG_FILE" ]; then
-        ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
-      fi
-
-      # Initialize new config, accounting for no-argument up command.
-      if [ "$1" = "" ]; then
-        if [ ! -z $ACTIVE_CONFIG ]; then
-          statusline "Bringing up existing sandbox: '$ACTIVE_CONFIG'"
-          FRESH_INSTALL=0
-          NEW_CONFIG="$ACTIVE_CONFIG"
-        else
-          statusline "Starting default sandbox: $DEFAULT_CONFIG"
-          NEW_CONFIG="$DEFAULT_CONFIG"
-        fi
-      else
-        statusline "Starting sandbox for: $1"
-        NEW_CONFIG="$1"
-      fi
-      CONFIG_FILE="$SANDBOX_DIR/config.$NEW_CONFIG"
-
-      # Verify config exists
+      # Error if configuration file is missing. 
+      CONFIG_FILE="$SANDBOX_DIR/config.$CHOSEN_CONFIG"
       if [ ! -f "$CONFIG_FILE" ]; then
         SANDBOX_CONFIG_OPTIONS=$(ls "$SANDBOX_DIR"/config.* | sed 's/^.*config\./ /'| paste -sd',' -)
-        err "Could not find config file for '$NEW_CONFIG'.\nValid options:$SANDBOX_CONFIG_OPTIONS"
+        err "Could not find config file for '$CHOSEN_CONFIG'.\nValid options:$SANDBOX_CONFIG_OPTIONS"
       fi
 
       # Handle mismatched argument + active config
-      if [ ! -z "$ACTIVE_CONFIG" ] && [ "$NEW_CONFIG" != "$ACTIVE_CONFIG" ]; then
-        err_noexit "Sandbox was already started for '$ACTIVE_CONFIG'."
-        ask_clean "Would you like to reset the local sandbox with '$NEW_CONFIG'?"
-        # If we get here the active config was cleared out.
+      if [ ! -z "$ACTIVE_CONFIG" ] && [ "$CHOSEN_CONFIG" != "$ACTIVE_CONFIG" ]; then
+        echo "The requested configuration is not currently the active configuration."
+        if ask "Would you like to attempt to stop the active configuration '$ACTIVE_CONFIG' before bringing up '$CHOSEN_CONFIG'?" "Y"; then
+          down $ACTIVE_CONFIG
+        fi
+
+        if ask "Would you like to try to clean out the sandbox image files for current active configuration '$ACTIVE_CONFIG' before bringing up '$CHOSEN_CONFIG'?" "Y"; then
+          clean $ACTIVE_CONFIG
+        fi
+
+        # Remove the active config file as the user has abandoned (possibly stopped, possibly cleaned) the current 
+        # active configuration, and re-run up with the desired configuration.
+        rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1 || true
+
         up "$@"
         return
       fi
 
-      #################
-      # START NETWORK #
-      #################
-
-      # network configured with the environment exported by $CONFIG_FILE
-      echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
+      # Set the active configuration. 
+      echo "$CHOSEN_CONFIG" > "$ACTIVE_CONFIG_FILE"
       source "$CONFIG_FILE"
+
+      statusline "Starting $CHOSEN_CONFIG configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+
+      # Rebuild the images if the .clean file for the configuration has been marked, and then start them with
+      # docker-compose up
       if [ $INTERACTIVE_MODE == 1 ]; then
         rebuild_if_needed
         dc up
@@ -503,26 +678,24 @@ sandbox () {
         echo "see sandbox.log for detailed progress, or use -v."
         echo "" # The spinner will rewrite this line.
         rebuild_if_needed >> "$SANDBOX_LOG" 2>&1               & spinner
-        echo "* docker compose up -d"   >> "$SANDBOX_LOG"
+        echo "Running docker-compose up -d"   >> "$SANDBOX_LOG"
         dc up -d                        >> "$SANDBOX_LOG" 2>&1 & spinner
-        overwrite "* docker containers started!"
+        overwrite "Docker containers started!"
       else
         rebuild_if_needed
-        echo "* running: docker compose up [--verbose] -d"
+        echo "Running docker-compose up [--verbose] -d"
         dc up -d
       fi
 
-      echo -e "* waiting for services to initialize."
+      echo -e "waiting for services to initialize."
       wait_for_services
-      echo "* services ready!"
+      echo "Services ready!"
 
-      version_helper
-      status_helper
+      version_helper_core
+      status_helper_core
 
       if [ -z $NETWORK_GENESIS_FILE ]; then
-        #####################
-        # PRINT WALLET INFO #
-        #####################
+        # Print wallet information
         goal_helper wallet -f unencrypted-default-wallet > /dev/null 2>&1
 
         ACCOUNTS_OUTPUT=$(goal_helper account list)
@@ -538,9 +711,7 @@ sandbox () {
         statusline "Soon after sending the transaction it will appear in indexer:"
         printc $default "~$ ${blue}curl ${teal}\"localhost:$IPORT/v2/transactions?pretty\""
       else
-        ################################
-        # FAST CATCHUP (if applicable) #
-        ################################
+        # Attempt fast catchup (if not disabled on the command line)
         if [ $USE_FAST_CATCHUP == 1 ] && [ $FRESH_INSTALL == 1 ] && [ ! -z "$NETWORK" ]; then
           set_catchpoint $NETWORK
 
@@ -560,32 +731,125 @@ sandbox () {
       fi
   }
 
+  # Print out some helpful information.
   help () {
       cat <<-EOF
+Algorand Sandbox
+
+Sandbox manages a set of docker components that contain the algod, indexer, 
+and indexerdb(postgres) services.  
+
+Options for the services, including the port numbers, algorand network name,
+and details on how and where to pull/build the service images are available 
+in the configuration files, which live in the root directory of the sandbox. 
+
+These configuration files are sourced by the sandbox to import the variables 
+they define.  In addition, a blank .env file in the root directory is 
+sourced by all configurations as a convenience.
+
+Multiple sandbox configurations can be started in parallel. Sandbox 
+maintains a notion of the "active" configuration, which is the most recent 
+configuration "start"ed, or the configuration set by the "set-active" command.
+If a configuration is not specified, the default action is to use the active 
+configuration.  If no configuration is active, the default configuration 
+will be used (currently set to '$DEFAULT_CONFIG').
+
+In order to bring up, say, both betanet and mainnet on the same machine, 
+users will have to provide distinct port numbers and COMPOSE_PROJECT_NAME in 
+the two configuration files.  Once they are both started, users can point 
+client code to the relevant ports specified to hit either betanet or mainnet. 
+
 sandbox commands:
-  up    [config]  -> start the sandbox environment.
-  down            -> tear down the sandbox environment.
-  reset           -> reset the containers to their initial state.
-  clean           -> stops and deletes containers and data directory.
-  test            -> runs some tests to demonstrate usage.
-  enter [algod||indexer||indexer-db]
-                  -> enter the sandbox container.
-  version         -> print binary versions.
-  copyTo <file>   -> copy <file> into the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
-  copyFrom <file> -> copy <file> from the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
+  <up|start|resume> [config] [-v|--verbose] [-s|--skip_fast_catchup] 
+                             [-i|--interactive]
+      Start the sandbox docker project defined in the config, and set it as the 
+      active configuration. If blank, it will starts the active configuration, 
+      or failing that, default to the release configuration.  -v verbose output
+      when starting the docker project.  -s flag skips fast catchup if the user
+      is starting a non-private network and wish to skip fast cathcup.  -i flag 
+      start the docker project in interactive mode.
 
-algorand commands:
-  logs           -> stream algorand logs with the carpenter utility.
-  status         -> get node status.
-  goal (args)    -> run goal command like 'goal node status'.
-  tealdbg (args) -> run tealdbg command.
+  <down|pause|stop> [config] 
+      Stop the sandbox docker project defined in the config. If blank, it will
+      stop the active configuration, or failing that, default to the release 
+      configuration.
 
-special flags for 'up' command:
-  -v|--verbose           -> display verbose output when starting standbox.
-  -s|--skip-fast-catchup -> skip catchup when connecting to real network.
-  -i|--interactive       -> start docker compose in interactive mode.
+  <reset|restart> [config] 
+      Stop and then start the sandbox docker project defined in the config
+      provided. If blank, it will restart the active configuration, or failing
+      that, will try to restart the default $DEFAULT_CONFIG configuration.  If
+      the chosen configuration points to a non-private network, it will 
+      attempt fast-catchup on restart.
+
+  clean [config]
+      Stops and deletes the specified sandbox docker project configuration 
+      images and containers.  If no configuration provided, the active or the 
+      default configuration is cleaned.
+
+  set-active <config>  
+      Set the active configuration to <config>.  Config file must be present.
+
+  test [config]
+      Runs some tests to demonstrate usage on the specified configuration
+      (or on the active configuration, or if none, the default configuration).
+
+  enter <algod||indexer||indexer-db>
+      Enter the sandbox container.  Attempts to use the active configuration,
+      and if not present, will default to the release configuration.
+
+  enter-config <config> <algod||indexer||indexer-db>
+      Enter the sandbox container using the specific config provided.
+
+  version [config] 
+      Print binary versions of the specified config, or if unspecified, the
+      active (or if nothing is active, the default) configuration.
+
+  active
+      Print out the active configuration, if there is one, and quit.
+
+  copyTo <file>
+      Copy <file> into the active (or if none, the default) configuration's
+      algod /opt/data. Useful for offline transactions, offline LogicSigs and
+      TEAL work
+
+  copyFrom <file>
+      Copy <file> from /opt/data/ in the active or default configuration algod.
+     Useful for offline transactions, offline LogicSigs and TEAL work.
+
+  copyTo-config <config> <file> 
+      Copy <file> into the algod in the specific config's /opt/data. Useful
+      for offline transactions, offline LogicSigs and TEAL work.
+
+  copyFrom-config <config> <file> 
+      Copy <file> from the algod in the specific configuration's /opt/data. 
+      Useful for offline transactions, offline LogicSigs and TEAL work.
+
+  logs [config]
+      Stream algorand logs with the carpenter utility.
+
+  status [config]
+      Get node status of the configuration specified (or the active 
+      configuration, or the default configuration).
+
+  goal (args)
+      Run goal command like 'goal node status' on the active configuration. 
+      Errors if there is no active configuration.
+
+  goal-config <config> (args) 
+      Run goal command like 'goal node status' for the specified configuration.
+
+  tealdbg (args) 
+      Run tealdbg command on the active configuration.  Errors if there is no
+      active configuration.
+
+  tealdbg-config <config> (args) 
+      Run tealdbg command for the specified configuration.
+
 EOF
   }
+
+  ####################################################
+  # Sandbox function command line parsing begins here.
 
   if [ $# -eq 0 ]; then
     help
@@ -622,86 +886,114 @@ EOF
       up "${PARAMS[@]-}"
       ;;
 
+    set-active)
+      shift
+      if [ "${1-}" = "" ]; then
+        err "Must specify a configuration file to set active."
+      else
+        CONFIG_FILE="$SANDBOX_DIR/config.$1"
+        if [ -f "$CONFIG_FILE" ]; then
+          statusline "Setting active configuration to $1"
+          echo "$1" > "$ACTIVE_CONFIG_FILE" 
+        else
+          SANDBOX_CONFIG_OPTIONS=$(ls "$SANDBOX_DIR"/config.* | sed 's/^.*config\./ /'| paste -sd',' -)
+          err "Could not find config file for $1.\nValid options:$SANDBOX_CONFIG_OPTIONS"
+        fi
+      fi
+      ;;
+      
     stop|down|pause)
-      statusline "Stopping sandbox containers..."
-      dc stop -t 0
+      shift 
+      down "${@-}"
       ;;
 
     restart|reset)
-      # Make sure fast-catchup runs when resetting a real network.
-      if [ -f "$ACTIVE_CONFIG_FILE" ]; then
-        ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
-        # up only runs fast-catchup for fresh installs.
-        # removing the active config file will trick it.
-        rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1 || true
-      else
-        err "No active sandbox to reset."
-      fi
-      sandbox down
-      dc rm -f
-      sandbox up "$ACTIVE_CONFIG" "$@"
+      shift
+      restart "${@-}"
       ;;
 
     clean)
-      statusline "Cleaning up sandbox environment..."
-      clean >> "$SANDBOX_LOG" 2>&1
+      # Remove "clean"
+      shift
+      clean "${@-}" | tee -a "$SANDBOX_LOG" 2>&1
+      ;;
+
+    active)
+      if [ -f "$ACTIVE_CONFIG_FILE" ]; then
+        echo "Active configuration = $(cat $ACTIVE_CONFIG_FILE)"
+      else
+        echo "There is no active configuration."
+        echo "Sandbox commands that do not specify a configuration file will thus be redirected to the default configuration."
+        echo "The default configuration is ${DEFAULT_CONFIG}"
+      fi
       ;;
 
     test)
-      statusline "Test command forwarding..."
-      printc $default "~$ ${blue}docker exec -it algod uname -a"
-      dc exec -T algod uname -a
-
-      TOKEN=$(cat "$SANDBOX_DIR/config/token")
-      statusline "Test Algod REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:$APORT/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
-      curl "localhost:$APORT/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
-
-      statusline "Test KMD REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:$KPORT/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
-      curl "localhost:$KPORT/v1/wallets" -H "X-KMD-API-Token: $TOKEN"
-
-      statusline "\nTest Indexer REST API..."
-      printc $default "~$ ${blue}curl ${teal}\"localhost:$IPORT/health?pretty\""
-      curl "localhost:$IPORT/health?pretty"
+      shift
+      test "${@-}"
       ;;
 
     enter)
-      enter "$@"
+      shift
+      enter_blank "${@-}"
+      ;;
+
+    enter-config)
+      shift
+      enter_config "${@-}"
       ;;
 
     logs)
-      logs "$@"
+      shift
+      logs "${@-}"
       ;;
 
     status)
-      status_helper
+      shift
+      status_helper "${@-}"
       ;;
 
     version)
-      version_helper
+      shift
+      version_helper "${@-}"
       ;;
 
     goal)
       shift
-      goal_helper "$@"
+      goal_helper "${@-}"
+      ;;
+
+    goal-config)
+      shift
+      goal_helper_config "${@-}"
       ;;
 
     tealdbg)
       shift
-      tealdbg_helper "$@"
+      tealdbg_helper_blank "${@-}"
+      ;;
+
+    tealdbg-config)
+      shift
+      tealdbg_helper_config "${@-}"
       ;;
 
     copyTo|cpt)
       shift
-      statusline "Now copying $1 to Algod container in /opt/data/$1"
-      docker cp "$1" "$(dc ps -q algod):/opt/data/$(basename $1)"
+      copyTo "${@-}"
+      ;;
+    copyTo-config|cpt)
+      shift
+      copyTo_config "${@-}"
       ;;
 
+    copyFrom-config|cpf)
+      shift
+      copyFrom_config "${@-}"
+      ;;
     copyFrom|cpf)
       shift
-      statusline "Now copying  /opt/data/$1 from Algod container to $SANDBOX_DIR/" 
-      docker cp "$(dc ps -q algod):/opt/data/$(basename $1)" "$1"
+      copyFrom "${@-}"
       ;;
 
     *)
@@ -711,8 +1003,5 @@ EOF
   esac
 }
 
-##############
-# Entrypoint #
-##############
-
+# Script main program starts here.
 sandbox "$@"
