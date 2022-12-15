@@ -1038,11 +1038,6 @@ EOF
       copyFrom "${@-}"
       ;;
 
-    bob)
-      shift
-      check_project_name "${@-}"
-      ;;
-
     *)
 
       help
