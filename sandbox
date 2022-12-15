@@ -627,9 +627,30 @@ sandbox () {
       statusline ".clean file for $CHOSEN_CONFIG found in sandbox directory. Rebuilding images for configuration $CHOSEN_CONFIG in ${COMPOSE_PROJECT_NAME}..."
       echo "Running docker-compose build --no-cache"
       dc build --no-cache
-    elif [ $FRESH_INSTALL -eq 0 ]; then
-      echo ".clean file NOT FOUND. Sandbox images for $CHOSEN_CONFIG will NOT be rebuilt."
+    else 
+      FRESH_INSTALL=0
     fi
+  }
+
+  check_port () {
+    if ( $(nc -z localhost $1 > /dev/null 2>&1 ) ) 
+    then
+      echo "Looks like this localhost already has something operating on the "
+      echo "port '$CHOSEN_CONFIG''s $2 wants to use ($1)."
+      if ask "Do you want to proceed?" "Y"; then
+        echo "Okay, proceeding."
+      else
+         err "$2 wants to use unavailable port $1.  This port was checked for availability using nc -z localhost $1"
+      fi
+    fi
+  }
+ 
+  check_ports () {
+    check_port "${ALGOD_PORT:-4001}" "algod(algorand_node)"
+    check_port "${KMD_PORT:-4002}" "kmd(key_management)"
+    check_port "${INDEXER_PORT:-8980}" "indexer"
+    check_port "${CDT_PORT:-9392}" "cdt(chrome_dev_tool)"
+    check_port "${POSTGRES_PORT:-9392}" "postgres"
   }
 
   # Bring the configuration up.
@@ -644,15 +665,36 @@ sandbox () {
         err "Could not find config file for '$CHOSEN_CONFIG'.\nValid options:$SANDBOX_CONFIG_OPTIONS"
       fi
 
+      # Set the active configuration. 
+      echo "$CHOSEN_CONFIG" > "$ACTIVE_CONFIG_FILE"
+      source "$CONFIG_FILE"
+
+      statusline "Starting $CHOSEN_CONFIG configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+
+      # Check if the docker project is already running.
+      declare -i projectnames
+      projectnames=$(dc ls -q | grep -cFx $COMPOSE_PROJECT_NAME || true)
+      if [ ! $projectnames == 0 ]; then
+        echo It looks like a docker project named ${COMPOSE_PROJECT_NAME} is already running.
+        if ask "Do you want to stop it and then bring it up using config : ($CHOSEN_CONFIG)?" "Y"; then
+           down $CHOSEN_CONFIG
+           if ask "Do you want to clean out the images too?" "Y"; then
+             clean $CHOSEN_CONFIG
+           fi
+        else
+          err "Docker project file ${COMPOSE_PROJECT_NAME} is already running"
+        fi
+      fi
+
       # Handle mismatched argument + active config
       if [ ! -z "$ACTIVE_CONFIG" ] && [ "$CHOSEN_CONFIG" != "$ACTIVE_CONFIG" ]; then
         echo "The requested configuration is not currently the active configuration."
-        if ask "Would you like to attempt to stop the active configuration '$ACTIVE_CONFIG' before bringing up '$CHOSEN_CONFIG'?" "Y"; then
+        echo "$ACTIVE_CONFIG $CHOSEN_CONFIG"
+        if ask "Do you want to stop the active config $(ACTIVE_CONFIG) first?" "Y"; then
           down $ACTIVE_CONFIG
-        fi
-
-        if ask "Would you like to try to clean out the sandbox image files for current active configuration '$ACTIVE_CONFIG' before bringing up '$CHOSEN_CONFIG'?" "Y"; then
-          clean $ACTIVE_CONFIG
+          if ask "$ACTIVE_CONFIG has been stopped.  Do you want to clean out its images too?" "Y"; then
+            clean $ACTIVE_CONFIG
+          fi
         fi
 
         # Remove the active config file as the user has abandoned (possibly stopped, possibly cleaned) the current 
@@ -663,31 +705,31 @@ sandbox () {
         return
       fi
 
-      # Set the active configuration. 
-      echo "$CHOSEN_CONFIG" > "$ACTIVE_CONFIG_FILE"
-      source "$CONFIG_FILE"
-
-      statusline "Starting $CHOSEN_CONFIG configuration with composed services project name ${COMPOSE_PROJECT_NAME}"
+      # Check if the ports in the config are available
+      check_ports
 
       # Rebuild the images if the .clean file for the configuration has been marked, and then start them with
       # docker-compose up
       if [ $INTERACTIVE_MODE == 1 ]; then
         rebuild_if_needed
+        dc convert  >> "$SANDBOX_LOG"
         dc up
       elif [ $VERBOSE_MODE == 0 ]; then
-        echo "see sandbox.log for detailed progress, or use -v."
-        echo "" # The spinner will rewrite this line.
-        rebuild_if_needed >> "$SANDBOX_LOG" 2>&1               & spinner
-        echo "Running docker-compose up -d"   >> "$SANDBOX_LOG"
-        dc up -d                        >> "$SANDBOX_LOG" 2>&1 & spinner
-        overwrite "Docker containers started!"
+        dc convert  >> "$SANDBOX_LOG"
+        rebuild_if_needed >> "$SANDBOX_LOG" 2>&1
+        dc up -d  >> "$SANDBOX_LOG" 2>&1 & spinner
       else
-        rebuild_if_needed
-        echo "Running docker-compose up [--verbose] -d"
+        dc convert  >> "$SANDBOX_LOG"
         dc up -d
       fi
 
-      echo -e "waiting for services to initialize."
+      if [ $FRESH_INSTALL == 0 ]; then
+        echo "Sandbox determined that this config '$CHOSEN_CONFIG' did not need a image rebuild."
+      else
+        echo "Sandbox rebuilt the images for '$CHOSEN_CONFIG'."
+      fi
+
+      echo -e "Waiting for ${COMPOSE_PROJECT_NAME} to initialize."
       wait_for_services
       echo "Services ready!"
 
@@ -722,8 +764,8 @@ sandbox () {
 
             perform_fast_catchup $CATCHPOINT
 
-            statusline "Fast-catchup complete! Printing status..."
-            status_helper
+            statusline "Fast-catchup complete"
+            status_helper_core
           fi
         else
           statusline "Skipping fast catchup"
@@ -994,6 +1036,11 @@ EOF
     copyFrom|cpf)
       shift
       copyFrom "${@-}"
+      ;;
+
+    bob)
+      shift
+      check_project_name "${@-}"
       ;;
 
     *)
