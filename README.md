@@ -18,7 +18,7 @@ Options for the services, including the port numbers, algorand network name, and
 
 These configuration files are sourced by the sandbox to import the variables they define.  In addition, a blank .env file in the root directory is sourced by all configurations as a convenience.
 
-Multiple sandbox configurations can be started in parallel. Sandbox maintains a notion of the "active" configuration, which is the most recent configuration "start"ed, or the configuration set by the "set-active" command.  If a configuration is not specified, the default action is to use the active configuration.  If no configuration is active, the default configuration will be used (currently set to '$DEFAULT_CONFIG').
+Multiple sandbox configurations can be started in parallel. Sandbox maintains a notion of the "active" configuration, which is the most recent configuration "start"ed, or the configuration set by the "set-active" command.  If a configuration is not specified, the default action is to use the active configuration.  If no configuration is active, the default configuration will be used (currently set to 'release').
 
 In order to bring up, say, both betanet and mainnet on the same machine, users will have to provide distinct port numbers and COMPOSE_PROJECT_NAME in the two configuration files.  Once they are both started, users can point client code to the relevant ports specified to hit either betanet or mainnet. 
 
@@ -42,7 +42,7 @@ sandbox commands:
   <reset|restart> [config] 
       Stop and then start the sandbox docker project defined in the config
       provided. If blank, it will restart the active configuration, or failing
-      that, will try to restart the default $DEFAULT_CONFIG configuration.  If
+      that, will try to restart the default 'release' configuration.  If
       the chosen configuration points to a non-private network, it will 
       attempt fast-catchup on restart.
 
