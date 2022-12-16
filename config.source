@@ -12,3 +12,13 @@ export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 export INDEXER_ENABLE_ALL_PARAMETERS="false"
+
+#Change these options if you want to run more than one sandbox.  These port
+#numbers are on the docker machine level and redirect into the standard algorand
+#ports inside the container.
+#export KMD_PORT=31001
+#export ALGOD_PORT=31000
+#export INDEXER_PORT=31999
+#export POSTGRES_PORT=31432
+#export CDT_PORT=31738
+#export COMPOSE_PROJECT_NAME="algorand-sandbox-source"

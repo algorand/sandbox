@@ -12,32 +12,107 @@ On a _Windows_ machine, **Docker Desktop** comes with the necessary tools. Pleas
 
 Use the **sandbox** command to interact with the Algorand Sandbox.
 
+Sandbox manages a set of docker components that contain the algod, indexer, and indexerdb(postgres) services.  
+
+Options for the services, including the port numbers, algorand network name, and details on how and where to pull/build the service images are available in the configuration files, which live in the root directory of the sandbox. 
+
+These configuration files are sourced by the sandbox to import the variables they define.  In addition, a blank .env file in the root directory is sourced by all configurations as a convenience.
+
+Multiple sandbox configurations can be started in parallel. Sandbox maintains a notion of the "active" configuration, which is the most recent configuration "start"ed, or the configuration set by the "set-active" command.  If a configuration is not specified, the default action is to use the active configuration.  If no configuration is active, the default configuration will be used (currently set to '$DEFAULT_CONFIG').
+
+In order to bring up, say, both betanet and mainnet on the same machine, users will have to provide distinct port numbers and COMPOSE_PROJECT_NAME in the two configuration files.  Once they are both started, users can point client code to the relevant ports specified to hit either betanet or mainnet. 
+
+
 ```plain
 sandbox commands:
-  up    [config]  -> start the sandbox environment.
-  down            -> tear down the sandbox environment.
-  reset           -> reset the containers to their initial state.
-  clean           -> stops and deletes containers and data directory.
-  test            -> runs some tests to demonstrate usage.
-  enter [algod||indexer||indexer-db]
-                  -> enter the sandbox container.
-  version         -> print binary versions.
-  copyTo <file>   -> copy <file> into the algod container. Useful for offline transactions & LogicSigs plus TEAL work.
-  copyFrom <file> -> copy <file> from the algod container. Useful for offline transactions & LogicSigs plus TEAL work.
+  <up|start|resume> [config] [-v|--verbose] [-s|--skip_fast_catchup] 
+                             [-i|--interactive]
+      Start the sandbox docker project defined in the config, and set it as the 
+      active configuration. If blank, it will starts the active configuration, 
+      or failing that, default to the release configuration.  -v verbose output
+      when starting the docker project.  -s flag skips fast catchup if the user
+      is starting a non-private network and wish to skip fast cathcup.  -i flag 
+      start the docker project in interactive mode.
 
-algorand commands:
-  logs            -> stream algorand logs with the carpenter utility.
-  status          -> get node status.
-  goal (args)     -> run goal command like 'goal node status'.
-  tealdbg (args)  -> run tealdbg command to debug program execution.
+  <down|pause|stop> [config] 
+      Stop the sandbox docker project defined in the config. If blank, it will
+      stop the active configuration, or failing that, default to the release 
+      configuration.
 
-special flags for 'up' command:
-  -v|--verbose           -> display verbose output when starting standbox.
-  -s|--skip-fast-catchup -> skip catchup when connecting to real network.
-  -i|--interactive       -> start docker-compose in interactive mode.
+  <reset|restart> [config] 
+      Stop and then start the sandbox docker project defined in the config
+      provided. If blank, it will restart the active configuration, or failing
+      that, will try to restart the default $DEFAULT_CONFIG configuration.  If
+      the chosen configuration points to a non-private network, it will 
+      attempt fast-catchup on restart.
+
+  clean [config]
+      Stops and deletes the specified sandbox docker project configuration 
+      images and containers.  If no configuration provided, the active or the 
+      default configuration is cleaned.
+
+  set-active <config>  
+      Set the active configuration to <config>.  Config file must be present.
+
+  test [config]
+      Runs some tests to demonstrate usage on the specified configuration
+      (or on the active configuration, or if none, the default configuration).
+
+  enter <algod||indexer||indexer-db>
+      Enter the sandbox container.  Attempts to use the active configuration,
+      and if not present, will default to the release configuration.
+
+  enter-config <config> <algod||indexer||indexer-db>
+      Enter the sandbox container using the specific config provided.
+
+  version [config] 
+      Print binary versions of the specified config, or if unspecified, the
+      active (or if nothing is active, the default) configuration.
+
+  active
+      Print out the active configuration, if there is one, and quit.
+
+  copyTo <file>
+      Copy <file> into the active (or if none, the default) configuration's
+      algod /opt/data. Useful for offline transactions, offline LogicSigs and
+      TEAL work
+
+  copyFrom <file>
+      Copy <file> from /opt/data/ in the active or default configuration algod.
+     Useful for offline transactions, offline LogicSigs and TEAL work.
+
+  copyTo-config <config> <file> 
+      Copy <file> into the algod in the specific config's /opt/data. Useful
+      for offline transactions, offline LogicSigs and TEAL work.
+
+  copyFrom-config <config> <file> 
+      Copy <file> from the algod in the specific configuration's /opt/data. 
+      Useful for offline transactions, offline LogicSigs and TEAL work.
+
+  logs [config]
+      Stream algorand logs with the carpenter utility.
+
+  status [config]
+      Get node status of the configuration specified (or the active 
+      configuration, or the default configuration).
+
+  goal (args)
+      Run goal command like 'goal node status' on the active configuration. 
+      Errors if there is no active configuration.
+
+  goal-config <config> (args) 
+      Run goal command like 'goal node status' for the specified configuration.
+
+  tealdbg (args) 
+      Run tealdbg command on the active configuration.  Errors if there is no
+      active configuration.
+
+  tealdbg-config <config> (args) 
+      Run tealdbg command for the specified configuration.
+
 ```
 
-Sandbox creates the following API endpoints:
+Sandbox creates the following API endpoints (unless the ports are changed in the configuration file):
 
 - `algod`:
   - address: `http://localhost:4001`
@@ -64,10 +139,10 @@ In whatever local directory the sandbox should reside. Then:
 
 ```bash
 cd sandbox
-./sandbox up
+./sandbox up release
 ```
 
-This will run the `sandbox` shell script with the default configuration. See the [Basic Configuration](#basic-configuration) for other options.
+This will run the `sandbox` shell script with the release configuration. See the [Basic Configuration](#basic-configuration) for other options.
 
 <!-- markdownlint-disable-file MD034 -->
 
@@ -142,7 +217,7 @@ For example to run a `dev` mode network, run:
 ./sandbox up dev
 ```
 
-To switch the configuration:
+To switch configurations, you can bring down the active configuration and bring up a new configuration:
 
 ```sh
 ./sandbox down
@@ -150,13 +225,25 @@ To switch the configuration:
 ./sandbox up $NEW_CONFIG
 ```
 
+Cleaning is optional but it will remove the containers and images from your docker installation.
+
+Or, you can bring up additional sandboxes side-by-side if you change the ports and COMPOSE_PROJECT_NAME in the configuration.
+
+```sh
+./sandbox up $NEW_CONFIG
+```
+
+Sandbox will ask you if you want to stop or clean the current active configuration before switching.  It will also check if the ports requested are available and if there is already a docker project with the requested name.
+
 ### Private Network
 
-If no configuration is specified the sandbox will be started with the `release` configuration which is a private network. The other private network configurations are those not suffixed with `net`. Namely these are `beta`, `dev` and `nightly`.
+If no configuration is specified the sandbox will be started with the `release` configuration, which is a private network. The other private network configurations are those not suffixed with `net`. Namely these are `beta`, `dev` and `nightly`.
 
 The private network environment creates and funds a number of accounts in the algod containers local `kmd` ready to use for testing transactions. These accounts can be reviewed using `./sandbox goal account list`.
 
 Private networks also include an `Indexer` service configured to synchronize against the private network. Because it doesn't require catching up to one of the long running networks it also starts very quickly.
+
+Choosing a public network disables the indexer service, due to the length of time necessary to catchup an indexer.
 
 The `dev` configuration starts a private network using the latest release with these algod configuration customizations:
 * `"DevMode": true` - In dev mode, every transaction being sent to the node automatically generates a new block, rather than wait for a new round in real time. This is extremely useful for fast e2e testing of an application.
@@ -193,11 +280,18 @@ export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 export INDEXER_ENABLE_ALL_PARAMETERS="false"
+#Uncomment and change for alternative ports and docker compose project name
+#export KMD_PORT=31001
+#export ALGOD_PORT=31000
+#export INDEXER_PORT=31999
+#export POSTGRES_PORT=31432
+#export CDT_PORT=31738
+#export COMPOSE_PROJECT_NAME="algorand-betanet"
 ```
 
 Indexer is always built from source since it can be done quickly. For most configurations, algod will be installed using our standard release channels, but building from source is also available by setting the git URL, Branch and optionally a specific SHA commit hash.
 
-The **up** command looks for the config extension based on the argument provided. With a custom configuration pointed to a fork, the sandbox will start using the fork:
+The **up** command looks for the config extension based on the argument provided.  Here's an example of a configuration file that pulls down a specific branch of algod to use and a renamed docker for it:
 
 ```bash
 export ALGOD_CHANNEL=""
@@ -211,6 +305,13 @@ export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 export INDEXER_ENABLE_ALL_PARAMETERS="false"
+#Uncomment and change for alternative ports and docker compose project name
+#export KMD_PORT=31001
+#export ALGOD_PORT=31000
+#export INDEXER_PORT=31999
+#export POSTGRES_PORT=31432
+#export CDT_PORT=31738
+export COMPOSE_PROJECT_NAME="my-test-branch"
 ```
 
 ### Indexer Query Parameters
@@ -253,6 +354,7 @@ these commands will create and copy a signed logic transaction file, created by 
 ~$ ./sandbox copyFrom "signed.txn"
 ```
 
+These commands copy files to and from the active configuration (the one most recently "up"ed or the one set active with "active-config").  If you want to copy to and from a different configuration, you can use the copyFrom-config and copyTo-config commands.
 ## Errors
 
 If something goes wrong, check the `sandbox.log` file for details.
