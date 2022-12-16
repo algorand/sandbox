@@ -830,6 +830,9 @@ sandbox commands:
 
   set-active <config>  
       Set the active configuration to <config>.  Config file must be present.
+      Note this has no impact on the docker containers at all, it merely sets
+      which configuration future config-less sandbox commands will get 
+      directed to.
 
   test [config]
       Runs some tests to demonstrate usage on the specified configuration
