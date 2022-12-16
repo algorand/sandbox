@@ -1,6 +1,5 @@
 {
     "Genesis": {
-        "ConsensusProtocol": "future",
         "NetworkName": "devmodenet",
         "FirstPartKeyRound": 0,
         "LastPartKeyRound":  NETWORK_NUM_ROUNDS,

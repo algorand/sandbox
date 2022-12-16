@@ -484,8 +484,8 @@ sandbox () {
         return
         ;;
       indexer-db)
-        statusline "Entering /bin/bash session in the indexer-db container..."
-        dc_pty exec indexer-db //bin/bash
+        statusline "Entering psql session in the indexer-db container..."
+        dc_pty exec indexer-db psql -U algorand -d indexer_db
         return
         ;;
     esac
