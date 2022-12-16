@@ -673,7 +673,8 @@ sandbox () {
 
       # Check if the docker project is already running.
       declare -i projectnames
-      projectnames=$(dc ls -q | grep -cFx $COMPOSE_PROJECT_NAME || true)
+#      projectnames=$(dc ps -aq | grep -cFx $COMPOSE_PROJECT_NAME || true)
+      projectnames=$(dc ps -aq 2> /dev/null | wc -l || true)
       if [ ! $projectnames == 0 ]; then
         echo It looks like a docker project named ${COMPOSE_PROJECT_NAME} is already running.
         if ask "Do you want to stop it and then bring it up using config : ($CHOSEN_CONFIG)?" "Y"; then
@@ -712,14 +713,17 @@ sandbox () {
       # docker-compose up
       if [ $INTERACTIVE_MODE == 1 ]; then
         rebuild_if_needed
-        dc convert  >> "$SANDBOX_LOG"
+#       docker-compose convert not yet available in all versions of docker-cli, although this is useful information
+#        dc convert  >> "$SANDBOX_LOG"
         dc up
       elif [ $VERBOSE_MODE == 0 ]; then
-        dc convert  >> "$SANDBOX_LOG"
+#       docker-compose convert not yet available in all versions of docker-cli, although this is useful information
+#        dc convert  >> "$SANDBOX_LOG"
         rebuild_if_needed >> "$SANDBOX_LOG" 2>&1
         dc up -d  >> "$SANDBOX_LOG" 2>&1 & spinner
       else
-        dc convert  >> "$SANDBOX_LOG"
+#       docker-compose convert not yet available in all versions of docker-cli, although this is useful information
+#        dc convert  >> "$SANDBOX_LOG"
         dc up -d
       fi
 
