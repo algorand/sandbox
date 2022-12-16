@@ -673,7 +673,6 @@ sandbox () {
 
       # Check if the docker project is already running.
       declare -i projectnames
-#      projectnames=$(dc ps -aq | grep -cFx $COMPOSE_PROJECT_NAME || true)
       projectnames=$(dc ps -aq 2> /dev/null | wc -l || true)
       if [ ! $projectnames == 0 ]; then
         echo It looks like a docker project named ${COMPOSE_PROJECT_NAME} is already running.
