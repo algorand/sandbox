@@ -817,11 +817,11 @@ sandbox commands:
       configuration.
 
   <reset|restart> [config] 
-      Stop and then start the sandbox docker project defined in the config
-      provided. If blank, it will restart the active configuration, or failing
-      that, will try to restart the default $DEFAULT_CONFIG configuration.  If
-      the chosen configuration points to a non-private network, it will 
-      attempt fast-catchup on restart.
+      Stop, remove the containers, and then start the sandbox docker project
+      defined in the config provided from scratch. If blank, it will restart 
+      the active configuration, or failing that, will try to restart the 
+      default $DEFAULT_CONFIG configuration.  If the chosen configuration 
+      points to a non-private network, it will attempt fast-catchup on restart.
 
   clean [config]
       Stops and deletes the specified sandbox docker project configuration 
