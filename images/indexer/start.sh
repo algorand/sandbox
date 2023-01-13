@@ -28,7 +28,7 @@ start_with_algod() {
     --server ":$PORT" \
     -P "$CONNECTION_STRING" \
     --algod-net "${ALGOD_ADDR}" \
-    --algod-token "${ALGOD_TOKEN}"
+    --algod-token "${ALGOD_TOKEN}" 2>&1
 }
 
 import_and_start_readonly() {
@@ -47,8 +47,9 @@ import_and_start_readonly() {
 
   /tmp/algorand-indexer daemon \
     --dev-mode \
+    --data-dir "/tmp/indexer-data" \
     --server ":$PORT" \
-    -P "$CONNECTION_STRING"
+    -P "$CONNECTION_STRING" 2>&1
 }
 
 disabled() {
