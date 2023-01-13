@@ -17,18 +17,26 @@ start_with_algod() {
 
   # wait for algod to start
   for i in 1 2 3 4 5; do
-    wget "${ALGOD_ADDR}"/genesis && break
+    wget "${ALGOD_ADDR}"/genesis -O genesis.json && break
     echo "Algod not responding... waiting."
     sleep 15
   done
 
+  if [ ! -f genesis.json ]; then
+    echo "Failed to create genesis file!"
+    exit 1
+  fi
+
+  echo "Algod detected, genesis.json downloaded."
+  echo "Starting algorand-indexer."
   /tmp/algorand-indexer daemon \
     --dev-mode \
     --data-dir "/tmp/indexer-data" \
     --server ":$PORT" \
     -P "$CONNECTION_STRING" \
     --algod-net "${ALGOD_ADDR}" \
-    --algod-token "${ALGOD_TOKEN}" 2>&1
+    --algod-token "${ALGOD_TOKEN}" \
+    --genesis "genesis.json" 2>&1 
 }
 
 import_and_start_readonly() {
