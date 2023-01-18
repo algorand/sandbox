@@ -95,6 +95,8 @@ The [installation instructions](https://docs.docker.com/desktop/windows/install/
 4. Install whatever distribution of Linux desired.
 5. Open the Windows Terminal with the distribution installed in the previous step and follow the instruction for Ubuntu and macOS above.
 
+**Tip**: If you are using VSCode, do not forget to use the WSL2 terminal inside VSCode too. You may follow [this Microsoft tutorial](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-vscode).
+
 #### Option 2: Using Git for Windows/ MSYS 2 (not recommended)
 
 This option is not fully tested and may cause issues.
