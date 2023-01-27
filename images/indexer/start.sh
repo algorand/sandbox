@@ -31,12 +31,11 @@ start_with_algod() {
   echo "Starting algorand-indexer."
   /tmp/algorand-indexer daemon \
     --dev-mode \
-    --data-dir "/tmp/indexer-data" \
     --server ":$PORT" \
     -P "$CONNECTION_STRING" \
     --algod-net "${ALGOD_ADDR}" \
     --algod-token "${ALGOD_TOKEN}" \
-    --genesis "genesis.json" 2>&1 
+    --genesis "genesis.json" 
 }
 
 import_and_start_readonly() {
@@ -55,9 +54,8 @@ import_and_start_readonly() {
 
   /tmp/algorand-indexer daemon \
     --dev-mode \
-    --data-dir "/tmp/indexer-data" \
     --server ":$PORT" \
-    -P "$CONNECTION_STRING" 2>&1
+    -P "$CONNECTION_STRING"
 }
 
 disabled() {
