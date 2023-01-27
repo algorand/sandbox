@@ -35,6 +35,7 @@ start_with_algod() {
     -P "$CONNECTION_STRING" \
     --algod-net "${ALGOD_ADDR}" \
     --algod-token "${ALGOD_TOKEN}" \
+    --data-dir $INDEXER_DATA \
     --genesis "genesis.json" 
 }
 
@@ -55,6 +56,7 @@ import_and_start_readonly() {
   /tmp/algorand-indexer daemon \
     --dev-mode \
     --server ":$PORT" \
+    --data-dir $INDEXER_DATA \
     -P "$CONNECTION_STRING"
 }
 
