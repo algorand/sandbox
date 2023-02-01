@@ -12,8 +12,11 @@ ACTIVE_CONFIG_FILE="$SANDBOX_DIR/.active_config"
 SANDBOX_LOG="$SANDBOX_DIR/sandbox.log"
 FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channel/CHANNEL/latest.catchpoint'
 
+AHOST="${ALGOD_HOST:-localhost}"
 APORT="${ALGOD_PORT:-4001}"
+KHOST="${KMD_HOST:-localhost}"
 KPORT="${KMD_PORT:-4002}"
+IHOST="${INDEXER_HOST:-localhost}"
 IPORT="${INDEXER_PORT:-8980}"
 
 # Global flags
@@ -195,7 +198,7 @@ sandbox () {
     statusline "algod - goal node status"
     goal_helper node status
     statusline "indexer - health"
-    curl -s "localhost:$IPORT/health?pretty"
+    curl -s "$IHOST:$IPORT/health?pretty"
   }
 
   # docker-compose alias
@@ -275,8 +278,8 @@ sandbox () {
 
     # wait for startup
     while [[ $ATTEMPTS_REMAINING -gt 0 ]]; do
-      INDEXER_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$IPORT/health" -o /dev/null || true)
-      ALGOD_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$APORT/health" -o /dev/null || true)
+      INDEXER_STATUS=$(curl -sL -w "%{http_code}\n" "$IHOST:$IPORT/health" -o /dev/null || true)
+      ALGOD_STATUS=$(curl -sL -w "%{http_code}\n" "$AHOST:$APORT/health" -o /dev/null || true)
       if [ "$ALGOD_STATUS" == "200" ] && [ "$INDEXER_STATUS" == "200" ]; then
         ATTEMPTS_REMAINING=0
       else
@@ -301,7 +304,7 @@ sandbox () {
     statusline "algod version"
     dc exec -T algod goal -v
     statusline "Indexer version"
-    INDEXER_VERSION=$(dc exec -T indexer cmd/algorand-indexer/algorand-indexer daemon -v) && echo ${INDEXER_VERSION} || curl -s "localhost:$IPORT/health?pretty"
+    INDEXER_VERSION=$(dc exec -T indexer cmd/algorand-indexer/algorand-indexer daemon -v) && echo ${INDEXER_VERSION} || curl -s "$IHOST:$IPORT/health?pretty"
     statusline "Postgres version"
     dc exec -T indexer-db postgres -V
   }
@@ -535,7 +538,7 @@ sandbox () {
         statusline "Example command to send between two accounts:"
         printc $default "~$ ${blue}./sandbox ${teal}goal clerk send -a 123456789 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
         statusline "Soon after sending the transaction it will appear in indexer:"
-        printc $default "~$ ${blue}curl ${teal}\"localhost:$IPORT/v2/transactions?pretty\""
+        printc $default "~$ ${blue}curl ${teal}\"$IHOST:$IPORT/v2/transactions?pretty\""
       else
         ################################
         # FAST CATCHUP (if applicable) #
@@ -653,16 +656,16 @@ EOF
 
       TOKEN=$(cat "$SANDBOX_DIR/config/token")
       statusline "Test Algod REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:$APORT/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
-      curl "localhost:$APORT/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
+      printc $default "~$ ${blue}curl ${teal}$AHOST:$APORT/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
+      curl "$AHOST:$APORT/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
 
       statusline "Test KMD REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:$KPORT/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
-      curl "localhost:$KPORT/v1/wallets" -H "X-KMD-API-Token: $TOKEN"
+      printc $default "~$ ${blue}curl ${teal}$KHOST:$KPORT/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
+      curl "$KHOST:$KPORT/v1/wallets" -H "X-KMD-API-Token: $TOKEN"
 
       statusline "\nTest Indexer REST API..."
-      printc $default "~$ ${blue}curl ${teal}\"localhost:$IPORT/health?pretty\""
-      curl "localhost:$IPORT/health?pretty"
+      printc $default "~$ ${blue}curl ${teal}\"$IHOST:$IPORT/health?pretty\""
+      curl "$IHOST:$IPORT/health?pretty"
       ;;
 
     enter)
