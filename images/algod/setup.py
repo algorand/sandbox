@@ -275,7 +275,7 @@ sleep infinity
     os.symlink(data_dir, args.data_dir)
 
     follower_port_or_drop = args.algod_follower_port
-    if args.drop_follower:
+    if args.drop_follower == "true":
         follower_port_or_drop = None
 
     # Configure network
