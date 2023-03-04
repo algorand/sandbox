@@ -48,6 +48,8 @@ RUN sed -i "s/NETWORK_NUM_ROUNDS/$NETWORK_NUM_ROUNDS/" "//tmp/${TEMPLATE}" && \
  --network-template "//tmp/${TEMPLATE}" \
  --network-token "${TOKEN}" \
  --algod-port "${ALGOD_PORT}" \
+ --algod-follower-port "4003" \
+ --drop-follower "${DROP_FOLLOWER}" \
  --kmd-port "${KMD_PORT}" \
  --bootstrap-url "${BOOTSTRAP_URL}" \
  --genesis-file "/tmp/${GENESIS_FILE}" \

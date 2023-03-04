@@ -13,7 +13,6 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apk add --no-cache git bzip2 make bash libtool boost-dev autoconf automake g++
 
 # Copy files to container.
-COPY images/indexer/disabled.go /tmp/disabled.go
 COPY images/indexer/start.sh /tmp/start.sh
 COPY images/indexer/install.sh /tmp/install.sh
 

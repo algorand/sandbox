@@ -25,7 +25,7 @@
                 "Online": false
             }
         ],
-        "RewardsBalance":0
+        "RewardsBalance": 0
     },
     "Nodes": [
         {
@@ -54,6 +54,11 @@
                     "ParticipationOnly": false
                 }
             ]
+        },
+        {
+            "Name": "Follower",
+            "Wallets": [],
+            "ConfigJSONOverride": "{\"EnableFollowMode\":true,\"CatchupBlockValidateMode\":3}"
         }
     ]
 }

@@ -20,42 +20,13 @@ services:
         ALGOD_PORT: "4001"
         KMD_PORT: "4002"
         CDT_PORT: "9392"
+        DROP_FOLLOWER: "${INDEXER_DISABLED}"
     ports:
       - ${ALGOD_PORT:-4001}:4001
       - ${KMD_PORT:-4002}:4002
       - ${CDT_PORT:-9392}:9392
+    networks:
+      - follower
 
-  indexer:
-    container_name: "${INDEXER_CONTAINER:-algorand-sandbox-indexer}"
-    build:
-      context: .
-      dockerfile: ./images/indexer/Dockerfile
-      args:
-        URL: "${INDEXER_URL}"
-        BRANCH: "${INDEXER_BRANCH}"
-        SHA: "${INDEXER_SHA}"
-    ports:
-      - ${INDEXER_PORT:-8980}:8980
-    restart: unless-stopped
-    environment:
-      DISABLED: "${INDEXER_DISABLED}"
-      PORT: "8980"
-      SNAPSHOT: ""
-      CONNECTION_STRING: "host=indexer-db port=5432 user=algorand password=algorand dbname=indexer_db sslmode=disable"
-      ALGOD_ADDR: "algod:4001"
-      ALGOD_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-      INDEXER_ENABLE_ALL_PARAMETERS: "${INDEXER_ENABLE_ALL_PARAMETERS:-false}"
-    depends_on:
-      - indexer-db
-      - algod
-
-  indexer-db:
-    image: "postgres:13-alpine"
-    container_name: "${POSTGRES_CONTAINER:-algorand-sandbox-postgres}"
-    ports:
-      - ${POSTGRES_PORT:-5433}:5432
-    user: postgres
-    environment:
-      POSTGRES_USER: algorand
-      POSTGRES_PASSWORD: algorand
-      POSTGRES_DB: indexer_db
+networks:
+  follower:

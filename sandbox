@@ -6,7 +6,9 @@ set -euo pipefail
 #####################
 DEFAULT_CONFIG='release'
 SANDBOX_DIR=$(dirname "$0")
-source "$SANDBOX_DIR/.env"
+SANDBOX_ENV="$SANDBOX_DIR/.env"
+# shellcheck source=/dev/null
+source "$SANDBOX_ENV"
 CLEAN_FILE="$SANDBOX_DIR/.clean"
 ACTIVE_CONFIG_FILE="$SANDBOX_DIR/.active_config"
 SANDBOX_LOG="$SANDBOX_DIR/sandbox.log"
@@ -71,6 +73,7 @@ fi
 default="\033[0m"
 
 red="\033[0;31m"
+green="\033[0;32m"
 blue="\033[0;34m"
 teal="\033[0;36m"
 
@@ -79,7 +82,7 @@ Bgreen="\033[1;32m"
 
 
 function printc () {
-  printf "%s%s%s\n" "$1" "$2" "${default}"
+  printf "$1$2${default}\n"
 }
 
 function statusline () {
@@ -87,7 +90,7 @@ function statusline () {
 }
 
 function err_noexit () {
-  printf "%s%s%s\n" "${red}" "$1" "${default}"
+  printf "${red}$1${default}\n"
 }
 
 function err () {
@@ -97,7 +100,7 @@ function err () {
 
 # Overwrite the current line on the terminal
 function overwrite() {
-  echo -e "\r\033[1A\033[0K$*";
+  echo -e "\r\033[1A\033[0K$@";
 }
 
 # Yes/no prompt around the clean command
@@ -131,7 +134,7 @@ function ask () {
         echo -n "$1 [$prompt] "
 
         # Read the answer (use /dev/tty in case stdin is redirected from somewhere else)
-        read -r reply < /dev/tty
+        read reply </dev/tty
 
         # Default?
         if [ -z "$reply" ]; then
@@ -155,7 +158,7 @@ function spinner()
   local pid=$!
   local delay=0.75
   local spinstr='|/-\'
-  while (ps a | awk '{print $1}' | grep -q $pid); do
+  while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
     local temp=${spinstr#?}
     overwrite " [${spinstr::1}] "
     local spinstr=$temp${spinstr%"$temp"}
@@ -169,18 +172,18 @@ function spinner()
 # 1.1 Input is prefixString($1) currentState($2) and totalState($3)
 function progress_bar {
   local progress
-  local isdone
+  local done
   local left
   local fill
   local empty
 
   # Process data
   progress=$(( $(( ${2} * 100 / ${3} * 100)) / 100))
-  isdone=$(( $(( progress * 4 )) / 10 ))
-  left=$(( 40 - isdone ))
+  done=$(( $(( ${progress} * 4 )) / 10 ))
+  left=$(( 40 - $done ))
 
   # Build progressbar string lengths
-  fill=$(printf "%${isdone}s")
+  fill=$(printf "%${done}s")
   empty=$(printf "%${left}s")
 
   # 1.2 Build progressbar strings and print the progress_bar line
@@ -214,7 +217,7 @@ sandbox () {
       VERBOSE_FLAG=" --verbose"
     fi
 
-    "$DOCKER_COMPOSE$VERBOSE_FLAG" -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    $DOCKER_COMPOSE$VERBOSE_FLAG -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
   # dc_pty needs to be used instead of dc any time
@@ -226,7 +229,7 @@ sandbox () {
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
     # TODO: can windows docker handle --verbose?
-    $WINDOWS_PTY_PREFIX "$DOCKER_COMPOSE" -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    $WINDOWS_PTY_PREFIX $DOCKER_COMPOSE -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
   rebuild_if_needed () {
@@ -300,14 +303,16 @@ sandbox () {
     statusline "algod version"
     dc exec -T algod goal -v
     statusline "Indexer version"
-    (INDEXER_VERSION=$(dc exec -T indexer cmd/algorand-indexer/algorand-indexer daemon -v) && echo "${INDEXER_VERSION}") || curl -s "localhost:$IPORT/health?pretty"
+    INDEXER_VERSION=$(dc exec -T indexer cmd/algorand-indexer/algorand-indexer daemon -v) && echo ${INDEXER_VERSION} || curl -s "localhost:$IPORT/health?pretty"
     statusline "Postgres version"
     dc exec -T indexer-db postgres -V
   }
 
   # Given a network name attempts to fetch a catchpoint and catchup.
   perform_fast_catchup () {
-    if ! goal_helper node catchup "$1"; then
+    goal_helper node catchup "$1"
+
+    if [ $? -ne 0 ]; then
       err "There was a problem starting fast catchup."
     fi
 
@@ -329,14 +334,14 @@ sandbox () {
       # If progress has been made, update the progress.
       if [[ "$RES" == *"Catchpoint total accounts"* ]]; then
         STARTED=true
-        TOTAL=$(echo "$RES" | grep -o 'Catchpoint total accounts: [[:digit:]]*' | cut -d':' -f 2 )
-        PROGRESS=$(echo "$RES" | grep -o 'Catchpoint accounts processed: [[:digit:]]*' | cut -d':' -f 2 )
+        TOTAL=$(echo $RES | grep -o 'Catchpoint total accounts: [[:digit:]]*' | cut -d':' -f 2 )
+        PROGRESS=$(echo $RES | grep -o 'Catchpoint accounts processed: [[:digit:]]*' | cut -d':' -f 2 )
       elif [ $STARTED == "true" ]; then
         DONE=true
         PROGRESS=$TOTAL
       fi
 
-      if [ "$TOTAL" == "$PROGRESS" ]; then
+      if [ $TOTAL == $PROGRESS ]; then
         DONE=true
       else
         progress_bar "Processing accounts:" "$PROGRESS" "$TOTAL"
@@ -364,14 +369,14 @@ sandbox () {
       # If progress has been made, update the progress.
       if [[ "$RES" == *"Catchpoint downloaded blocks"* ]]; then
         STARTED=true
-        TOTAL=$(echo "$RES" | grep -o 'Catchpoint total blocks: [[:digit:]]*' | cut -d ':' -f 2 )
-        PROGRESS=$(echo "$RES" | grep -o 'Catchpoint downloaded blocks: [[:digit:]]*' | cut -d ':' -f 2 )
+        TOTAL=$(echo $RES | grep -o 'Catchpoint total blocks: [[:digit:]]*' | cut -d ':' -f 2 )
+        PROGRESS=$(echo $RES | grep -o 'Catchpoint downloaded blocks: [[:digit:]]*' | cut -d ':' -f 2 )
       elif [ $STARTED == "true" ]; then
         DONE=true
         PROGRESS=$TOTAL
       fi
 
-      if [ "$TOTAL" == "$PROGRESS" ]; then
+      if [ $TOTAL == $PROGRESS ]; then
         DONE=true
       else
         progress_bar "Downloading blocks:" "$PROGRESS" "$TOTAL"
@@ -451,12 +456,12 @@ sandbox () {
       # Grab active config if there is one
       ACTIVE_CONFIG=""
       if [ -f "$ACTIVE_CONFIG_FILE" ]; then
-        ACTIVE_CONFIG=$(cat "$ACTIVE_CONFIG_FILE")
+        ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
       fi
 
       # Initialize new config, accounting for no-argument up command.
       if [ "$1" = "" ]; then
-        if [ -n "$ACTIVE_CONFIG" ]; then
+        if [ ! -z $ACTIVE_CONFIG ]; then
           statusline "Bringing up existing sandbox: '$ACTIVE_CONFIG'"
           FRESH_INSTALL=0
           NEW_CONFIG="$ACTIVE_CONFIG"
@@ -477,7 +482,7 @@ sandbox () {
       fi
 
       # Handle mismatched argument + active config
-      if [ -n "$ACTIVE_CONFIG" ] && [ "$NEW_CONFIG" != "$ACTIVE_CONFIG" ]; then
+      if [ ! -z "$ACTIVE_CONFIG" ] && [ "$NEW_CONFIG" != "$ACTIVE_CONFIG" ]; then
         err_noexit "Sandbox was already started for '$ACTIVE_CONFIG'."
         ask_clean "Would you like to reset the local sandbox with '$NEW_CONFIG'?"
         # If we get here the active config was cleared out.
@@ -491,7 +496,14 @@ sandbox () {
 
       # network configured with the environment exported by $CONFIG_FILE
       echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
+      # shellcheck source=/dev/null
       source "$CONFIG_FILE"
+      if [ "$INDEXER_DISABLED" == "true" ]; then
+        echo "COMPOSE_FILE=docker-compose.yml" >> "$SANDBOX_ENV"
+      else
+        echo "COMPOSE_FILE=docker-compose.yml,docker-compose-indexer.yml" >> "$SANDBOX_ENV"
+      fi
+      
       if [ $INTERACTIVE_MODE == 1 ]; then
         rebuild_if_needed
         dc up
@@ -515,7 +527,7 @@ sandbox () {
       version_helper
       status_helper
 
-      if [ -z "$NETWORK_GENESIS_FILE" ]; then
+      if [ -z $NETWORK_GENESIS_FILE ]; then
         #####################
         # PRINT WALLET INFO #
         #####################
@@ -523,29 +535,29 @@ sandbox () {
 
         ACCOUNTS_OUTPUT=$(goal_helper account list)
         for acct in $(echo "$ACCOUNTS_OUTPUT" | cut -f 3 |tr -s ' '); do
-          ACCOUNTS+=("$acct")
+          ACCOUNTS+=($acct)
         done
 
         statusline "Available accounts"
-        printc "$default" "~$ ${blue}./sandbox ${teal}goal account list"
+        printc $default "~$ ${blue}./sandbox ${teal}goal account list"
         echo "$ACCOUNTS_OUTPUT"
         statusline "Example command to send between two accounts:"
-        printc "$default" "~$ ${blue}./sandbox ${teal}goal clerk send -a 123456789 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
+        printc $default "~$ ${blue}./sandbox ${teal}goal clerk send -a 123456789 -f ${ACCOUNTS[1]} -t ${ACCOUNTS[2]}"
         statusline "Soon after sending the transaction it will appear in indexer:"
-        printc "$default" "~$ ${blue}curl ${teal}\"localhost:$IPORT/v2/transactions?pretty\""
+        printc $default "~$ ${blue}curl ${teal}\"localhost:$IPORT/v2/transactions?pretty\""
       else
         ################################
         # FAST CATCHUP (if applicable) #
         ################################
-        if [ $USE_FAST_CATCHUP == 1 ] && [ $FRESH_INSTALL == 1 ] && [ -n "$NETWORK" ]; then
-          set_catchpoint "$NETWORK"
+        if [ $USE_FAST_CATCHUP == 1 ] && [ $FRESH_INSTALL == 1 ] && [ ! -z "$NETWORK" ]; then
+          set_catchpoint $NETWORK
 
-          if [ -z "$CATCHPOINT" ]; then
+          if [ -z $CATCHPOINT ]; then
             err_noexit "Fast catchup is not available for $NETWORK, continuing without catchup."
           else
             statusline "Starting fast-catchup with catchpoint: $CATCHPOINT"
 
-            perform_fast_catchup "$CATCHPOINT"
+            perform_fast_catchup $CATCHPOINT
 
             statusline "Fast-catchup complete! Printing status..."
             status_helper
@@ -626,7 +638,7 @@ EOF
     restart|reset)
       # Make sure fast-catchup runs when resetting a real network.
       if [ -f "$ACTIVE_CONFIG_FILE" ]; then
-        ACTIVE_CONFIG=$(cat "$ACTIVE_CONFIG_FILE")
+        ACTIVE_CONFIG=$(cat $ACTIVE_CONFIG_FILE)
         # up only runs fast-catchup for fresh installs.
         # removing the active config file will trick it.
         rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1 || true
@@ -645,20 +657,20 @@ EOF
 
     test)
       statusline "Test command forwarding..."
-      printc "$default" "~$ ${blue}docker exec -it algod uname -a"
+      printc $default "~$ ${blue}docker exec -it algod uname -a"
       dc exec -T algod uname -a
 
       TOKEN=$(cat "$SANDBOX_DIR/config/token")
       statusline "Test Algod REST API..."
-      printc "$default" "~$ ${blue}curl ${teal}localhost:$APORT/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
+      printc $default "~$ ${blue}curl ${teal}localhost:$APORT/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
       curl "localhost:$APORT/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
 
       statusline "Test KMD REST API..."
-      printc "$default" "~$ ${blue}curl ${teal}localhost:$KPORT/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
+      printc $default "~$ ${blue}curl ${teal}localhost:$KPORT/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
       curl "localhost:$KPORT/v1/wallets" -H "X-KMD-API-Token: $TOKEN"
 
       statusline "\nTest Indexer REST API..."
-      printc "$default" "~$ ${blue}curl ${teal}\"localhost:$IPORT/health?pretty\""
+      printc $default "~$ ${blue}curl ${teal}\"localhost:$IPORT/health?pretty\""
       curl "localhost:$IPORT/health?pretty"
       ;;
 

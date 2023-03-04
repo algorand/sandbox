@@ -10,32 +10,76 @@
 # if you provide arguments unused parameters.
 
 import argparse
+import json
 import os
+from os.path import join
 import pprint
 import shutil
 import subprocess
-import tarfile
-import time
-import json
-import urllib.request
-from os.path import expanduser, join
 
 from typing import List
 
-parser = argparse.ArgumentParser(description='''\
+parser = argparse.ArgumentParser(
+    description="""\
         Configure private network for SDK and prepare it to run. A start script and
-        symlink to data directory will be generated to make it easier to use.''')
-parser.add_argument('--bin-dir', required=True, help='Location to install algod binaries.')
-parser.add_argument('--data-dir', required=True, help='Location to place a symlink to the data directory.')
-parser.add_argument('--start-script', required=True, help='Path to start script, including the script name.')
-parser.add_argument('--network-template', required=True, help='Path to private network template file.')
-parser.add_argument('--network-token', required=True, help='Valid token to use for algod/kmd.')
-parser.add_argument('--algod-port', required=True, help='Port to use for algod.')
-parser.add_argument('--kmd-port', required=True, help='Port to use for kmd.')
-parser.add_argument('--network-dir', required=True, help='Path to create network.')
-parser.add_argument('--bootstrap-url', required=True, help='DNS Bootstrap URL, empty for private networks.')
-parser.add_argument('--genesis-file', required=True, help='Genesis file used by the network.')
-parser.add_argument('--archival', type=bool, default=False, help='When True, bootstrap an archival node.')
+        symlink to data directory will be generated to make it easier to use."""
+)
+parser.add_argument(
+    "--bin-dir", required=True, help="Location to install algod binaries."
+)
+parser.add_argument(
+    "--data-dir",
+    required=True,
+    help="Location to place a symlink to the data directory.",
+)
+parser.add_argument(
+    "--start-script",
+    required=True,
+    help="Path to start script, including the script name.",
+)
+parser.add_argument(
+    "--network-template", required=True, help="Path to private network template file."
+)
+parser.add_argument(
+    "--network-token", required=True, help="Valid token to use for algod/kmd."
+)
+parser.add_argument(
+    "--algod-port",
+    required=True,
+    help="Port to use for algod.",
+)
+parser.add_argument(
+    "--algod-follower-port", required=True, help="Port to use for algod follower."
+)
+parser.add_argument(
+    "--drop-follower",
+    required=True,
+    help="Determine whether to keep or drop the follower node.",
+)
+parser.add_argument(
+    "--kmd-port",
+    required=True,
+    help="Port to use for kmd.",
+)
+parser.add_argument(
+    "--network-dir",
+    required=True,
+    help="Path to create network.",
+)
+parser.add_argument(
+    "--bootstrap-url",
+    required=True,
+    help="DNS Bootstrap URL, empty for private networks.",
+)
+parser.add_argument(
+    "--genesis-file", required=True, help="Genesis file used by the network."
+)
+parser.add_argument(
+    "--archival",
+    type=bool,
+    default=False,
+    help="When True, bootstrap an archival node.",
+)
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -44,24 +88,27 @@ def algod_directories(network_dir):
     """
     Compute data/kmd directories.
     """
-    data_dir=join(network_dir, 'Node')
+    data_dir = join(network_dir, "Node")
+    follower_data_dir = join(network_dir, "Follower")
 
     kmd_dir = None
-    options = [filename for filename in os.listdir(data_dir) if filename.startswith('kmd')]
+    options = [
+        filename for filename in os.listdir(data_dir) if filename.startswith("kmd")
+    ]
 
     # When setting up the real network the kmd dir doesn't exist yet because algod hasn't been started.
     if len(options) == 0:
-        kmd_dir=join(data_dir, 'kmd-v0.5')
+        kmd_dir = join(data_dir, "kmd-v0.5")
         os.mkdir(kmd_dir)
     else:
-        kmd_dir=join(data_dir, options[0])
+        kmd_dir = join(data_dir, options[0])
 
-    return data_dir, kmd_dir
+    return data_dir, follower_data_dir, kmd_dir
 
 
-def create_real_network(bin_dir, network_dir, template, genesis_file) -> List[str]:
-    data_dir_src=join(bin_dir, 'data')
-    target=join(network_dir, 'Node')
+def create_real_network(bin_dir, network_dir, genesis_file, drop_follower) -> List[str]:
+    # TODO: what about the follower node?
+    target = join(network_dir, "Node")
 
     # Reset in case it exists
     if os.path.exists(target):
@@ -71,13 +118,15 @@ def create_real_network(bin_dir, network_dir, template, genesis_file) -> List[st
     # Copy in the genesis file...
     shutil.copy(genesis_file, target)
 
-    data_dir, kmd_dir = algod_directories(network_dir)
+    data_dir, _, kmd_dir = algod_directories(network_dir)
 
-    return ['%s/goal node start -d %s' % (bin_dir, data_dir),
-            '%s/kmd start -t 0 -d %s' % (bin_dir, kmd_dir)]
+    return [
+        "%s/goal node start -d %s" % (bin_dir, data_dir),
+        "%s/kmd start -t 0 -d %s" % (bin_dir, kmd_dir),
+    ]
 
 
-def create_private_network(bin_dir, network_dir, template) -> List[str]:
+def create_private_network(bin_dir, network_dir, template, drop_follower) -> List[str]:
     """
     Create a private network.
     """
@@ -85,76 +134,157 @@ def create_private_network(bin_dir, network_dir, template) -> List[str]:
     if os.path.exists(args.network_dir):
         shutil.rmtree(args.network_dir)
 
+    if drop_follower:
+        with open(template, "rw") as f:
+            err_msg = (
+                "Expected follower node @ template_data['Nodes'][-1] but not found."
+            )
+
+            template_data = json.load(f)
+            try:
+                # TODO: this is a total hack. Generalize.
+                follower = template_data["Nodes"].pop(-1)
+            except (IndexError, KeyError) as e:
+                print(err_msg)
+                raise e
+
+            # TODO: this is not an accurate criterion for a follower node
+            assert follower["Name"] == "Follower", err_msg
+
+            f.write(json.dumps(template_data))
+
     # Use goal to create the private network.
-    subprocess.check_call(['%s/goal network create -n sandnet -r %s -t %s' % (bin_dir, network_dir, template)], shell=True)
+    try:
+        subprocess.check_call(
+            [
+                f"{bin_dir}/goal network create -n sandnet -r {network_dir} -t {template}"
+            ],
+            shell=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to create private network for template: {template}")
+        raise e
 
-    data_dir, kmd_dir = algod_directories(network_dir)
-    return ['%s/goal network start -r %s' % (bin_dir, network_dir),
-            '%s/kmd start -t 0 -d %s' % (bin_dir, kmd_dir)]
+    _, _, kmd_dir = algod_directories(network_dir)
+    return [
+        f"{bin_dir}/goal network start -r {network_dir}",
+        f"{bin_dir}/kmd start -t 0 -d {kmd_dir}",
+    ]
 
 
-def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, archival):
-    node_dir, kmd_dir = algod_directories(network_dir)
+def configure_data_dir(
+    network_dir,
+    token,
+    algod_port,
+    follower_port_or_drop,
+    kmd_port,
+    bootstrap_url,
+    archival,
+):
+    node_dir, follower_dir, kmd_dir = algod_directories(network_dir)
 
     # Set tokens
-    with open(join(node_dir, 'algod.token'), 'w') as f:
+    with open(join(node_dir, "algod.token"), "w") as f:
         f.write(token)
-    with open(join(kmd_dir, 'kmd.token'), 'w') as f:
+    with open(join(follower_dir, "algod.token"), "w") as f:
+        f.write(token)
+    with open(join(kmd_dir, "kmd.token"), "w") as f:
         f.write(token)
 
     # Setup config, inject port
     node_config_path = join(node_dir, "config.json")
-    archival = 'true' if archival else 'false'
-    node_config = f'{{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "isIndexerActive":false, "EnableDeveloperAPI":true }}'    
-    print(f"writing to node_config_path=[{node_config_path}] config json: {node_config}")
-    with open(node_config_path, "w") as f:
-        f.write(node_config)
+    node_config = {
+        "Version": 27,
+        "GossipFanout": 1,
+        "EndpointAddress": f"0.0.0.0:{algod_port}",
+        "DNSBootstrapID": f"{bootstrap_url}",
+        "IncomingConnectionsLimit": 0,
+        "Archival": archival,
+        "isIndexerActive": False,
+        "EnableDeveloperAPI": True,
+    }
 
-    kmd_config_path = join(kmd_dir, 'kmd_config.json')
-    kmd_config = f'{{ "address":"0.0.0.0:{kmd_port}",  "allowed_origins":["*"] }}'
+    print(
+        f"writing to node_config_path=[{node_config_path}] config json: {node_config}"
+    )
+    with open(node_config_path, "w") as f:
+        f.write(json.dumps(node_config))
+
+    if follower_port_or_drop is not None:
+        follower_config_path = join(follower_dir, "config.json")
+        node_config["EndpointAddress"] = f"follower:{follower_port_or_drop}"
+        print(
+            f"writing to follower_config_path=[{follower_config_path}] config json: {node_config}"
+        )
+        with open(follower_config_path, "w") as f:
+            f.write(json.dumps(node_config))
+
+    kmd_config_path = join(kmd_dir, "kmd_config.json")
+    kmd_config = json.dumps(
+        {
+            "address": f"0.0.0.0:{kmd_port}",
+            "allowed_origins": ["*"],
+        }
+    )
     print(f"writing to kmd_config_path=[{kmd_config_path}] config json: {kmd_config}")
-    with open(kmd_config_path, 'w') as f:
+    with open(kmd_config_path, "w") as f:
         f.write(kmd_config)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     args = parser.parse_args()
 
-    print('Configuring network with the following arguments:')
+    print("Configuring network with the following arguments:")
     pp.pprint(vars(args))
 
-
     # Setup network
-    privateNetworkMode = args.genesis_file == None or args.genesis_file == '' or os.path.isdir(args.genesis_file)
+    privateNetworkMode = (not args.genesis_file) or os.path.isdir(args.genesis_file)
     if privateNetworkMode:
-        print('Creating a private network.')
-        startCommands = create_private_network(args.bin_dir, args.network_dir, args.network_template)
+        print("Creating a private network.")
+        startCommands = create_private_network(
+            args.bin_dir,
+            args.network_dir,
+            args.network_template,
+            args.drop_follower,
+        )
     else:
-        print('Setting up real retwork.')
-        startCommands = create_real_network(args.bin_dir, args.network_dir, args.network_template, args.genesis_file)
+        print("Setting up real retwork.")
+        startCommands = create_real_network(
+            args.bin_dir,
+            args.network_dir,
+            args.genesis_file,
+            args.drop_follower,
+        )
 
     # Write start script
-    print(f'Start commands for {args.start_script}:')
-    pp.pprint(f'startCommands={startCommands}')
-    with open(args.start_script, 'w') as f:
-        f.write('#!/usr/bin/env bash\n')
-        for line in startCommands:
-            f.write(f'{line}\n')
-        f.write('sleep infinity\n')
+    print(f"Start commands for {args.start_script}:")
+    pp.pprint(f"startCommands={startCommands}")
+    with open(args.start_script, "w") as f:
+        cmds = "\n".join(startCommands)
+        algod_sh = f"""#!/usr/bin/env bash
+{cmds}
+sleep infinity
+"""
+        f.write(algod_sh)
     os.chmod(args.start_script, 0o755)
-    print(f"Finished preparing start script '{args.start_script}' under /opt/")    
+    print(f"Finished preparing start script '{args.start_script}' under /opt/")
 
     # Create symlink
-    data_dir, _ = algod_directories(args.network_dir)
-    print(f'Creating symlink {args.data_dir} -> {data_dir}')
+    data_dir, _, _ = algod_directories(args.network_dir)
+    print(f"Creating symlink {args.data_dir} -> {data_dir}")
     os.symlink(data_dir, args.data_dir)
+
+    follower_port_or_drop = args.algod_follower_port
+    if args.drop_follower:
+        follower_port_or_drop = None
 
     # Configure network
     configure_data_dir(
-        args.network_dir, 
-        args.network_token, 
-        args.algod_port, 
-        args.kmd_port, 
+        args.network_dir,
+        args.network_token,
+        args.algod_port,
+        follower_port_or_drop,
+        args.kmd_port,
         args.bootstrap_url,
         args.archival,
     )
-
