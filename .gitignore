@@ -1,5 +1,6 @@
 .active_config
 .clean
+.env
 sandbox.log
 data
 
