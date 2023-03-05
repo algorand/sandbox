@@ -6,9 +6,17 @@ set -euo pipefail
 #####################
 DEFAULT_CONFIG='release'
 SANDBOX_DIR=$(dirname "$0")
-SANDBOX_ENV="$SANDBOX_DIR/.env"
+EXTERNAL_ENV_FILE="$SANDBOX_DIR/.ext-env"
+DC_ALGOD_ONLY_ENV_FILE="$SANDBOX_DIR/.docker-algod-only-env"
+DC_ALGOD_INDEXER_ENV_FILE="$SANDBOX_DIR/.docker-algod-indexer-env"
+
+# NOTE: to ensure that `docker compose` can by independently recreate the
+# dc () function, don't change the following definition:
+DC_ENV_FILE="$SANDBOX_DIR/.env"
+touch "$EXTERNAL_ENV_FILE"
+touch "$DC_ENV_FILE"
 # shellcheck source=/dev/null
-source "$SANDBOX_ENV"
+source "$EXTERNAL_ENV_FILE"
 CLEAN_FILE="$SANDBOX_DIR/.clean"
 ACTIVE_CONFIG_FILE="$SANDBOX_DIR/.active_config"
 SANDBOX_LOG="$SANDBOX_DIR/sandbox.log"
@@ -200,6 +208,26 @@ sandbox () {
     curl -s "localhost:$IPORT/health?pretty"
   }
 
+  reenv_dc () {
+    # Prepare the .env file for `docker compose`. 
+    # This allows re-creating the `dc ()` function externally via
+    # a direct call to `docker compose`
+
+    if [ -z "$CONFIG_FILE" ] || [ ! -f "$CONFIG_FILE" ]; then
+      err "expected config file at $CONFIG_FILE"
+    fi
+
+
+    DC2EXT_SEP="\n\n# --- EXTERNAL ENVIRONMENT VARIABLES ---\n"
+    EXT2SB_SEP="\n\n# --- SANDBOX ENVIRONMENT VARIABLES ---\n"
+
+    if [ "$INDEXER_DISABLED" == "true" ]; then
+      cat <(cat "$DC_ALGOD_ONLY_ENV_FILE" && echo -e "$DC2EXT_SEP") <(cat "$EXTERNAL_ENV_FILE" && echo -e "$EXT2SB_SEP") "$CONFIG_FILE" > "$DC_ENV_FILE"
+    else
+      cat <(cat "$DC_ALGOD_INDEXER_ENV_FILE" && echo -e "$DC2EXT_SEP") <(cat "$EXTERNAL_ENV_FILE" && echo -e "$EXT2SB_SEP") "$CONFIG_FILE" > "$DC_ENV_FILE"
+    fi
+  }
+
   # docker-compose alias
   # must only be used when no pseudo-TTY is required
   # in particular, when using 
@@ -211,7 +239,11 @@ sandbox () {
   #   dc_pty algod exec //bin/bash
   # This is to ensure compatibility with Windows Msys
   dc () {
-    VERBOSE_FLAG=""
+    if [ ! -f $DC_ENV_FILE ]; then
+    echo "WARNING: $DC_ENV_FILE not found. 'docker compose' command may not work"
+  fi
+
+   VERBOSE_FLAG=""
     if [ $VERBOSE_MODE == 1 ]; then
       # --verbose is universally available since tag https://github.com/docker/compose-cli/releases/tag/v1.0.18 pr https://github.com/docker/compose-cli/pull/1830
       VERBOSE_FLAG=" --verbose"
@@ -228,7 +260,6 @@ sandbox () {
   dc_pty () {
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
-    # TODO: can windows docker handle --verbose?
     $WINDOWS_PTY_PREFIX $DOCKER_COMPOSE -f "$SANDBOX_DIR/docker-compose.yml" "$@"
   }
 
@@ -271,13 +302,16 @@ sandbox () {
 
   # wait until indexer/algod health endpoints report 200
   wait_for_services() {
-    local ATTEMPTS_REMAINING=60
+    local ATTEMPTS_REMAINING=10
     local INDEXER_STATUS="000"
     local ALGOD_STATUS="000"
 
     # wait for startup
     while [[ $ATTEMPTS_REMAINING -gt 0 ]]; do
-      INDEXER_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$IPORT/health" -o /dev/null || true)
+      if [ "$INDEXER_DISABLED" != "true" ]; then
+        INDEXER_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$IPORT/health" -o /dev/null || true)
+      fi
+
       ALGOD_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$APORT/health" -o /dev/null || true)
       if [ "$ALGOD_STATUS" == "200" ] && [ "$INDEXER_STATUS" == "200" ]; then
         ATTEMPTS_REMAINING=0
@@ -292,7 +326,7 @@ sandbox () {
       if [ "$ALGOD_STATUS" != "200" ]; then
         echo "* algorand node"
       fi
-      if [ "$INDEXER_STATUS" != "200" ]; then
+      if [ "$INDEXER_DISABLED" != "true" ] && [ "$INDEXER_STATUS" != "200" ]; then
         echo "* indexer node"
       fi
       err "One or more services failed to start."
@@ -391,16 +425,29 @@ sandbox () {
 
   clean () {
     echo "* docker compose down"
-    dc down -t 0                                   || true
+    dc down -t 0                                               || true
     echo "* docker rmi sandbox_algod sandbox_indexer"
     docker rmi sandbox_algod sandbox_indexer                   || true
     echo "* docker compose rm -f"
-    dc rm -f                                       || true
-    echo "* docker rmi $(docker images -f "dangling=true" -q)"
-    docker rmi $(docker images -f "dangling=true" -q)          || true
-    rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1                  || true
-    echo 'clean function executed' > "$CLEAN_FILE";
+    dc rm -f                                                   || true
+    echo "* docker rmi $(docker images -f 'dangling=true' -q)"
+    docker rmi "$(docker images -f 'dangling=true' -q)"        || true
+
+    echo "* deleting $ACTIVE_CONFIG_FILE:"
+    cat "$ACTIVE_CONFIG_FILE" 2>&1                             || true
+    rm "$ACTIVE_CONFIG_FILE"  2>&1                             || true
+
+    echo "* deleting $DC_ENV_FILE:"
+    cat "$DC_ENV_FILE"        2>&1                             || true
+    rm "$DC_ENV_FILE"         2>&1                             || true
+
+    echo "clean function executed" > "$CLEAN_FILE";
   }
+
+
+echo "* deleting $DC_ENV_FILE:"
+cat -u "$DC_ENV_FILE" 2>&1 || true
+rm "$DC_ENV_FILE" > /dev/null 2>&1 || true
 
   # Enter attaches users to a shell in the desired container
   enter () {
@@ -461,7 +508,7 @@ sandbox () {
 
       # Initialize new config, accounting for no-argument up command.
       if [ "$1" = "" ]; then
-        if [ ! -z $ACTIVE_CONFIG ]; then
+        if [ -n "$ACTIVE_CONFIG" ]; then
           statusline "Bringing up existing sandbox: '$ACTIVE_CONFIG'"
           FRESH_INSTALL=0
           NEW_CONFIG="$ACTIVE_CONFIG"
@@ -473,7 +520,7 @@ sandbox () {
         statusline "Starting sandbox for: $1"
         NEW_CONFIG="$1"
       fi
-      CONFIG_FILE="$SANDBOX_DIR/config.$NEW_CONFIG"
+      CONFIG_FILE="$SANDBOX_DIR/config.$NEW_CONFIG" 
 
       # Verify config exists
       if [ ! -f "$CONFIG_FILE" ]; then
@@ -482,27 +529,19 @@ sandbox () {
       fi
 
       # Handle mismatched argument + active config
-      if [ ! -z "$ACTIVE_CONFIG" ] && [ "$NEW_CONFIG" != "$ACTIVE_CONFIG" ]; then
+      if [ -n "$ACTIVE_CONFIG" ] && [ "$NEW_CONFIG" != "$ACTIVE_CONFIG" ]; then
         err_noexit "Sandbox was already started for '$ACTIVE_CONFIG'."
         ask_clean "Would you like to reset the local sandbox with '$NEW_CONFIG'?"
         # If we get here the active config was cleared out.
         up "$@"
         return
       fi
+      
+      reenv_dc
 
       #################
       # START NETWORK #
       #################
-
-      # network configured with the environment exported by $CONFIG_FILE
-      echo "$NEW_CONFIG" > "$ACTIVE_CONFIG_FILE"
-      # shellcheck source=/dev/null
-      source "$CONFIG_FILE"
-      if [ "$INDEXER_DISABLED" == "true" ]; then
-        echo "COMPOSE_FILE=docker-compose.yml" >> "$SANDBOX_ENV"
-      else
-        echo "COMPOSE_FILE=docker-compose.yml,docker-compose-indexer.yml" >> "$SANDBOX_ENV"
-      fi
       
       if [ $INTERACTIVE_MODE == 1 ]; then
         rebuild_if_needed
