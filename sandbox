@@ -202,10 +202,17 @@ function progress_bar {
 
 sandbox () {
   status_helper () {
+    load_dcenv
+
     statusline "algod - goal node status"
     goal_helper node status
-    statusline "indexer - health"
-    curl -s "localhost:$IPORT/health?pretty"
+
+    if [ "$INDEXER_DISABLED" == "true" ] ; then
+      statusline "indexer - DISABLED"
+    else
+      statusline "indexer - health"
+      curl -s "localhost:$IPORT/health?pretty"
+    fi
   }
 
   reenv_dc () {
@@ -224,21 +231,31 @@ sandbox () {
     _DCEF=$DC_ALGOD_INDEXER_ENV_FILE
     if [ "$INDEXER_DISABLED" == "true" ]; then
       _DCEF=$DC_ALGOD_ONLY_ENV_FILE
-    # else
-    #   echo "$INTRO_SEP" && cat "$DC_ALGOD_INDEXER_ENV_FILE" && echo -e "$DC2EXT_SEP") <(cat "$EXTERNAL_ENV_FILE" && echo -e "$EXT2SB_SEP") "$CONFIG_FILE" > "$DC_ENV_FILE"
+    else
+      _DCEF=$DC_ALGOD_INDEXER_ENV_FILE
     fi
 
     cat <(echo -e "$INTRO_SEP" && cat "$_DCEF" && echo -e "$DC2EXT_SEP") <(cat "$EXTERNAL_ENV_FILE" && echo -e "$EXT2SB_SEP") "$CONFIG_FILE" > "$DC_ENV_FILE"
 
   }
 
-  setenv_dc() {
+  set_dcenv() {
     # Prepare the docker compose env subcommand string variable
     DC_ENV_SUBCMD=" --env-file $DC_ENV_FILE"
     if [ ! -f "$DC_ENV_FILE" ]; then
       err "Config file [$DC_ENV_FILE] not found. 'docker compose' command won't work properly."
       # DC_ENV_SUBCMD=" "
     fi
+
+  }
+
+  load_dcenv() {
+      if [ -z "$DC_ENV_FILE" ] || [ ! -f "$DC_ENV_FILE" ]; then
+        printc $default "WARNING: expected env file at $DC_ENV_FILE. Aborting."
+      else
+        # shellcheck source=/dev/null
+        source "$DC_ENV_FILE"
+      fi
 
   }
 
@@ -253,7 +270,8 @@ sandbox () {
   #   dc_pty algod exec //bin/bash
   # This is to ensure compatibility with Windows Msys
   dc () {
-    setenv_dc
+    set_dcenv
+    load_dcenv
 
     pwd
 
@@ -264,8 +282,6 @@ sandbox () {
     fi
 
     echo "$DOCKER_COMPOSE$VERBOSE_FLAG$DC_ENV_SUBCMD" "$@"
-    # this shouldn't be needed, should it?
-    source ./.env
     $DOCKER_COMPOSE$VERBOSE_FLAG$DC_ENV_SUBCMD "$@"
   }
 
@@ -275,7 +291,8 @@ sandbox () {
   # Do NOT used when the command input/output needs to be piped
   # or inside command substituions as this will fail on Windows Msys
   dc_pty () {
-    setenv_dc
+    set_dcenv
+    load_dcenv
 
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
@@ -330,12 +347,16 @@ sandbox () {
 
     # wait for startup
     while [[ $ATTEMPTS_REMAINING -gt 0 ]]; do
-      if [ "$INDEXER_DISABLED" != "true" ]; then
-        INDEXER_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$IPORT/health" -o /dev/null || true)
+      INDEXER_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$IPORT/health" -o /dev/null || true)
+      if [ "$INDEXER_DISABLED" == "true" ] || [ "$INDEXER_STATUS" == "200" ] ; then
+        INDEXER_OK=true
+      else
+        INDEXER_OK=false
       fi
 
+
       ALGOD_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$APORT/health" -o /dev/null || true)
-      if [ "$ALGOD_STATUS" == "200" ] && [ "$INDEXER_STATUS" == "200" ]; then
+      if [ "$ALGOD_STATUS" == "200" ] &&  [ "$INDEXER_OK" ] ; then
         ATTEMPTS_REMAINING=0
       else
         ((ATTEMPTS_REMAINING--))
@@ -343,13 +364,14 @@ sandbox () {
       fi
     done
 
-    if [ "$ALGOD_STATUS" != "200" ] || [ "$INDEXER_STATUS" != "200" ]; then
+    if [ "$ALGOD_STATUS" != "200" ] || [ ! "$INDEXER_OK" ]; then
       echo "the following did not start:"
       if [ "$ALGOD_STATUS" != "200" ]; then
         echo "* algorand node"
       fi
-      if [ "$INDEXER_DISABLED" != "true" ] && [ "$INDEXER_STATUS" != "200" ]; then
+      if [ ! "$INDEXER_OK" ]; then
         echo "* indexer node"
+        echo "INDEXER_OK=$INDEXER_OK"
       fi
       err "One or more services failed to start."
     fi
@@ -358,10 +380,15 @@ sandbox () {
   version_helper () {
     statusline "algod version"
     dc exec -T algod goal -v
-    statusline "Indexer version"
-    INDEXER_VERSION=$(dc exec -T indexer cmd/algorand-indexer/algorand-indexer daemon -v) && echo ${INDEXER_VERSION} || curl -s "localhost:$IPORT/health?pretty"
-    statusline "Postgres version"
-    dc exec -T indexer-db postgres -V
+    if [ "$INDEXER_DISABLED" == "true" ] ; then
+      statusline "indexer and postres - DISABLED"
+    else
+      statusline "Indexer version"
+      INDEXER_VERSION=$(dc exec -T indexer cmd/algorand-indexer/algorand-indexer daemon -v) && echo ${INDEXER_VERSION} || curl -s "localhost:$IPORT/health?pretty"
+
+      statusline "Postgres version"
+      dc exec -T indexer-db postgres -V
+    fi
   }
 
   # Given a network name attempts to fetch a catchpoint and catchup.
@@ -708,6 +735,8 @@ EOF
       ;;
 
     test)
+      load_dcenv
+
       statusline "Test command forwarding..."
       printc $default "~$ ${blue}docker exec -it algod uname -a"
       dc exec -T algod uname -a
@@ -721,10 +750,16 @@ EOF
       printc $default "~$ ${blue}curl ${teal}localhost:$KPORT/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
       curl "localhost:$KPORT/v1/wallets" -H "X-KMD-API-Token: $TOKEN"
 
-      statusline "\nTest Indexer REST API..."
-      printc $default "~$ ${blue}curl ${teal}\"localhost:$IPORT/health?pretty\""
-      curl "localhost:$IPORT/health?pretty"
+      if [ "$INDEXER_DISABLED" != "true" ]; then
+          statusline "Test Indexer REST API..."
+          printc $default "~$ ${blue}curl ${teal}localhost:$IPORT/health?pretty"
+          curl "localhost:$IPORT/health?pretty"
+      else
+          statusline "Indexer is disabled, skipping REST API test."
+      fi
+
       ;;
+
 
     enter)
       enter "$@"
@@ -760,7 +795,7 @@ EOF
 
     copyFrom|cpf)
       shift
-      statusline "Now copying  /opt/data/$1 from Algod container to $SANDBOX_DIR/" 
+      statusline "Now copying /opt/data/$1 from Algod container to $SANDBOX_DIR/" 
       docker cp "$(dc ps -q algod):/opt/data/$(basename $1)" "$1"
       ;;
 
