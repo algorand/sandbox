@@ -217,15 +217,19 @@ sandbox () {
       err "expected config file at $CONFIG_FILE"
     fi
 
+    INTRO_SEP="# --- DOCKER COMPOSE ENVIRONMENT VARIABLES FOR CONFIG_FILE=$CONFIG_FILE ---"
+    DC2EXT_SEP="\n# --- EXTERNAL ENVIRONMENT VARIABLES ---"
+    EXT2SB_SEP="\n# --- SANDBOX ENVIRONMENT VARIABLES COPIED FROM CONFIG_FILE=$CONFIG_FILE ---"
 
-    DC2EXT_SEP="\n\n# --- EXTERNAL ENVIRONMENT VARIABLES ---\n"
-    EXT2SB_SEP="\n\n# --- SANDBOX ENVIRONMENT VARIABLES ---\n"
-
+    _DCEF=$DC_ALGOD_INDEXER_ENV_FILE
     if [ "$INDEXER_DISABLED" == "true" ]; then
-      cat <(cat "$DC_ALGOD_ONLY_ENV_FILE" && echo -e "$DC2EXT_SEP") <(cat "$EXTERNAL_ENV_FILE" && echo -e "$EXT2SB_SEP") "$CONFIG_FILE" > "$DC_ENV_FILE"
-    else
-      cat <(cat "$DC_ALGOD_INDEXER_ENV_FILE" && echo -e "$DC2EXT_SEP") <(cat "$EXTERNAL_ENV_FILE" && echo -e "$EXT2SB_SEP") "$CONFIG_FILE" > "$DC_ENV_FILE"
+      _DCEF=$DC_ALGOD_ONLY_ENV_FILE
+    # else
+    #   echo "$INTRO_SEP" && cat "$DC_ALGOD_INDEXER_ENV_FILE" && echo -e "$DC2EXT_SEP") <(cat "$EXTERNAL_ENV_FILE" && echo -e "$EXT2SB_SEP") "$CONFIG_FILE" > "$DC_ENV_FILE"
     fi
+
+    cat <(echo -e "$INTRO_SEP" && cat "$_DCEF" && echo -e "$DC2EXT_SEP") <(cat "$EXTERNAL_ENV_FILE" && echo -e "$EXT2SB_SEP") "$CONFIG_FILE" > "$DC_ENV_FILE"
+
   }
 
   setenv_dc() {
@@ -527,7 +531,9 @@ sandbox () {
         statusline "Starting sandbox for: $1"
         NEW_CONFIG="$1"
       fi
-      CONFIG_FILE="$SANDBOX_DIR/config.$NEW_CONFIG" 
+      CONFIG_FILE="$SANDBOX_DIR/config.$NEW_CONFIG"
+      # shellcheck source=/dev/null
+      source "$CONFIG_FILE"
 
       # Verify config exists
       if [ ! -f "$CONFIG_FILE" ]; then
