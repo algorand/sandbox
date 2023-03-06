@@ -17,7 +17,7 @@ start_with_algod() {
   # wait for algod to start
   for i in 1 2 3 4 5; do
     wget "${ALGOD_ADDR}"/genesis -O genesis.json && break
-    echo "Algod not responding... waiting."
+    echo "Algod @ ${ALGOD_ADDR} not responding... waiting."
     sleep 15
   done
 

@@ -228,6 +228,16 @@ sandbox () {
     fi
   }
 
+  setenv_dc() {
+    # Prepare the docker compose env subcommand string variable
+    DC_ENV_SUBCMD=" --env-file $DC_ENV_FILE"
+    if [ ! -f "$DC_ENV_FILE" ]; then
+      err "Config file [$DC_ENV_FILE] not found. 'docker compose' command won't work properly."
+      # DC_ENV_SUBCMD=" "
+    fi
+
+  }
+
   # docker-compose alias
   # must only be used when no pseudo-TTY is required
   # in particular, when using 
@@ -239,17 +249,20 @@ sandbox () {
   #   dc_pty algod exec //bin/bash
   # This is to ensure compatibility with Windows Msys
   dc () {
-    if [ ! -f $DC_ENV_FILE ]; then
-    echo "WARNING: $DC_ENV_FILE not found. 'docker compose' command may not work"
-  fi
+    setenv_dc
 
-   VERBOSE_FLAG=""
+    pwd
+
+    VERBOSE_FLAG=""
     if [ $VERBOSE_MODE == 1 ]; then
       # --verbose is universally available since tag https://github.com/docker/compose-cli/releases/tag/v1.0.18 pr https://github.com/docker/compose-cli/pull/1830
       VERBOSE_FLAG=" --verbose"
     fi
 
-    $DOCKER_COMPOSE$VERBOSE_FLAG -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    echo "$DOCKER_COMPOSE$VERBOSE_FLAG$DC_ENV_SUBCMD" "$@"
+    # this shouldn't be needed, should it?
+    source ./.env
+    $DOCKER_COMPOSE$VERBOSE_FLAG$DC_ENV_SUBCMD "$@"
   }
 
   # dc_pty needs to be used instead of dc any time
@@ -258,15 +271,20 @@ sandbox () {
   # Do NOT used when the command input/output needs to be piped
   # or inside command substituions as this will fail on Windows Msys
   dc_pty () {
+    setenv_dc
+
     # note: cannot be replaced by $WINDOWS_PTY_PREFIX dc "$@"
     #       because winpty requires an executable as argument
-    $WINDOWS_PTY_PREFIX $DOCKER_COMPOSE -f "$SANDBOX_DIR/docker-compose.yml" "$@"
+    echo "$WINDOWS_PTY_PREFIX $DOCKER_COMPOSE$DC_ENV_SUBCMD" "$@"
+    $WINDOWS_PTY_PREFIX $DOCKER_COMPOSE$DC_ENV_SUBCMD "$@"
   }
 
   rebuild_if_needed () {
     if [ -f "$CLEAN_FILE" ]; then
       rm "$CLEAN_FILE"
       echo ".clean file found in sandbox directory. Rebuilding images..."
+      echo "* docker compose config"
+      dc config
       echo "* docker compose build --no-cache"
       dc build --no-cache
     elif [ $FRESH_INSTALL -eq 0 ]; then
@@ -424,6 +442,9 @@ sandbox () {
   }
 
   clean () {
+    # Clean up docker detritous and prepare for re-building the next time
+    # `up` is called by creating the sentinel file  `.clean`
+
     echo "* docker compose down"
     dc down -t 0                                               || true
     echo "* docker rmi sandbox_algod sandbox_indexer"
@@ -432,22 +453,8 @@ sandbox () {
     dc rm -f                                                   || true
     echo "* docker rmi $(docker images -f 'dangling=true' -q)"
     docker rmi "$(docker images -f 'dangling=true' -q)"        || true
-
-    echo "* deleting $ACTIVE_CONFIG_FILE:"
-    cat "$ACTIVE_CONFIG_FILE" 2>&1                             || true
-    rm "$ACTIVE_CONFIG_FILE"  2>&1                             || true
-
-    echo "* deleting $DC_ENV_FILE:"
-    cat "$DC_ENV_FILE"        2>&1                             || true
-    rm "$DC_ENV_FILE"         2>&1                             || true
-
     echo "clean function executed" > "$CLEAN_FILE";
   }
-
-
-echo "* deleting $DC_ENV_FILE:"
-cat -u "$DC_ENV_FILE" 2>&1 || true
-rm "$DC_ENV_FILE" > /dev/null 2>&1 || true
 
   # Enter attaches users to a shell in the desired container
   enter () {

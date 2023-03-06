@@ -10,6 +10,7 @@
 # if you provide arguments unused parameters.
 
 import argparse
+from copy import deepcopy
 import json
 import os
 from os.path import join
@@ -89,7 +90,7 @@ def algod_directories(network_dir):
     Compute data/kmd directories.
     """
     data_dir = join(network_dir, "Node")
-    follower_data_dir = join(network_dir, "Follower")
+    follower_data_dir = join(network_dir, "Follower")  # is this right? "Node" instead?
 
     kmd_dir = None
     options = [
@@ -107,7 +108,6 @@ def algod_directories(network_dir):
 
 
 def create_real_network(bin_dir, network_dir, genesis_file, drop_follower) -> List[str]:
-    # TODO: what about the follower node?
     target = join(network_dir, "Node")
 
     # Reset in case it exists
@@ -166,10 +166,14 @@ def create_private_network(bin_dir, network_dir, template, drop_follower) -> Lis
         raise e
 
     _, _, kmd_dir = algod_directories(network_dir)
-    return [
+    cmds = [
         f"{bin_dir}/goal network start -r {network_dir}",
         f"{bin_dir}/kmd start -t 0 -d {kmd_dir}",
     ]
+    # not sure what here?
+    # if not drop_follower:
+    #     cmds.append(f"{bin_dir}/goal network start -r {network_dir} -p Follower")
+    return cmds
 
 
 def configure_data_dir(
@@ -211,13 +215,16 @@ def configure_data_dir(
         f.write(json.dumps(node_config))
 
     if follower_port_or_drop is not None:
+        follower_config = deepcopy(node_config)
         follower_config_path = join(follower_dir, "config.json")
         node_config["EndpointAddress"] = f"follower:{follower_port_or_drop}"
+        # ZEPH: does this work???? -- it does not
+        # follower_config["EndpointAddress"] = f"0.0.0.0:{follower_port_or_drop}"
         print(
             f"writing to follower_config_path=[{follower_config_path}] config json: {node_config}"
         )
         with open(follower_config_path, "w") as f:
-            f.write(json.dumps(node_config))
+            f.write(json.dumps(follower_config))
 
     kmd_config_path = join(kmd_dir, "kmd_config.json")
     kmd_config = json.dumps(
