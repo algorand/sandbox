@@ -12,23 +12,25 @@
 #   ALGOD_TOKEN       - token to use when connecting to algod.
 set -e
 
+THIS=$(basename "$0")
+
 start_with_algod() {
-  echo "Starting indexer against algod."
+  echo "$THIS: starting indexer against algod (empty SNAPSHOT=$SNAPSHOT)"
 
   # wait for algod to start
   for i in 1 2 3 4 5; do
     wget "${ALGOD_ADDR}"/genesis -O genesis.json && break
-    echo "Algod not responding... waiting."
+    echo "$THIS: ($i) Algod not responding... waiting."
     sleep 15
   done
 
   if [ ! -f genesis.json ]; then
-    echo "Failed to create genesis file!"
+    echo "$THIS: Failed to create genesis file!"
     exit 1
   fi
 
-  echo "Algod detected, genesis.json downloaded."
-  echo "Starting algorand-indexer."
+  echo "$THIS: Algod detected, genesis.json downloaded."
+  echo "$THIS: Starting algorand-indexer."
   /tmp/algorand-indexer daemon \
     --dev-mode \
     --server ":$PORT" \
@@ -39,12 +41,12 @@ start_with_algod() {
 }
 
 import_and_start_readonly() {
-  echo "Starting indexer with DB."
+  echo "$THIS: Starting indexer with DB."
 
   # Extract the correct dataset
   ls -lh  /tmp
   mkdir -p /tmp/indexer-snapshot
-  echo "Extracting ${SNAPSHOT}"
+  echo "$THIS: Extracting ${SNAPSHOT}"
   tar -xf "${SNAPSHOT}" -C /tmp/indexer-snapshot
 
   /tmp/algorand-indexer import \
@@ -59,14 +61,17 @@ import_and_start_readonly() {
 }
 
 disabled() {
+  echo "$THIS: running disabled.go script in lieu of indexer"
   go run /tmp/disabled.go -port "$PORT" -code 200 -message "Indexer disabled for this configuration."
 }
+
+echo "$THIS: starting indexer container script"
 
 # Make sure data directory is available in case we're using a version that requires it.
 export INDEXER_DATA=/tmp/indexer-data
 mkdir -p ${INDEXER_DATA}
 
-if [ ! -z "$DISABLED" ]; then
+if [ -n "$DISABLED" ]; then
   disabled
 elif [ -z "${SNAPSHOT}" ]; then
   start_with_algod

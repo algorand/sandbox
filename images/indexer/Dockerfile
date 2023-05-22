@@ -20,4 +20,4 @@ COPY images/indexer/install.sh /tmp/install.sh
 # Install indexer binaries.
 RUN /tmp/install.sh
 
-CMD ["/tmp/start.sh"]
+CMD ["sh", "-c", "env && /tmp/start.sh"]
