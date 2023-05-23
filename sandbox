@@ -455,8 +455,6 @@ sandbox () {
         err "Cannot dump '$2'. Available containers: algod, indexer, indexer-db"
         ;;
     esac
-    
-    
   }
 
   set_catchpoint () {
