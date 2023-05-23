@@ -21,9 +21,11 @@ sandbox commands:
   test            -> runs some tests to demonstrate usage.
   enter [algod||indexer||indexer-db]
                   -> enter the sandbox container.
+  dump [algod||indexer||indexer-db]
+                  -> dump log information for a container.
   version         -> print binary versions.
-  copyTo <file>   -> copy <file> into the algod container. Useful for offline transactions & LogicSigs plus TEAL work.
-  copyFrom <file> -> copy <file> from the algod container. Useful for offline transactions & LogicSigs plus TEAL work.
+  copyTo <file>   -> copy <file> into the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
+  copyFrom <file> -> copy <file> from the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
 
 algorand commands:
   logs            -> stream algorand logs with the carpenter utility.
@@ -34,7 +36,7 @@ algorand commands:
 special flags for 'up' command:
   -v|--verbose           -> display verbose output when starting standbox.
   -s|--skip-fast-catchup -> skip catchup when connecting to real network.
-  -i|--interactive       -> start docker-compose in interactive mode.
+  -i|--interactive       -> start docker compose in interactive mode.
 ```
 
 Sandbox creates the following API endpoints:
