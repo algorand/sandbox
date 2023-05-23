@@ -444,6 +444,21 @@ sandbox () {
     fi
   }
 
+  # One-time dump of logs of a particular service to the shell
+  dump() {
+    case $2 in
+      algod|indexer|indexer-db)
+        dc logs "$2"
+        ;;
+
+      *)
+        err "Cannot dump '$2'. Available containers: algod, indexer, indexer-db"
+        ;;
+    esac
+    
+    
+  }
+
   set_catchpoint () {
     # TODO: Might be useful to allow providing the catchpoint with '-c'
     CATCHPOINT=$(curl -s ${FAST_CATCHUP_URL/CHANNEL/$1})
@@ -575,6 +590,8 @@ sandbox commands:
   test            -> runs some tests to demonstrate usage.
   enter [algod||indexer||indexer-db]
                   -> enter the sandbox container.
+  dump [algod||indexer||indexer-db]
+                  -> dump log information for a container.
   version         -> print binary versions.
   copyTo <file>   -> copy <file> into the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
   copyFrom <file> -> copy <file> from the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
@@ -677,6 +694,10 @@ EOF
 
     logs)
       logs "$@"
+      ;;
+
+    dump)
+      dump "$@"
       ;;
 
     status)
