@@ -26,7 +26,7 @@
     "Nodes": [
         {
             "Name": "Node",
-            "IsRelay": false,
+            "IsRelay": true,
             "Wallets": [
                 { 
                     "Name": "Wallet1", 
