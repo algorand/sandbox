@@ -16,7 +16,8 @@ echo "$THIS: starting conduit image install"
 # Sometimes conduit is disabled, detect the missing build config.
 if [ -z "${BRANCH}" ] || [ -z "${URL}" ]; then
   echo "Missing BRANCH or URL environment variable. Skipping install."
-  exit 1
+  # returning with 0 because it will run the disabled server.
+  exit 0
 fi
 
 git clone --single-branch --branch "${BRANCH}" "${URL}" /opt/conduit

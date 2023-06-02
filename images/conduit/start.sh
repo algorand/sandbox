@@ -26,6 +26,9 @@ mkdir -p ${CONDUIT_DATA}
 
 if [ -n "$DISABLED" ]; then
   disabled
+elif [ ! -f /tmp/conduit ]; then
+  echo "$THIS: binary not found at /tmp/conduit"
+  exit 1
 else
   /tmp/conduit init --importer algod --exporter postgresql > "${CONDUIT_DATA}"/conduit.yaml
   sed -i \

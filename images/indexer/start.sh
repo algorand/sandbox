@@ -24,6 +24,9 @@ mkdir -p ${INDEXER_DATA}
 
 if [ -n "$DISABLED" ]; then
   disabled
+elif [ ! -f /tmp/algorand-indexer ]; then
+  echo "$THIS: binary not found at /tmp/algorand-indexer"
+  exit 1
 else
   /tmp/algorand-indexer daemon \
     --dev-mode \

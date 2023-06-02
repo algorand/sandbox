@@ -103,10 +103,11 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, 
         f.write(token)
     with open(join(node_dir, 'algod.admin.token'), 'w') as f:
         f.write(token)
-    with open(join(follower_dir, 'algod.token'), 'w') as f:
-        f.write(token)
-    with open(join(follower_dir, 'algod.admin.token'), 'w') as f:
-        f.write(token)
+    if os.path.exists(follower_dir):
+        with open(join(follower_dir, 'algod.token'), 'w') as f:
+            f.write(token)
+        with open(join(follower_dir, 'algod.admin.token'), 'w') as f:
+            f.write(token)
     with open(join(kmd_dir, 'kmd.token'), 'w') as f:
         f.write(token)
 
