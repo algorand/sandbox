@@ -198,7 +198,7 @@ sandbox () {
     statusline "indexer - health"
     curl -s "localhost:$IPORT/health?pretty"
     statusline "conduit - imported metric"
-    curl -s "localhost:$CPORT/metrics"|grep "^conduit_imported_round"
+    curl -s "localhost:$CPORT/metrics"|grep -e "^conduit_imported_round" -e "^Conduit disabled"
   }
 
   # docker-compose alias
