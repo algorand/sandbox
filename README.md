@@ -207,7 +207,7 @@ export CONDUIT_SHA=""
 export CONDUIT_DISABLED=""
 ```
 
-Indexer and Conduit are always built from source since these can be done quickly. For most configurations, algod will be installed using our standard release channels, but building from source is also available by setting the git URL, branch and optionally a specific SHA commit hash.
+Indexer and Conduit are always built from source since it can be done quickly. For most configurations, algod will be installed using our standard release channels, but building from source is also available by setting the git URL, Branch and optionally a specific SHA commit hash.
 
 The **up** command looks for the config extension based on the argument provided. With a custom configuration pointed to a fork, the sandbox will start using the fork:
 
