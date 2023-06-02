@@ -2,22 +2,22 @@ ARG GO_VERSION=1.17.5
 FROM golang:$GO_VERSION-alpine
 
 # Environment variables used by install.sh
-ARG URL=https://github.com/algorand/indexer
+ARG URL=https://github.com/algorand/conduit
 ARG BRANCH=master
 ARG SHA=""
 
-ENV HOME /opt/indexer
-WORKDIR /opt/indexer
+ENV HOME /opt/conduit
+WORKDIR /opt/conduit
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apk add --no-cache git make bash
 
 # Copy files to container.
-COPY images/indexer/disabled.go /tmp/disabled.go
-COPY images/indexer/start.sh /tmp/start.sh
-COPY images/indexer/install.sh /tmp/install.sh
+COPY images/conduit/disabled.go /tmp/disabled.go
+COPY images/conduit/start.sh /tmp/start.sh
+COPY images/conduit/install.sh /tmp/install.sh
 
-# Install indexer binaries.
+# Install conduit binaries.
 RUN /tmp/install.sh
 
 CMD ["/tmp/start.sh"]

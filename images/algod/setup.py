@@ -56,7 +56,9 @@ def algod_directories(network_dir):
     else:
         kmd_dir=join(data_dir, options[0])
 
-    return data_dir, kmd_dir
+    follower_dir=join(network_dir, 'Follower')
+
+    return data_dir, kmd_dir, follower_dir
 
 
 def create_real_network(bin_dir, network_dir, template, genesis_file) -> List[str]:
@@ -71,7 +73,7 @@ def create_real_network(bin_dir, network_dir, template, genesis_file) -> List[st
     # Copy in the genesis file...
     shutil.copy(genesis_file, target)
 
-    data_dir, kmd_dir = algod_directories(network_dir)
+    data_dir, kmd_dir, _ = algod_directories(network_dir)
 
     return ['%s/goal node start -d %s' % (bin_dir, data_dir),
             '%s/kmd start -t 0 -d %s' % (bin_dir, kmd_dir)]
@@ -88,16 +90,22 @@ def create_private_network(bin_dir, network_dir, template) -> List[str]:
     # Use goal to create the private network.
     subprocess.check_call(['%s/goal network create -n sandnet -r %s -t %s' % (bin_dir, network_dir, template)], shell=True)
 
-    data_dir, kmd_dir = algod_directories(network_dir)
+    _, kmd_dir, _ = algod_directories(network_dir)
     return ['%s/goal network start -r %s' % (bin_dir, network_dir),
             '%s/kmd start -t 0 -d %s' % (bin_dir, kmd_dir)]
 
 
 def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, archival):
-    node_dir, kmd_dir = algod_directories(network_dir)
+    node_dir, kmd_dir, follower_dir = algod_directories(network_dir)
 
     # Set tokens
     with open(join(node_dir, 'algod.token'), 'w') as f:
+        f.write(token)
+    with open(join(node_dir, 'algod.admin.token'), 'w') as f:
+        f.write(token)
+    with open(join(follower_dir, 'algod.token'), 'w') as f:
+        f.write(token)
+    with open(join(follower_dir, 'algod.admin.token'), 'w') as f:
         f.write(token)
     with open(join(kmd_dir, 'kmd.token'), 'w') as f:
         f.write(token)
@@ -144,7 +152,7 @@ if __name__ == '__main__':
     print(f"Finished preparing start script '{args.start_script}' under /opt/")    
 
     # Create symlink
-    data_dir, _ = algod_directories(args.network_dir)
+    data_dir, _, _ = algod_directories(args.network_dir)
     print(f'Creating symlink {args.data_dir} -> {data_dir}')
     os.symlink(data_dir, args.data_dir)
 

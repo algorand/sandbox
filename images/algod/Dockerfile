@@ -12,6 +12,7 @@ ARG BOOTSTRAP_URL=""
 
 # Options for algod config
 ARG ALGOD_PORT=""
+ARG ALGOD_FOLLOWER_PORT="3999"
 ARG KMD_PORT=""
 ARG TOKEN=""
 ARG TEMPLATE=""
@@ -39,7 +40,10 @@ RUN /tmp/images/algod/install.sh \
     -s "${SHA}"
 
 # Configure network
-RUN sed -i "s/NETWORK_NUM_ROUNDS/$NETWORK_NUM_ROUNDS/" "//tmp/${TEMPLATE}" && \
+RUN sed -i \
+  -e "s/NETWORK_NUM_ROUNDS/$NETWORK_NUM_ROUNDS/" \
+  -e "s/ALGOD_FOLLOWER_PORT/$ALGOD_FOLLOWER_PORT/" \
+  "//tmp/${TEMPLATE}" && \
  /tmp/images/algod/setup.py \
  --bin-dir "$BIN_DIR" \
  --data-dir "/opt/data" \

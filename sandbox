@@ -15,6 +15,7 @@ FAST_CATCHUP_URL='https://algorand-catchpoints.s3.us-east-2.amazonaws.com/channe
 APORT="${ALGOD_PORT:-4001}"
 KPORT="${KMD_PORT:-4002}"
 IPORT="${INDEXER_PORT:-8980}"
+CPORT="${CONDUIT_PORT:-3998}"
 
 # Global flags
 USE_FAST_CATCHUP=1
@@ -196,6 +197,8 @@ sandbox () {
     goal_helper node status
     statusline "indexer - health"
     curl -s "localhost:$IPORT/health?pretty"
+    statusline "conduit - imported metric"
+    curl -s "localhost:$CPORT/metrics"|grep "^conduit_imported_round"
   }
 
   # docker-compose alias
@@ -282,6 +285,12 @@ sandbox () {
           INDEXER_STATUS="200"
       fi
 
+      if [ -z "$CONDUIT_DISABLED" ]; then
+          CONDUIT_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$CPORT/metrics" -o /dev/null || true)
+      else
+          CONDUIT_STATUS="200"
+      fi
+
       ALGOD_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$APORT/health" -o /dev/null || true)
       if [ "$ALGOD_STATUS" == "200" ] && [ "$INDEXER_STATUS" == "200" ]; then
         ATTEMPTS_REMAINING=0
@@ -297,7 +306,10 @@ sandbox () {
         echo "* algorand node"
       fi
       if [ "$INDEXER_STATUS" != "200" ]; then
-        echo "* indexer node"
+        echo "* indexer"
+      fi
+      if [ "$CONDUIT_STATUS" != "200" ]; then
+        echo "* conduit"
       fi
       err "One or more services failed to start."
     fi
@@ -410,17 +422,12 @@ sandbox () {
   enter () {
     CONTAINER=${2:-}
     if [ -z "$CONTAINER" ]; then
-        err "'enter' requires a container. Available containers: algod, indexer, indexer-db"
+        err "'enter' requires a container. Available containers: algod, conduit, indexer, indexer-db"
     fi
     case $CONTAINER in
-      algod)
-        statusline "Entering /bin/bash session in the algod container..."
-        dc_pty exec algod //bin/bash
-        return
-        ;;
-      indexer)
-        statusline "Entering /bin/bash session in the indexer container..."
-        dc_pty exec indexer //bin/bash
+      algod|indexer|conduit)
+        statusline "Entering /bin/bash session in the $CONTAINER container..."
+        dc_pty exec $CONTAINER //bin/bash
         return
         ;;
       indexer-db)
@@ -447,12 +454,24 @@ sandbox () {
   # One-time dump of logs of a particular service to the shell
   dump() {
     case $2 in
-      algod|indexer|indexer-db)
+      algod|indexer|conduit|indexer-db)
         dc logs "$2"
         ;;
 
       *)
-        err "Cannot dump '$2'. Available containers: algod, indexer, indexer-db"
+        err "Cannot dump '$2'. Available containers: algod, conduit, indexer, indexer-db"
+        ;;
+    esac
+  }
+
+  tail_f() {
+    case $2 in
+      algod|indexer|conduit|indexer-db)
+        dc logs --follow "$2"
+        ;;
+
+      *)
+        err "Cannot tail '$2'. Available containers: algod, conduit, indexer, indexer-db"
         ;;
     esac
   }
@@ -696,6 +715,10 @@ EOF
 
     dump)
       dump "$@"
+      ;;
+
+    tail)
+      tail_f "$@"
       ;;
 
     status)

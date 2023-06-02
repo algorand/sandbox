@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Build indexer and put binary in /tmp.
+# Build conduit and put binary in /tmp.
 #
 # Configured with environment variables:
 #   URL    - Git repository URL.
@@ -11,20 +11,20 @@ set -e
 START=$(date "+%s")
 THIS=$(basename "$0")
 
-echo "$THIS: starting indexer image install"
+echo "$THIS: starting conduit image install"
 
-# Sometimes indexer is disabled, detect the missing build config.
+# Sometimes conduit is disabled, detect the missing build config.
 if [ -z "${BRANCH}" ] || [ -z "${URL}" ]; then
   echo "Missing BRANCH or URL environment variable. Skipping install."
   exit 1
 fi
 
-git clone --single-branch --branch "${BRANCH}" "${URL}" /opt/indexer
+git clone --single-branch --branch "${BRANCH}" "${URL}" /opt/conduit
 if [ "${SHA}" != "" ]; then
   echo "Checking out ${SHA}"
   git checkout "${SHA}";
 fi
 make
-cp cmd/algorand-indexer/algorand-indexer /tmp
+cp cmd/conduit/conduit /tmp
 
-echo "$THIS: seconds it took to get to finish indexer image install: $(($(date "+%s") - START))s"
+echo "$THIS: seconds it took to get to finish conduit image install: $(($(date "+%s") - START))s"

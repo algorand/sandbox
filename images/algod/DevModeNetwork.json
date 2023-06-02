@@ -41,6 +41,11 @@
                     "ParticipationOnly": false 
                 }
             ]
+        },
+        {
+            "Name": "Follower",
+            "Wallets": [],
+            "ConfigJSONOverride": "{\"EnableFollowMode\":true,\"CatchupBlockValidateMode\":3,\"EndpointAddress\":\"0.0.0.0:ALGOD_FOLLOWER_PORT\"}"
         }
     ]
 }
