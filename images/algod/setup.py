@@ -98,12 +98,14 @@ def create_private_network(bin_dir, network_dir, template) -> List[str]:
 def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, archival):
     node_dir, kmd_dir, follower_dir = algod_directories(network_dir)
 
+    has_follower = os.path.exists(follower_dir)
+
     # Set tokens
     with open(join(node_dir, 'algod.token'), 'w') as f:
         f.write(token)
     with open(join(node_dir, 'algod.admin.token'), 'w') as f:
         f.write(token)
-    if os.path.exists(follower_dir):
+    if has_follower:
         with open(join(follower_dir, 'algod.token'), 'w') as f:
             f.write(token)
         with open(join(follower_dir, 'algod.admin.token'), 'w') as f:
@@ -114,7 +116,10 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, 
     # Setup config, inject port
     node_config_path = join(node_dir, "config.json")
     archival = 'true' if archival else 'false'
-    node_config = f'{{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "isIndexerActive":false, "EnableDeveloperAPI":true }}'    
+    if has_follower:
+        node_config = f'{{ "Version": 27, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "Archival":{archival}, "EnableDeveloperAPI":true, "NetAddress": "127.0.0.1:0", "DNSBootstrapID": "{bootstrap_url}" }}'
+    else:
+        node_config = f'{{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "EnableDeveloperAPI":true }}'
     print(f"writing to node_config_path=[{node_config_path}] config json: {node_config}")
     with open(node_config_path, "w") as f:
         f.write(node_config)
@@ -150,7 +155,7 @@ if __name__ == '__main__':
             f.write(f'{line}\n')
         f.write('sleep infinity\n')
     os.chmod(args.start_script, 0o755)
-    print(f"Finished preparing start script '{args.start_script}' under /opt/")    
+    print(f"Finished preparing start script '{args.start_script}' under /opt/")
 
     # Create symlink
     data_dir, _, _ = algod_directories(args.network_dir)
@@ -159,10 +164,10 @@ if __name__ == '__main__':
 
     # Configure network
     configure_data_dir(
-        args.network_dir, 
-        args.network_token, 
-        args.algod_port, 
-        args.kmd_port, 
+        args.network_dir,
+        args.network_token,
+        args.algod_port,
+        args.kmd_port,
         args.bootstrap_url,
         args.archival,
     )

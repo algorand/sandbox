@@ -28,17 +28,17 @@
             "Name": "Node",
             "IsRelay": true,
             "Wallets": [
-                { 
-                    "Name": "Wallet1", 
-                    "ParticipationOnly": false 
+                {
+                    "Name": "Wallet1",
+                    "ParticipationOnly": false
                 },
-                { 
-                    "Name": "Wallet2", 
-                    "ParticipationOnly": false 
+                {
+                    "Name": "Wallet2",
+                    "ParticipationOnly": false
                 },
-                { 
-                    "Name": "Wallet3", 
-                    "ParticipationOnly": false 
+                {
+                    "Name": "Wallet3",
+                    "ParticipationOnly": false
                 }
             ]
         },
