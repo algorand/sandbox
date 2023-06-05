@@ -37,6 +37,10 @@ export INDEXER_URL=""
 export INDEXER_BRANCH=""
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
+export CONDUIT_URL=""
+export CONDUIT_BRANCH=""
+export CONDUIT_SHA=""
+export CONDUIT_DISABLED=""
 
 ##################################################
 # Determine the correct docker command (or fail) #
