@@ -368,8 +368,58 @@ sandbox () {
       fi
     done
 
-    overwrite "* Account processing complete."
+    overwrite "* Account download complete."
+    # Newline for the progress bar to use.
+    echo ""
 
+    DONE=false
+    STARTED=false
+    while [ $DONE == "false" ]; do
+      sleep 0.1
+
+      local RES
+      local TOTAL
+      local PROGRESS
+
+      RES="$(status_helper)"
+      STARTED=true
+      TOTAL=$(echo $RES | grep -o 'Catchpoint total KVs: [[:digit:]]*' | cut -d':' -f 2 )
+      PROGRESS=$(echo $RES | grep -o 'Catchpoint KVs processed: [[:digit:]]*' | cut -d':' -f 2 )
+
+      if [ $TOTAL == $PROGRESS ]; then
+        DONE=true
+      else
+        progress_bar "Processing boxes:" "$PROGRESS" "$TOTAL"
+      fi
+    done
+
+    overwrite "* Box processing complete."
+
+    # Newline for the progress bar to use.
+    echo ""
+
+    DONE=false
+    STARTED=false
+    while [ $DONE == "false" ]; do
+      sleep 0.1
+
+      local RES
+      local TOTAL
+      local PROGRESS
+
+      RES="$(status_helper)"
+      STARTED=true
+      TOTAL=$(echo $RES | grep -o 'Catchpoint total accounts: [[:digit:]]*' | cut -d':' -f 2 )
+      PROGRESS=$(echo $RES | grep -o 'Catchpoint accounts verified: [[:digit:]]*' | cut -d':' -f 2 )
+
+      if [ $TOTAL == $PROGRESS ]; then
+        DONE=true
+      else
+        progress_bar "Verifying accounts:" "$PROGRESS" "$TOTAL"
+      fi
+    done
+
+    overwrite "* Account validation complete."
     # Newline for the progress bar to use.
     echo ""
 
