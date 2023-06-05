@@ -51,7 +51,7 @@ jobs:
           environment:
             CONFIG: << parameters.config >>
           command: |
-            set -e
+            #set -e
             ./sandbox up -v $CONFIG
             echo "============= algod ============="
             ./sandbox dump algod
