@@ -311,12 +311,14 @@ sandbox () {
   }
 
   version_helper () {
+    set +e
     statusline "algod version"
     dc exec -T algod goal -v
     statusline "Indexer version"
     INDEXER_VERSION=$(dc exec -T indexer cmd/algorand-indexer/algorand-indexer daemon -v) && echo ${INDEXER_VERSION} || curl -s "localhost:$IPORT/health?pretty"
     statusline "Postgres version"
     dc exec -T indexer-db postgres -V
+    set -e
   }
 
   # Given a network name attempts to fetch a catchpoint and catchup.
