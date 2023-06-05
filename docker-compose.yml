@@ -41,7 +41,7 @@ services:
     restart: unless-stopped
     environment:
       DISABLED: "${INDEXER_DISABLED}"
-      PORT: ${INDEXER_PORT:-8980}
+      PORT: "8980"
       CONNECTION_STRING: "host=indexer-db port=5432 user=algorand password=algorand dbname=indexer_db sslmode=disable"
       INDEXER_ENABLE_ALL_PARAMETERS: "${INDEXER_ENABLE_ALL_PARAMETERS:-false}"
     depends_on:
@@ -62,7 +62,7 @@ services:
     restart: unless-stopped
     environment:
       DISABLED: "${CONDUIT_DISABLED}"
-      PORT: ${CONDUIT_PORT:-3998}
+      PORT: "3998"
       CONNECTION_STRING: "host=indexer-db port=5432 user=algorand password=algorand dbname=indexer_db sslmode=disable"
       ALGOD_ADDR: "algod:3999"
       ALGOD_ADMIN_TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
