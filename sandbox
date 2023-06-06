@@ -207,7 +207,7 @@ sandbox () {
 
   # docker-compose alias
   # must only be used when no pseudo-TTY is required
-  # in particular, when using 
+  # in particular, when using
   #   dc ... exec ...
   # the flag -T needs to be passed
   # Concretely, to execute non-interactive commands:
@@ -267,11 +267,10 @@ sandbox () {
       then
           echo "tealdbg debug command called without --listen option therefore sandbox attached the option automatically!"
           dc exec -T algod tealdbg  "$@" --listen 0.0.0.0
-          
       else
           dc exec -T algod tealdbg "$@"
-      fi        
-    fi    
+      fi
+    fi
   }
 
   # wait until indexer/algod health endpoints report 200
@@ -661,10 +660,12 @@ sandbox commands:
   reset           -> reset the containers to their initial state.
   clean           -> stops and deletes containers and data directory.
   test            -> runs some tests to demonstrate usage.
-  enter [algod||indexer||indexer-db]
+  enter [algod||conduit||indexer||indexer-db]
                   -> enter the sandbox container.
-  dump [algod||indexer||indexer-db]
+  dump [algod||conduit||indexer||indexer-db]
                   -> dump log information for a container.
+  tail [algod||conduit||indexer||indexer-db]
+                  -> tail log information for a container.
   version         -> print binary versions.
   copyTo <file>   -> copy <file> into the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
   copyFrom <file> -> copy <file> from the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
@@ -749,11 +750,11 @@ EOF
 
       TOKEN=$(cat "$SANDBOX_DIR/config/token")
       statusline "Test Algod REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:$APORT/v2/status?pretty -H \"X-Algo-API-Token: $TOKEN\""
+      printc $default "~$ ${blue}curl ${teal}\"localhost:$APORT/v2/status?pretty\" -H \"X-Algo-API-Token: $TOKEN\""
       curl "localhost:$APORT/v2/status?pretty" -H "X-Algo-API-Token: $TOKEN"
 
       statusline "Test KMD REST API..."
-      printc $default "~$ ${blue}curl ${teal}localhost:$KPORT/v1/wallets -H \"X-KMD-API-Token: $TOKEN\""
+      printc $default "~$ ${blue}curl ${teal}\"localhost:$KPORT/v1/wallets\" -H \"X-KMD-API-Token: $TOKEN\""
       curl "localhost:$KPORT/v1/wallets" -H "X-KMD-API-Token: $TOKEN"
 
       statusline "\nTest Indexer REST API..."
@@ -803,7 +804,7 @@ EOF
 
     copyFrom|cpf)
       shift
-      statusline "Now copying  /opt/data/$1 from Algod container to $SANDBOX_DIR/" 
+      statusline "Now copying  /opt/data/$1 from Algod container to $SANDBOX_DIR/"
       docker cp "$(dc ps -q algod):/opt/data/$(basename $1)" "$1"
       ;;
 
