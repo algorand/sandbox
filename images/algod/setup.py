@@ -117,9 +117,9 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, 
     node_config_path = join(node_dir, "config.json")
     archival = 'true' if archival else 'false'
     if has_follower:
-        node_config = f'{{ "Version": 27, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "Archival":{archival}, "EnableDeveloperAPI":true, "NetAddress": "127.0.0.1:0", "DNSBootstrapID": "{bootstrap_url}", "EnableTxnEvalTracer": true, "MaxAcctLookback": 256 }}'
+        node_config = f'{{ "Version": 27, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "Archival":{archival}, "EnableDeveloperAPI":true, "NetAddress": "127.0.0.1:0", "DNSBootstrapID": "{bootstrap_url}"}}'
     else:
-        node_config = f'{{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "EnableDeveloperAPI":true, "EnableTxnEvalTracer": true, "MaxAcctLookback": 256 }}'
+        node_config = f'{{ "Version": 12, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "EnableDeveloperAPI":true}}'
     print(f"writing to node_config_path=[{node_config_path}] config json: {node_config}")
     with open(node_config_path, "w") as f:
         f.write(node_config)
