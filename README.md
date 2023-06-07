@@ -19,10 +19,12 @@ sandbox commands:
   reset           -> reset the containers to their initial state.
   clean           -> stops and deletes containers and data directory.
   test            -> runs some tests to demonstrate usage.
-  enter [algod||indexer||indexer-db]
+  enter [algod||conduit||indexer||indexer-db]
                   -> enter the sandbox container.
-  dump [algod||indexer||indexer-db]
+  dump [algod||conduit||indexer||indexer-db]
                   -> dump log information for a container.
+  tail [algod||conduit||indexer||indexer-db]
+                  -> tail log information for a container.
   version         -> print binary versions.
   copyTo <file>   -> copy <file> into the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
   copyFrom <file> -> copy <file> from the algod. Useful for offline transactions, offline LogicSigs & TEAL work.
@@ -49,6 +51,11 @@ Sandbox creates the following API endpoints:
   - token: `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`
 - `indexer`:
   - address: `http://localhost:8980`
+- `algod (follower)`:
+  - address: `http://localhost:3999`
+  - token: `aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`
+- `conduit`:
+  - address: `http://localhost:3998/metrics`
 
 ## Getting Started
 
@@ -160,7 +167,7 @@ If no configuration is specified the sandbox will be started with the `release` 
 
 The private network environment creates and funds a number of accounts in the algod containers local `kmd` ready to use for testing transactions. These accounts can be reviewed using `./sandbox goal account list`.
 
-Private networks also include an `Indexer` service configured to synchronize against the private network. Because it doesn't require catching up to one of the long running networks it also starts very quickly.
+Private networks also include an `Indexer` API service configured to synchronize against the private network. Because it doesn't require catching up to one of the long running networks it also starts very quickly.
 
 The `dev` configuration starts a private network using the latest release with these algod configuration customizations:
 * `"DevMode": true` - In dev mode, every transaction being sent to the node automatically generates a new block, rather than wait for a new round in real time. This is extremely useful for fast e2e testing of an application.
@@ -172,10 +179,7 @@ It takes a long time to generate participation keys, so the default configuratio
 
 The `mainnet`, `testnet`, `betanet`, and `devnet` configurations configure the sandbox to connect to one of those long running networks. Once started it will automatically attempt to catchup to the latest round. Catchup tends to take a while and a progress bar will be displayed to illustrate of the progress.
 
-Due to technical limitations, this configuration does not contain preconfigured accounts that may be immediately transact with, and Indexer is not available. A new wallet and accounts may be created or imported at will using the [goal wallet new](https://developer.algorand.org/docs/clis/goal/wallet/new/) command to create a wallet and the [goal account import](https://developer.algorand.org/docs/clis/goal/account/import/) or [goal account new](https://developer.algorand.org/docs/clis/goal/account/new/) commands.
-
-_Note_
-A newly created account will not be funded and wont be able to submit transactions until it is. If a `testnet` configuration is used, please visit the [TestNet Dispenser](https://bank.testnet.algorand.network/) to fund the newly created account.
+Due to technical limitations, this configuration does not contain preconfigured accounts that may be immediately transact with, and Indexer is not available. A new wallet and accounts may be created or imported at will using the [goal wallet new](https://developer.algorand.org/docs/clis/goal/wallet/new/) command to create a wallet and the [goal account import](https://developer.algorand.org/docs/clis/goal/account/import/) or [goal account new](https://developer.algorand.org/docs/clis/goal/account/new/) commands. If a `testnet` configuration is used, please visit the [TestNet Dispenser](https://bank.testnet.algorand.network/) to fund the newly created account.
 
 ## Advanced configurations
 
@@ -197,9 +201,13 @@ export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 export INDEXER_ENABLE_ALL_PARAMETERS="false"
+export CONDUIT_URL="https://github.com/algorand/conduit"
+export CONDUIT_BRANCH="master"
+export CONDUIT_SHA=""
+export CONDUIT_DISABLED=""
 ```
 
-Indexer is always built from source since it can be done quickly. For most configurations, algod will be installed using our standard release channels, but building from source is also available by setting the git URL, Branch and optionally a specific SHA commit hash.
+Indexer and Conduit are always built from source since these can be done quickly. For most configurations, algod will be installed using our standard release channels, but building from source is also available by setting the git URL, branch and optionally a specific SHA commit hash.
 
 The **up** command looks for the config extension based on the argument provided. With a custom configuration pointed to a fork, the sandbox will start using the fork:
 
@@ -210,11 +218,15 @@ export ALGOD_BRANCH="my-test-branch"
 export ALGOD_SHA=""
 export ALGOD_BOOTSTRAP_URL=""
 export ALGOD_GENESIS_FILE=""
-export INDEXER_URL="https://github.com/<user>/go-algorand"
+export INDEXER_URL="https://github.com/<user>/indexer"
 export INDEXER_BRANCH="develop"
 export INDEXER_SHA=""
 export INDEXER_DISABLED=""
 export INDEXER_ENABLE_ALL_PARAMETERS="false"
+export CONDUIT_URL="https://github.com/<user>/conduit"
+export CONDUIT_BRANCH="master"
+export CONDUIT_SHA=""
+export CONDUIT_DISABLED=""
 ```
 
 ### Indexer Query Parameters
@@ -259,7 +271,7 @@ these commands will create and copy a signed logic transaction file, created by 
 
 ## Errors
 
-If something goes wrong, check the `sandbox.log` file for details.
+If something goes wrong, check the `sandbox.log` file and `./sandbox dump [service]` for details.
 
 ## Debugging for teal developers
 
