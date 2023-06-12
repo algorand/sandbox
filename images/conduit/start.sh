@@ -37,6 +37,7 @@ else
     -e "s/addr: \":9999\"/addr: \":$PORT\"/" \
     -e "s/mode: OFF/mode: ON/" \
     -e "s/host= port=5432 user= password= dbname=/$CONNECTION_STRING/" \
+    -e "s/retry-delay: \"1s\"/retry-delay: \"0s\"/" \
     "${CONDUIT_DATA}"/conduit.yaml
 
   cat "${CONDUIT_DATA}"/conduit.yaml
