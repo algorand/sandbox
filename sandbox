@@ -282,20 +282,12 @@ sandbox () {
     # wait for startup
     while [[ $ATTEMPTS_REMAINING -gt 0 ]]; do
 
-      if [ -z "$INDEXER_DISABLED" ]; then
-          INDEXER_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$IPORT/health" -o /dev/null || true)
-      else
-          INDEXER_STATUS="200"
-      fi
+      INDEXER_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$IPORT/health" -o /dev/null || true)
 
-      if [ -z "$CONDUIT_DISABLED" ]; then
-          CONDUIT_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$CPORT/metrics" -o /dev/null || true)
-      else
-          CONDUIT_STATUS="200"
-      fi
+      CONDUIT_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$CPORT/metrics" -o /dev/null || true)
 
       ALGOD_STATUS=$(curl -sL -w "%{http_code}\n" "localhost:$APORT/health" -o /dev/null || true)
-      if [ "$ALGOD_STATUS" == "200" ] && [ "$INDEXER_STATUS" == "200" ]; then
+      if [ "$ALGOD_STATUS" == "200" ] && [ "$INDEXER_STATUS" == "200" ] && [ "$CONDUIT_STATUS" == "200" ]; then
         ATTEMPTS_REMAINING=0
       else
         ((ATTEMPTS_REMAINING--))
@@ -303,7 +295,7 @@ sandbox () {
       fi
     done
 
-    if [ "$ALGOD_STATUS" != "200" ] || [ "$INDEXER_STATUS" != "200" ]; then
+    if [ "$ALGOD_STATUS" != "200" ] || [ "$INDEXER_STATUS" != "200" ] || [ "$CONDUIT_STATUS" != "200" ]; then
       echo "the following did not start:"
       if [ "$ALGOD_STATUS" != "200" ]; then
         echo "* algorand node"
@@ -606,10 +598,8 @@ sandbox () {
       wait_for_services
       echo "* services ready!"
 
-      set +e
       version_helper
       status_helper
-      set -e
 
       if [ -z $NETWORK_GENESIS_FILE ]; then
         #####################
