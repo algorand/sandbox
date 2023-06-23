@@ -598,10 +598,8 @@ sandbox () {
       wait_for_services
       echo "* services ready!"
 
-      set +e
       version_helper
       status_helper
-      set -e
 
       if [ -z $NETWORK_GENESIS_FILE ]; then
         #####################
