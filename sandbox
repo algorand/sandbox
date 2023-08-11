@@ -241,7 +241,7 @@ sandbox () {
     if [ -f "$CLEAN_FILE" ]; then
       rm "$CLEAN_FILE"
       echo ".clean file found in sandbox directory. Rebuilding images..."
-      echo "* docker compose build --no-cache"
+      echo "* docker compose build --no-cache --progress plain"
       dc build --no-cache
     elif [ $FRESH_INSTALL -eq 0 ]; then
       echo ".clean file NOT FOUND. Sandbox images will NOT be rebuilt."
