@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+alias docker-compose='docker run --rm \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v "$PWD:$PWD" \
+    -w="$PWD" \
+    docker/compose:1.27.4'
+
+
 #####################
 # Script constants. #
 #####################
@@ -45,14 +52,6 @@ export CONDUIT_DISABLED=""
 ##################################################
 # Determine the correct docker command (or fail) #
 ##################################################
-if [ -x "$(command -v docker-compose)" ]; then
-  DOCKER_COMPOSE="docker-compose"
-elif [ "$(docker compose help &>/dev/null; echo "$?")" -eq 16 ]; then
-  DOCKER_COMPOSE="docker compose"
-else
-  echo 'Error: docker compose is not installed.' >&2
-  exit 1
-fi
 
 ######################################
 # Compatibility with Windows / MSYS2 #
@@ -241,7 +240,7 @@ sandbox () {
     if [ -f "$CLEAN_FILE" ]; then
       rm "$CLEAN_FILE"
       echo ".clean file found in sandbox directory. Rebuilding images..."
-      echo "* docker compose build --no-cache --progress plain"
+      echo "* docker-compose build --no-cache --progress plain"
       dc build --no-cache --progress plain
     elif [ $FRESH_INSTALL -eq 0 ]; then
       echo ".clean file NOT FOUND. Sandbox images will NOT be rebuilt."
@@ -451,11 +450,11 @@ sandbox () {
   }
 
   clean () {
-    echo "* docker compose down"
+    echo "* docker-compose down"
     dc down -t 0                                   || true
     echo "* docker rmi sandbox_algod sandbox_indexer"
     docker rmi sandbox_algod sandbox_indexer                   || true
-    echo "* docker compose rm -f"
+    echo "* docker-compose rm -f"
     dc rm -f                                       || true
     echo "* docker rmi $(docker images -f "dangling=true" -q)"
     docker rmi $(docker images -f "dangling=true" -q)          || true
@@ -585,12 +584,12 @@ sandbox () {
         echo "see sandbox.log for detailed progress, or use -v."
         echo "" # The spinner will rewrite this line.
         rebuild_if_needed >> "$SANDBOX_LOG" 2>&1               & spinner
-        echo "* docker compose up -d"   >> "$SANDBOX_LOG"
+        echo "* docker-compose up -d"   >> "$SANDBOX_LOG"
         dc up -d                        >> "$SANDBOX_LOG" 2>&1 & spinner
         overwrite "* docker containers started!"
       else
         rebuild_if_needed
-        echo "* running: docker compose up [--verbose] -d"
+        echo "* running: docker-compose up [--verbose] -d"
         dc up -d
       fi
 
@@ -669,7 +668,7 @@ algorand commands:
 special flags for 'up' command:
   -v|--verbose           -> display verbose output when starting standbox.
   -s|--skip-fast-catchup -> skip catchup when connecting to real network.
-  -i|--interactive       -> start docker compose in interactive mode.
+  -i|--interactive       -> start docker-compose in interactive mode.
 EOF
   }
 
