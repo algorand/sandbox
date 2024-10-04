@@ -125,7 +125,7 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, 
         f.write(node_config)
 
     kmd_config_path = join(kmd_dir, 'kmd_config.json')
-    kmd_config = f'{{ "address":"0.0.0.0:{kmd_port}",  "allowed_origins":["*"], "enable_private_network_access_header": true }}'
+    kmd_config = f'{{ "address":"0.0.0.0:{kmd_port}",  "allowed_origins":["*"], "allow_header_pna": true }}'
     print(f"writing to kmd_config_path=[{kmd_config_path}] config json: {kmd_config}")
     with open(kmd_config_path, 'w') as f:
         f.write(kmd_config)
