@@ -3,10 +3,10 @@ version: 2.1
 parameters:
   ubuntu_focal_machine:
     type: string
-    default: 'ubuntu-2004:202111-02'
+    default: 'ubuntu-2404:2024.05.1'
   ubuntu_jammy_machine:
     type: string
-    default: 'ubuntu-2204:2022.04.2'
+    default: 'ubuntu-2404:2024.05.1'
 
 workflows:
   circleci_build_and_test:
