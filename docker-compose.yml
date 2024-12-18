@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   algod:
     container_name: "${ALGOD_CONTAINER:-algorand-sandbox-algod}"
