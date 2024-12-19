@@ -29,7 +29,7 @@ services:
     container_name: "${INDEXER_CONTAINER:-algorand-sandbox-indexer}"
     build:
       context: .
-      dockerfile: ./images/indexer/Dockerfile
+      dockerfile: ./images/indexer/IndexerDockerfile
       args:
         URL: "${INDEXER_URL}"
         BRANCH: "${INDEXER_BRANCH}"
