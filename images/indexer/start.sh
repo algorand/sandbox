@@ -30,6 +30,7 @@ elif [ ! -f /tmp/algorand-indexer ]; then
 else
   /tmp/algorand-indexer daemon \
     --dev-mode \
+	--enable-private-network-access-header \
     --server ":$PORT" \
     -P "$CONNECTION_STRING"
 fi
