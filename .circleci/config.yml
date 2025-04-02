@@ -15,7 +15,7 @@ workflows:
           name: 'spin_up_<< matrix.config >>_<< matrix.machine >>'
           matrix:
             parameters:
-              config: ['', 'betanet', 'testnet', 'devnet', 'dev', 'beta', 'release', 'nightly']
+              config: ['', 'betanet', 'devnet', 'dev', 'beta', 'release', 'nightly']
               machine: [<< pipeline.parameters.ubuntu_focal_machine >>, << pipeline.parameters.ubuntu_jammy_machine >>]
 
 jobs:
