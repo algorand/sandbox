@@ -43,11 +43,9 @@ export CONDUIT_SHA=""
 export CONDUIT_DISABLED=""
 
 ##################################################
-# Determine the correct docker command (or fail) #
+# Determine docker installed or fail #
 ##################################################
-if [ -x "$(command -v docker-compose)" ]; then
-  DOCKER_COMPOSE="docker-compose"
-elif [ "$(docker compose help &>/dev/null; echo "$?")" -eq 16 ]; then
+if [ "$(docker compose --help &>/dev/null; echo "$?")" -eq 0 ]; then
   DOCKER_COMPOSE="docker compose"
 else
   echo 'Error: docker compose is not installed.' >&2

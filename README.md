@@ -2,7 +2,7 @@
 
 This is a fast way to create and configure an Algorand development environment with [Algod](https://github.com/algorand/go-algorand) and [Indexer](https://github.com/algorand/indexer).
 
-**Docker Compose** _MUST_ be installed. [Instructions](https://docs.docker.com/compose/install/).
+**Docker Compose V2** _MUST_ be installed. [Instructions](https://docs.docker.com/compose/install/).
 
 On a _Windows_ machine, **Docker Desktop** comes with the necessary tools. Please see the [Windows](#windows) section in getting started for more details.
 
@@ -61,7 +61,7 @@ Sandbox creates the following API endpoints:
 
 ### Ubuntu and macOS
 
-Make sure the docker daemon is running and docker-compose is installed.
+Make sure the docker daemon is running and docker compose is installed.
 
 Open a terminal and run:
 
