@@ -14,6 +14,7 @@ services:
         TEMPLATE: "${NETWORK_TEMPLATE:-images/algod/template.json}"
         NETWORK_NUM_ROUNDS: "${NETWORK_NUM_ROUNDS:-30000}"
         NODE_ARCHIVAL: "${NODE_ARCHIVAL}"
+        MAX_ACCOUNT_LOOKBACK: "${MAX_ACCOUNT_LOOKBACK}"
         TOKEN: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         ALGOD_PORT: "4001"
         KMD_PORT: "4002"
