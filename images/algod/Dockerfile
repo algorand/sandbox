@@ -18,6 +18,7 @@ ARG TOKEN=""
 ARG TEMPLATE=""
 ARG NETWORK_NUM_ROUNDS="30000"
 ARG NODE_ARCHIVAL=""
+ARG MAX_ACCOUNT_LOOKBACK=256
 
 RUN echo "Installing from source. ${URL} -- ${BRANCH}"
 ENV BIN_DIR="$HOME/node"
@@ -55,7 +56,8 @@ RUN sed -i \
  --kmd-port "${KMD_PORT}" \
  --bootstrap-url "${BOOTSTRAP_URL}" \
  --genesis-file "/tmp/${GENESIS_FILE}" \
- --archival "${NODE_ARCHIVAL}"
+ --archival "${NODE_ARCHIVAL}" \
+ --max-account-lookback "${MAX_ACCOUNT_LOOKBACK}"
 
 ENV PATH="$BIN_DIR:${PATH}"
 WORKDIR /opt/data
