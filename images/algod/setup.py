@@ -36,6 +36,7 @@ parser.add_argument('--network-dir', required=True, help='Path to create network
 parser.add_argument('--bootstrap-url', required=True, help='DNS Bootstrap URL, empty for private networks.')
 parser.add_argument('--genesis-file', required=True, help='Genesis file used by the network.')
 parser.add_argument('--archival', type=bool, default=False, help='When True, bootstrap an archival node.')
+parser.add_argument('--max-account-lookback', required=True, help='Max account lookback range for account states on the node.')
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -95,7 +96,7 @@ def create_private_network(bin_dir, network_dir, template) -> List[str]:
             '%s/kmd start -t 0 -d %s' % (bin_dir, kmd_dir)]
 
 
-def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, archival):
+def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, archival, max_account_lookback):
     node_dir, kmd_dir, follower_dir = algod_directories(network_dir)
 
     has_follower = os.path.exists(follower_dir)
@@ -117,9 +118,9 @@ def configure_data_dir(network_dir, token, algod_port, kmd_port, bootstrap_url, 
     node_config_path = join(node_dir, "config.json")
     archival = 'true' if archival else 'false'
     if has_follower:
-        node_config = f'{{ "Version": 34, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "EnablePrivateNetworkAccessHeader": true, "Archival":{archival}, "EnableDeveloperAPI":true, "NetAddress": "127.0.0.1:0", "DNSBootstrapID": "{bootstrap_url}", "EnableTxnEvalTracer": true, "MaxAcctLookback": 256}}'
+        node_config = f'{{ "Version": 34, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "EnablePrivateNetworkAccessHeader": true, "Archival":{archival}, "EnableDeveloperAPI":true, "NetAddress": "127.0.0.1:0", "DNSBootstrapID": "{bootstrap_url}", "EnableTxnEvalTracer": true, "MaxAcctLookback": {max_account_lookback}}}'
     else:
-        node_config = f'{{ "Version": 34, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "EnablePrivateNetworkAccessHeader": true, "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "EnableDeveloperAPI":true, "EnableTxnEvalTracer": true, "MaxAcctLookback": 256}}'
+        node_config = f'{{ "Version": 34, "GossipFanout": 1, "EndpointAddress": "0.0.0.0:{algod_port}", "EnablePrivateNetworkAccessHeader": true, "DNSBootstrapID": "{bootstrap_url}", "IncomingConnectionsLimit": 0, "Archival":{archival}, "EnableDeveloperAPI":true, "EnableTxnEvalTracer": true, "MaxAcctLookback": {max_account_lookback}}}'
     print(f"writing to node_config_path=[{node_config_path}] config json: {node_config}")
     with open(node_config_path, "w") as f:
         f.write(node_config)
@@ -170,5 +171,6 @@ if __name__ == '__main__':
         args.kmd_port,
         args.bootstrap_url,
         args.archival,
+        args.max_account_lookback,
     )
 
