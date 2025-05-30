@@ -1,4 +1,4 @@
-ARG GO_VERSION=1.23.8
+ARG GO_VERSION=1.23.9
 FROM golang:$GO_VERSION-alpine
 
 # Environment variables used by install.sh
