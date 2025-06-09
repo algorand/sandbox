@@ -1,0 +1,30 @@
+name: CI Pull Request
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  push:
+    branches: [ main, master ]
+
+jobs:
+  spin_up:
+    runs-on: ${{ matrix.machine }}
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        config: ['', 'betanet', 'devnet', 'dev', 'beta', 'release', 'nightly']
+        machine: ['ubuntu-24.04', 'ubuntu-22.04']
+      fail-fast: false
+    
+    name: 'spin_up_${{ matrix.config }}_${{ matrix.machine }}'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Stand up sandbox
+        timeout-minutes: 30
+        env:
+          CONFIG: ${{ matrix.config }}
+        run: |
+          bash ./.github/scripts/test.sh
