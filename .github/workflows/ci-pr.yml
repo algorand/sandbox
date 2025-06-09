@@ -21,10 +21,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-    ##- Not sure this is needed, but it was in the CircleCI config
-    #   - name: Docker network fix
-    #     run: sudo iptables -I INPUT -m conntrack --ctstate INVALID -j DROP
       
       - name: Stand up sandbox
         timeout-minutes: 30
