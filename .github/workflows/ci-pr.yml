@@ -31,4 +31,4 @@ jobs:
         env:
           CONFIG: ${{ matrix.config }}
         run: |
-          bash ./.circleci/test.sh
+          bash ./.github/scripts/test.sh
