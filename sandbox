@@ -457,8 +457,6 @@ sandbox () {
     docker rmi sandbox_algod sandbox_indexer                   || true
     echo "* docker compose rm -f"
     dc rm -f                                       || true
-    echo "* docker rmi $(docker images -f "dangling=true" -q)"
-    docker rmi $(docker images -f "dangling=true" -q)          || true
     rm "$ACTIVE_CONFIG_FILE" > /dev/null 2>&1                  || true
     echo 'clean function executed' > "$CLEAN_FILE";
   }
